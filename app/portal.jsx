@@ -24,7 +24,11 @@ function Portal({ programs, onNewProgram, onOpenIM }) {
           <NavI icon="users" label="Panel" on={section === "panel"} onClick={() => go("panel")} badge={totalUsers} />
           <div className="side-sec">Workspace</div>
           <NavI icon="settings" label="Settings" on={section === "settings"} onClick={() => go("settings")} />
-          <NavI icon="book" label="Research library" on={false} onClick={() => go("settings")} />
+          <a className="nav-i" href="https://api.usercodified.com/docs" target="_blank" rel="noopener">
+            <Icon name="book" size={17} />
+            Docs
+            <Icon name="arrow" size={13} />
+          </a>
         </nav>
         <div className="side-foot">
           <div className="workspace">
@@ -284,6 +288,18 @@ function SettingsView() {
           <span className="ws-logo" style={{ width: 40, height: 40, borderRadius: 11 }}>N</span>
           <div><div style={{ fontWeight: 600 }}>Northwind</div><div className="mut" style={{ fontSize: "0.84rem" }}>Pro plan · billing managed by Xuan</div></div>
         </div>
+      </div>
+      <div className="scard" style={{ maxWidth: 520, marginTop: "1.25rem" }}>
+        <h4>Developers</h4>
+        <div className="mut" style={{ fontSize: "0.84rem", marginTop: "0.3rem" }}>Pull user insight into Claude Code, Cursor, or your terminal over MCP.</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.9rem", background: "var(--night)", borderRadius: 10, padding: "0.7rem 0.9rem", fontFamily: "var(--font-mono)", fontSize: "0.82rem", color: "oklch(0.91 0.012 75)" }}>
+          <span style={{ color: "oklch(0.70 0.115 45)" }}>$</span>
+          <span style={{ flex: 1, overflowX: "auto", whiteSpace: "nowrap" }}>claude mcp add edda</span>
+          <button type="button" onClick={(e) => { navigator.clipboard?.writeText("claude mcp add edda"); const b = e.currentTarget; const t = b.textContent; b.textContent = "Copied"; setTimeout(() => { b.textContent = t; }, 1400); }} style={{ fontFamily: "var(--font-mono)", fontSize: "0.64rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "oklch(0.66 0.015 70)", border: "1px solid oklch(0.34 0.014 58)", borderRadius: 7, padding: "0.35em 0.7em", flexShrink: 0, cursor: "pointer", background: "transparent" }}>Copy</button>
+        </div>
+        <a className="btn btn-ghost btn-sm" href="https://api.usercodified.com/docs" target="_blank" rel="noopener" style={{ marginTop: "0.9rem" }}>
+          <Icon name="book" size={15} /> Read the docs
+        </a>
       </div>
     </div>
   );
