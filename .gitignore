@@ -1,0 +1,17 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs / deps (none today, but for when this gets a real build)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+dist/
+.cache/
+
+# Generated artifacts — re-bundled from source, not hand-edited.
+# Uncomment to keep the offline bundle out of git:
+# edda/Edda-standalone.html

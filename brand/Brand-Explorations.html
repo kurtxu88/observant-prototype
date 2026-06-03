@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Edda — Brand Explorations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root {
+    --canvas: oklch(0.985 0.006 78);
+    --night: oklch(0.255 0.018 58);
+    --accent: oklch(0.575 0.118 41);
+    --accent-dark: oklch(0.685 0.125 45);
+    --ink: oklch(0.265 0.013 56);
+    --cream: oklch(0.95 0.012 75);
+    --muted: oklch(0.595 0.010 60);
+    --font-display: 'Spectral', Georgia, serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+  html, body, #root { height: 100%; margin: 0; }
+  body { font-family: var(--font-display); }
+
+  /* wordmark */
+  .lw { font-family: var(--font-display); font-weight: 500; font-size: 3.6rem; letter-spacing: -0.015em; color: var(--ink); line-height: 1; }
+  .lw.dark { color: var(--cream); }
+  .lw .ac { color: var(--accent); }
+
+  /* the pair (two dots = 1:1) */
+  .pair { display: inline-flex; flex-direction: column; justify-content: center; gap: 0.16em; }
+  .pair i { width: 0.2em; height: 0.2em; border-radius: 50%; background: var(--accent); display: block; }
+  .lw.dark .pair i { background: var(--accent-dark); }
+  .pair.lg i { width: 16px; height: 16px; }
+  .pair.sm i { width: 6px; height: 6px; }
+
+  /* diaeresis dots over the e */
+  .diaer { position: absolute; top: -0.06em; left: 50%; transform: translateX(-50%); display: flex; gap: 0.14em; }
+  .diaer i { width: 0.16em; height: 0.16em; border-radius: 50%; background: var(--accent); }
+
+  /* stamped */
+  .stamp { font-family: var(--font-mono); font-weight: 500; font-size: 1.5rem; letter-spacing: 0.42em; color: var(--ink); display: inline-flex; flex-direction: column; align-items: center; gap: 0.6rem; text-indent: 0.42em; white-space: nowrap; }
+  .stamp .rule { width: 64px; height: 1px; background: var(--accent); }
+
+  /* seal */
+  .seal { width: 120px; height: 120px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--ink); display: inline-grid; place-items: center; font-size: 4rem; font-weight: 500; }
+
+  /* tiles */
+  .tile { width: 120px; height: 120px; border-radius: 28px; display: inline-grid; place-items: center; }
+  .tile.night { background: var(--night); }
+  .tile.warm { background: var(--accent); color: var(--cream); font-size: 4.4rem; font-weight: 500; }
+
+  /* listening ripple */
+  .ripple { position: relative; display: inline-grid; place-items: center; width: 130px; height: 130px; }
+  .ripple i { position: absolute; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+  .ripple .rd { width: 16px; height: 16px; background: var(--accent); }
+  .ripple .r1 { width: 56px; height: 56px; border: 1.5px solid var(--accent); opacity: 0.55; }
+  .ripple .r2 { width: 100px; height: 100px; border: 1.5px solid var(--accent); opacity: 0.28; }
+
+  /* tagline + caption */
+  .tagline { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--muted); margin-top: 1.2rem; text-transform: lowercase; }
+  .tagline.dark { color: oklch(0.74 0.02 70); }
+  .cap { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--muted); margin-top: 1.5rem; max-width: 32ch; line-height: 1.5; }
+  .cap.dark { color: oklch(0.7 0.02 70); }
+
+  /* device-in-use rows */
+  .dev-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.5rem 0; }
+  .dev-mono { font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
+  .dev-txt { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink); }
+  .pair.sm { flex-direction: row; gap: 5px; }
+  .dotlive { width: 9px; height: 9px; border-radius: 50%; background: oklch(0.56 0.09 152); box-shadow: 0 0 0 3px oklch(0.56 0.09 152 / 0.18); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="brand.jsx"></script>
+</body>
+</html>
