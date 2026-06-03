@@ -137,12 +137,12 @@ function SetupFlow({ onLaunch, onExit }) {
               {step === 1 && (
                 <Step head={{ eyebrow: "Step 2", h1: "Who you learn from.", p: "Sell the capacity first — then choose the panel. Start with the users worth listening to." }}>
                   <div className="opt-grid two">
-                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Upload your user list or share a segment. Edda opens a private 1:1 line with each." tag="Recommended" />
+                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Share a link via email or in-app message. Edda opens a private 1:1 line with each." tag="Recommended" />
                     <OptCard on={source === "recruit"} onClick={() => setSource("recruit")} icon="users" name="Recruit a panel" desc="We recruit a vetted panel matched to your best-customer profile — on hundreds of behavioral traits." tag="No users yet?" />
                   </div>
                   {source === "own" && (
                     <div className="field" style={{ marginTop: "1.6rem" }}>
-                      <label>Link to your users <span className="hint">CSV, a segment, or a shareable invite</span></label>
+                      <label>Your invite link <span className="hint">share it by email or in your app</span></label>
                       <input className="input" placeholder="https://app.northwind.com/users/power-segment" value={link} onChange={(e) => setLink(e.target.value)} />
                       <div className="chips">
                         {[["power", "Power users"], ["early", "Early adopters"], ["all", "All users"]].map(([k, l]) => (
