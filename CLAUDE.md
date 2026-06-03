@@ -4,18 +4,27 @@ Context for Claude Code (or any dev) continuing this project. Read `README.md` f
 and quick start.
 
 ## What Edda is
-An AI that learns from a builder's users **1:1, continuously, at scale**. It runs a rolling-research
-loop (≈ a diary study) over the builder's own panel: onboards each user on a private line, watches
-behavior, follows up in the moment, lets the product team relay questions / request live 1:1s, and
-synthesizes insight bottom-up or on demand.
+**User learning on autopilot.** Edda automates the *entire* user-learning loop for a builder:
+**finds the users, runs the conversations, follows up continuously, and surfaces what matters** —
+so insight flows in while they ship. Under the hood it runs a rolling-research loop (≈ a diary study)
+over the builder's panel: onboards each user on a private 1:1 line, watches behavior, follows up in
+the moment, lets the team relay questions / request live 1:1s, and synthesizes bottom-up or on demand.
+The 1:1 line and proactive behavior-triggered deep-dives are the **engine** — they are features of
+the autopilot, no longer the headline.
+
+## ICP (LOCKED — who this is for)
+Laser focus on **startups, one-person companies, and AI-native teams** — builders shipping fast with
+**no research team and no time to chase feedback**. Today they post on X / Product Hunt, reply to
+random comments, and DM users one by one. Edda replaces that scramble with a system you turn on once.
 
 ## Positioning (LOCKED — do not drift)
-- **Hero:** "Let Edda learn from your users — 1:1, continuously, at scale."
-- **Sub:** "Whether you have a million users or your first ten, Edda automates how you learn from your power users — so you never build blind."
-- **Category:** the modern user-learning pipeline.
-- **CTA:** "Automate user learning now."
-- **Differentiator:** 1:1 **and** at scale, continuous & in-context — what surveys / one-off studies / rented panels can't do.
-- **Rule learned the hard way:** sell the **capability**, not the pain. Lead with the capacity; "who you learn from" (the panel) follows — never lead with the panel.
+- **Hero:** "Put user learning on autopilot."
+- **Sub:** "Edda finds your users, runs the conversations, and follows up continuously — so insight flows in while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback."
+- **Category:** user learning on autopilot.
+- **CTA:** "Turn on learning mode."
+- **The contrast (sell this):** stop chasing feedback — no more posting on X and hoping, combing Product Hunt threads, DMing users one by one, or blasting surveys that go cold. Turn it on; watch the data come in; iterate at lightning speed.
+- **Differentiator:** end-to-end **autopilot** (find → run → follow up → surface) — manual feedback is scattered and stops when you stop; surveys/one-off studies go cold; rented panels aren't your users. Edda keeps learning on its own, 1:1 and at scale.
+- **Rule learned the hard way:** sell the **capability/autopilot**, not the pain. Lead with the capacity; "who you learn from" (the panel) follows — never lead with the panel. 1:1/continuous are the *how*, not the headline.
 - Edda is **personified** ("Edda reached out to Dana"). Voice: calm, literary, Nordic-minimal, documentary-observer.
 
 ## Conventions in this repo
