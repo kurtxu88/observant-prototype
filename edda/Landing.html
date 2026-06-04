@@ -64,42 +64,58 @@
             <span class="shot-pill"><span class="wordmark sm">observant<span class="dot"></span></span><span class="shot-sep">/</span>Northwind</span>
             <span class="shot-status"><span class="live-dot"></span>Learning mode · On</span>
           </div>
-          <div class="panel flush">
-            <div class="panel-meta">On autopilot — Observant is in a 1:1 with <strong>5 users</strong> right now</div>
-            <div class="hero-stream">
-
-              <!-- 1 · behavior-triggered follow-up -->
-              <div class="mini">
-                <div class="mini-top">
-                  <span class="mini-ava" style="background:oklch(0.62 0.10 30)">M</span>
-                  <div class="mini-id"><span class="mini-name">Maya</span><span class="mini-ctx">in your product</span></div>
-                  <span class="mini-tag">following up</span>
+          <div class="demo-body" data-demo>
+            <div class="demo-meta">On autopilot — Observant runs each 1:1 in turn, right where the user already is</div>
+            <!-- launch rail: three sequential, separate 1:1s -->
+            <ol class="demo-rail">
+              <li class="rail-step is-active" data-i="0"><span class="rs-ava" style="background:oklch(0.62 0.10 30)">M</span><span class="rs-meta"><b>Maya</b><i>in your product</i></span></li>
+              <li class="rail-step" data-i="1"><span class="rs-ava" style="background:oklch(0.55 0.10 260)">D</span><span class="rs-meta"><b>Devin</b><i>browser companion</i></span></li>
+              <li class="rail-step" data-i="2"><span class="rs-ava" style="background:oklch(0.58 0.09 150)">S</span><span class="rs-meta"><b>Sofia</b><i>over email</i></span></li>
+            </ol>
+            <!-- stage: each user's 1:1, in its native surface -->
+            <div class="demo-stage">
+              <!-- scene 0 — in your product (in-app messenger) -->
+              <div class="scene is-active" data-i="0">
+                <div class="surf surf-app">
+                  <span class="surf-cap">In-app · Maya is at checkout</span>
+                  <div class="iw">
+                    <div class="iw-head"><span class="iw-ava" style="background:oklch(0.62 0.10 30)">M</span><span class="iw-id"><b>Observant → Maya</b><i>private 1:1 · in your product</i></span></div>
+                    <div class="iw-body">
+                      <div class="bub them">I noticed you started an order yesterday but didn't finish — what got in the way?</div>
+                      <div class="bub-type"><i></i><i></i><i></i></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="mini-msg">“I noticed you started an order yesterday but didn't finish — what got in the way?”</div>
-                <div class="mini-typing"><span class="dots"><i></i><i></i><i></i></span> Maya is replying…</div>
               </div>
-
-              <!-- 2 · team relay -->
-              <div class="mini">
-                <div class="mini-top">
-                  <span class="mini-ava" style="background:oklch(0.55 0.10 260)">D</span>
-                  <div class="mini-id"><span class="mini-name">Devin</span><span class="mini-ctx">browser companion</span></div>
-                  <span class="mini-tag">from your team</span>
+              <!-- scene 1 — browser companion (Chrome extension popup) -->
+              <div class="scene" data-i="1">
+                <div class="surf surf-br">
+                  <div class="br-top"><span class="br-traffic"><i></i><i></i><i></i></span><span class="br-omni">app.northwind.com<span class="br-puzzle">◎</span></span></div>
+                  <div class="br-page"><span class="br-skel w1"></span><span class="br-skel w2"></span><span class="br-skel w3"></span><span class="br-skel w2"></span></div>
+                  <div class="ext">
+                    <div class="ext-head"><span class="iw-ava" style="background:oklch(0.55 0.10 260)">D</span><span class="iw-id"><b>Observant → Devin</b><i>browser companion</i></span></div>
+                    <div class="ext-msg">You've opened team settings 3× today — would a shared workspace change how you use this?</div>
+                    <div class="ext-act"><span class="ext-btn">Reply</span><span class="ext-skip">Later</span></div>
+                  </div>
                 </div>
-                <div class="mini-msg">“Quick one from the team — would a shared workspace change how you use this?”</div>
               </div>
-
-              <!-- 3 · live 1:1 invite -->
-              <div class="mini">
-                <div class="mini-top">
-                  <span class="mini-ava" style="background:oklch(0.58 0.09 150)">S</span>
-                  <div class="mini-id"><span class="mini-name">Sofia</span><span class="mini-ctx">over email</span></div>
-                  <span class="mini-tag">live 1:1</span>
+              <!-- scene 2 — over email, with history → scheduler -->
+              <div class="scene" data-i="2">
+                <div class="surf surf-em">
+                  <div class="em-top"><span class="em-back">‹</span><span class="em-subj">Your workflow — a quick look?</span></div>
+                  <div class="em-thr">
+                    <div class="erow them"><span class="iw-ava sm" style="background:oklch(0.58 0.09 150)">O</span><div class="ebub">Last week the CSV export felt clunky — did the new layout help?<i>Tue</i></div></div>
+                    <div class="erow me"><div class="ebub me">Better — but I still rebuild the header row by hand every time.<i>Tue</i></div></div>
+                    <div class="erow them"><span class="iw-ava sm" style="background:oklch(0.58 0.09 150)">O</span><div class="ebub">The team would love a 15-min call to watch your workflow — want to grab a time?<i>now</i></div></div>
+                  </div>
+                  <div class="sched">
+                    <div class="sched-h">Northwind team · 15 min</div>
+                    <div class="sched-days"><span>Wed 11</span><span class="on">Thu 12</span><span>Fri 13</span></div>
+                    <div class="sched-slots"><span>9:30</span><span class="on">10:00</span><span>2:00</span></div>
+                    <div class="sched-go">Confirm — Thu, 10:00</div>
+                  </div>
                 </div>
-                <div class="mini-msg">“The team would love a 15-min call to watch your workflow — want to grab a time?”</div>
-                <div style="margin-top:0.55rem;text-align:right"><span class="mini-reply">Sure — Thursday works 👍</span></div>
               </div>
-
             </div>
           </div>
         </div>

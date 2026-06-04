@@ -73,88 +73,33 @@
     });
   });
 
-  /* ---------- animated 1:1 chat ---------- */
-  // Script: [type, text, meta]   type: them | me | relay | typing
-  const chatScript = [
-    { type: 'them', text: "Hi Dana — it's Observant. You just shipped your third weekly export. Mind if I ask what you do with it once it leaves the app?", meta: 'Observant · auto-started' },
-    { type: 'typing', after: 900 },
-    { type: 'me', text: "Honestly I paste it into a Google Sheet and rebuild half of it by hand.", meta: 'Dana · power user' },
-    { type: 'relay', tag: 'Relayed from your product team', text: "Would she switch to a live, shareable dashboard instead of the export?" },
-    { type: 'typing', after: 700 },
-    { type: 'me', text: "A live dashboard? Yes — that's exactly the thing I keep wishing existed.", meta: 'Dana' },
-    { type: 'relay', tag: 'Your team requested', text: "A 15-min live 1:1 with Dana — Observant is finding a time." },
-  ];
-
-  function buildMessage(item) {
-    if (item.type === 'typing') {
-      const t = document.createElement('div');
-      t.className = 'typing';
-      t.innerHTML = '<span></span><span></span><span></span>';
-      return t;
+  /* ---------- hero demo: sequential 1:1 surfaces ---------- */
+  const demo = document.querySelector('[data-demo]');
+  if (demo) {
+    const scenes = Array.from(demo.querySelectorAll('.scene'));
+    const steps = Array.from(demo.querySelectorAll('.rail-step'));
+    const DWELL = [3000, 3400, 4600]; // per-scene dwell (ms)
+    let timer = null;
+    function show(n) {
+      scenes.forEach((s, i) => s.classList.toggle('is-active', i === n));
+      steps.forEach((s, i) => {
+        s.classList.toggle('is-active', i === n);
+        s.classList.toggle('is-done', i < n);
+      });
+      clearTimeout(timer);
+      timer = setTimeout(() => show((n + 1) % scenes.length), DWELL[n] || 3400);
     }
-    if (item.type === 'relay') {
-      const wrap = document.createElement('div');
-      wrap.className = 'msg-relay';
-      wrap.innerHTML =
-        '<div class="relay-card">' +
-        '<div style="margin-top:1px;color:var(--accent);flex-shrink:0">' + iconRelay() + '</div>' +
-        '<div><div class="tag">' + item.tag + '</div><div class="rtext">' + item.text + '</div></div>' +
-        '</div>';
-      return wrap;
+    let demoStarted = false;
+    const startDemo = () => { if (demoStarted || !scenes.length) return; demoStarted = true; show(0); };
+    if ('IntersectionObserver' in window) {
+      const dObs = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { startDemo(); dObs.disconnect(); } });
+      }, { threshold: 0.25 });
+      dObs.observe(demo);
     }
-    const m = document.createElement('div');
-    m.className = 'msg ' + item.type;
-    m.innerHTML = '<div class="msg-bubble">' + item.text + '</div>' +
-      (item.meta ? '<div class="meta">' + item.meta + '</div>' : '');
-    return m;
+    window.addEventListener('scroll', () => { if (inView(demo)) startDemo(); }, { passive: true });
+    setTimeout(startDemo, 1600);
   }
-
-  function iconRelay() {
-    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="m22 7-10 5L2 7l10-5 10 5Z"/></svg>';
-  }
-
-  function playChat(body) {
-    body.innerHTML = '';
-    let i = 0;
-    function step() {
-      if (i >= chatScript.length) return;
-      const item = chatScript[i];
-      if (item.type === 'typing') {
-        const t = buildMessage(item);
-        body.appendChild(t);
-        scrollChat(body);
-        setTimeout(() => {
-          t.remove();
-          i++;
-          step();
-        }, item.after || 800);
-      } else {
-        const el = buildMessage(item);
-        body.appendChild(el);
-        scrollChat(body);
-        i++;
-        const delay = item.type === 'relay' ? 1300 : 1100;
-        setTimeout(step, delay);
-      }
-    }
-    setTimeout(step, 400);
-  }
-
-  function scrollChat(body) {
-    body.scrollTop = body.scrollHeight;
-  }
-
-  const chatBodies = Array.from(document.querySelectorAll('.chat-body[data-animate]'));
-  const started = new WeakSet();
-  const startChat = (b) => { if (started.has(b)) return; started.add(b); playChat(b); };
-  if ('IntersectionObserver' in window) {
-    const chatObs = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) { startChat(e.target); chatObs.unobserve(e.target); } });
-    }, { threshold: 0.35 });
-    chatBodies.forEach((b) => chatObs.observe(b));
-  }
-  window.addEventListener('scroll', () => chatBodies.forEach((b) => { if (inView(b)) startChat(b); }), { passive: true });
-  setTimeout(() => chatBodies.forEach(startChat), 2800);
 
   /* ---------- count-up (e.g. "Join 1,248 builders") ---------- */
   function countUp(el) {
