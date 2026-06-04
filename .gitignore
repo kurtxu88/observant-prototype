@@ -15,3 +15,5 @@ dist/
 # Generated artifacts — re-bundled from source, not hand-edited.
 # Uncomment to keep the offline bundle out of git:
 # edda/Edda-standalone.html
+
+.vercel
