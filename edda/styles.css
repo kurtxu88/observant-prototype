@@ -624,6 +624,21 @@ p + p { margin-top: 1em; }
 /* ============================================================
    "stop chasing feedback" — scattered scramble chips
    ============================================================ */
-.scramble { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.4rem; }
-.scrap { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--canvas); border: 1px solid var(--border); border-radius: 100px; padding: 0.5rem 0.9rem; font-size: 0.85rem; color: var(--text-secondary); transform: rotate(var(--r, 0deg)); box-shadow: 0 6px 16px -10px oklch(0.35 0.04 50 / .3); }
-.scrap svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-muted); }
+.scramble { position: relative; height: 272px; margin-top: 1.4rem; }
+.pile { position: absolute; top: var(--t); left: var(--l); width: 72%; max-width: 320px; background: var(--canvas); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 28px -14px oklch(0.35 0.04 50 / .42); padding: 0.62rem 0.78rem; opacity: 1; transform: translateY(0) rotate(var(--r)); transition: opacity .55s ease var(--d), transform .65s cubic-bezier(.2,.7,.3,1) var(--d); }
+.reveal:not(.in) .scramble .pile { opacity: 0; transform: translateY(-42px) rotate(0deg) scale(.96); }
+.pile-top { display: flex; align-items: center; gap: 0.42rem; font-size: 0.72rem; color: var(--text-secondary); }
+.pl-logo { width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; font-size: 0.66rem; font-weight: 700; color: oklch(0.99 0 0); flex-shrink: 0; }
+.pl-logo.x { background: oklch(0.2 0.01 60); }
+.pl-logo.ph { background: oklch(0.62 0.19 32); }
+.pl-ava { width: 18px; height: 18px; border-radius: 50%; background: oklch(0.6 0.09 220); color: oklch(0.99 0 0); display: grid; place-items: center; font-size: 0.6rem; font-weight: 600; flex-shrink: 0; }
+.pl-name { font-weight: 600; color: var(--text-primary); }
+.pl-time { color: var(--text-muted); }
+.pl-up { color: oklch(0.62 0.19 32); font-weight: 700; margin-left: auto; font-size: 0.66rem; }
+.pile-text { margin-top: 0.4rem; font-size: 0.78rem; line-height: 1.35; color: var(--text-primary); }
+.pile-text.sm { font-size: 0.74rem; }
+.pile-stat { margin-top: 0.5rem; display: flex; gap: 0.9rem; font-size: 0.64rem; color: var(--text-muted); }
+.pile-bub { margin-top: 0.4rem; font-size: 0.77rem; background: var(--surface); border-radius: 10px; padding: 0.45rem 0.6rem; color: var(--text-primary); }
+.pile-scale { margin-top: 0.45rem; display: flex; gap: 3px; }
+.pile-scale i { flex: 1; height: 15px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); }
+.pile-note { margin-top: 0.42rem; font-size: 0.62rem; color: var(--text-muted); }
