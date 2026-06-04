@@ -4,27 +4,27 @@ Context for Claude Code (or any dev) continuing this project. Read `README.md` f
 and quick start.
 
 ## What Edda is
-**User learning on autopilot.** Edda automates the *entire* user-learning loop for a builder:
-**finds the users, runs the conversations, follows up continuously, and surfaces what matters** —
-so insight flows in while they ship. Under the hood it runs a rolling-research loop (≈ a diary study)
-over the builder's panel: onboards each user on a private 1:1 line, watches behavior, follows up in
-the moment, lets the team relay questions / request live 1:1s, and synthesizes bottom-up or on demand.
-The 1:1 line and proactive behavior-triggered deep-dives are the **engine** — they are features of
-the autopilot, no longer the headline.
+An AI that puts user learning **on autopilot** for builders. Turn it on and Edda runs the whole
+user-research loop for you: it **finds your users** (bring your own or it recruits a vetted panel),
+onboards each one on a private line, watches behavior, follows up in the moment, and synthesizes
+insight — continuously, 1:1, at scale. The continuous 1:1 relationship (≈ a rolling diary study) is the
+**engine** that makes the loop work, not the whole pitch.
 
-## ICP (LOCKED — who this is for)
-Laser focus on **startups, one-person companies, and AI-native teams** — builders shipping fast with
-**no research team and no time to chase feedback**. Today they post on X / Product Hunt, reply to
-random comments, and DM users one by one. Edda replaces that scramble with a system you turn on once.
+## Audience (LOCKED)
+Laser-focused on **startups, solo founders / one-person companies, and small AI-native teams** shipping
+fast — people who have no time or headcount for a research function. "No research team required."
 
 ## Positioning (LOCKED — do not drift)
-- **Hero:** "Put user learning on autopilot."
-- **Sub:** "Edda finds your users, runs the conversations, and follows up continuously — so insight flows in while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback."
-- **Category:** user learning on autopilot.
+- **Hero:** "Now you can put user learning on autopilot."
+- **Sub:** "Edda finds your users, onboards them, follows up in the moment, and keeps learning — 1:1, continuously, at scale. You turn it on. The insight comes to you."
+- **Frame:** turn on **learning mode** and watch insight come in — the systematized alternative to chasing
+  feedback in scraps (polling X, refreshing Product Hunt, DMing power users, guessing). Iterate as fast as you ship.
 - **CTA:** "Turn on learning mode."
-- **The contrast (sell this):** stop chasing feedback — no more posting on X and hoping, combing Product Hunt threads, DMing users one by one, or blasting surveys that go cold. Turn it on; watch the data come in; iterate at lightning speed.
-- **Differentiator:** end-to-end **autopilot** (find → run → follow up → surface) — manual feedback is scattered and stops when you stop; surveys/one-off studies go cold; rented panels aren't your users. Edda keeps learning on its own, 1:1 and at scale.
-- **Rule learned the hard way:** sell the **capability/autopilot**, not the pain. Lead with the capacity; "who you learn from" (the panel) follows — never lead with the panel. 1:1/continuous are the *how*, not the headline.
+- **The loop (what Edda does):** Finds your users · Onboards & manages · Follows up in the moment · Learns continuously.
+- **Differentiator:** the entire loop, run for you, continuously — vs. surveys / one-off studies / rented panels.
+- **1:1 + proactive learning is a FEATURE** ("the engine under the hood"), not the headline.
+- **Rule still in force:** lead with the **capability** ("put it on autopilot"), not the pain. The
+  "stop chasing feedback" contrast is a supporting beat, never the lead.
 - Edda is **personified** ("Edda reached out to Dana"). Voice: calm, literary, Nordic-minimal, documentary-observer.
 
 ## Conventions in this repo
@@ -47,8 +47,12 @@ random comments, and DM users one by one. Edda replaces that scramble with a sys
   storyline that also appears on the landing).
 
 ## Next tasks (priority)
-1. **`/mcp` page** — "Ready for your agentic workflow." Edda installs as an MCP server; a coding agent
-   (Claude Code / Cursor) pulls user insight into the dev flow. Match the site's system.
+0. **Repivot landed (Jun 2026):** Landing, How-It-Works, MCP, and app surfaces reframed to "user learning
+   on autopilot" for the startup / solo / AI-native audience. Landing has new **The loop** (4 jobs) and
+   **Stop chasing feedback** (versus) sections; 1:1 demoted to "the engine." Old hero saved at
+   `Landing-v1-panel.html`. Keep all four surfaces in sync on this frame.
+1. **`/mcp` page** — built (`MCP.html`): "Ready for your agentic workflow," MCP server + Claude Code / Cursor
+   loop. Iterate as needed; keep matching the site system.
 2. **Brand identity / logo** — wordmark is a placeholder lowercase serif `edda` with a dot. Develop a real mark
    + the literary/Nordic visual language; refine color.
 3. **Real pricing** — replace indicative numbers in `Landing.html` (#pricing).

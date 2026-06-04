@@ -80,7 +80,7 @@ const PROGRAMS = [
     panelSize: 50, activeNow: 1, tier: "6-month continuous",
     members: ["leah"],
     cohorts: [
-      { name: "Recruited panel", n: 50, pct: 100, color: "var(--blue)" },
+      { name: "Recruited (Prolific)", n: 50, pct: 100, color: "var(--blue)" },
     ],
     insights: [
       { q: "What's the #1 reason evaluators churn before week 2?", meta: "synthesis · 50 conversations · 6h ago" },

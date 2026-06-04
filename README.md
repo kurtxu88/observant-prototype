@@ -1,12 +1,10 @@
 # Edda
 
-**Put user learning on autopilot.**
+**An AI that learns from your users — 1:1, continuously, at scale.**
 
-Edda automates the entire user-learning loop for startups, one-person companies, and AI-native teams:
-it finds your users, runs the conversations, follows up continuously, and surfaces what matters — so
-insight flows in while you ship, instead of chasing feedback on X, Product Hunt, and in random DMs.
-Under the hood it's a continuous, one-on-one learning loop (≈ a diary study); the 1:1 line and
-proactive deep-dives are the engine, not the headline. (Formerly *AlphaCommons*.)
+Edda runs a continuous, one-on-one learning loop with the users worth listening to: it onboards
+them, watches real behavior, follows up in the moment, and surfaces insight — so a builder never
+builds blind. (Formerly *AlphaCommons*.)
 
 This repo contains the **launch-ready V1 marketing site + an interactive product prototype**, built
 as self-contained HTML/CSS/JS (no build step). It is the **design front end** — the real backend

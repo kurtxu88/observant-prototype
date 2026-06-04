@@ -59,7 +59,7 @@ function SetupFlow({ onLaunch, onExit }) {
 
   const tierLabel = { oneoff: "One-off study", "1mo": "1-month program", "6mo": "6-month continuous" };
   const surfaceLabel = { product: "In your product", browser: "Browser companion", email: "Email", app: "Edda app" };
-  const sourceLabel = source === "own" ? `Your own users · ${link || "—"}` : source === "recruit" ? "Recruited vetted panel" : "—";
+  const sourceLabel = source === "own" ? `Your own users · ${link || "—"}` : source === "recruit" ? "Recruited vetted panel (Prolific)" : "—";
 
   const launch = () => {
     setLaunching(true);
@@ -70,7 +70,7 @@ function SetupFlow({ onLaunch, onExit }) {
       panelSize: source === "recruit" ? 50 : 32, activeNow: 2, tier: tierLabel[tier],
       members: ["dana", "priya"],
       cohorts: source === "recruit"
-        ? [{ name: "Recruited panel", n: 50, pct: 100, color: "var(--blue)" }]
+        ? [{ name: "Recruited (Prolific)", n: 50, pct: 100, color: "var(--blue)" }]
         : cohorts.map((c, i) => ({
             name: c === "power" ? "Power users" : c === "early" ? "Early adopters" : "All users",
             n: c === "power" ? 32 : c === "early" ? 18 : 60, pct: 100,
@@ -135,14 +135,14 @@ function SetupFlow({ onLaunch, onExit }) {
               )}
 
               {step === 1 && (
-                <Step head={{ eyebrow: "Step 2", h1: "Who you learn from.", p: "Sell the capacity first — then choose the panel. Start with the users worth listening to." }}>
+                <Step head={{ eyebrow: "Step 2", h1: "Who you learn from.", p: "Edda finds the right people for you — bring your own, or have Edda recruit a vetted panel. Start with the users worth listening to." }}>
                   <div className="opt-grid two">
-                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Share a link via email or in-app message. Edda opens a private 1:1 line with each." tag="Recommended" />
-                    <OptCard on={source === "recruit"} onClick={() => setSource("recruit")} icon="users" name="Recruit a panel" desc="We recruit a vetted panel matched to your best-customer profile — on hundreds of behavioral traits." tag="No users yet?" />
+                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Drop a link to your users. Edda opens a private 1:1 line with each." tag="Recommended" />
+                    <OptCard on={source === "recruit"} onClick={() => setSource("recruit")} icon="users" name="Recruit a panel" desc="We recruit a vetted panel for you — Prolific is the day-one bridge." tag="No users yet?" />
                   </div>
                   {source === "own" && (
                     <div className="field" style={{ marginTop: "1.6rem" }}>
-                      <label>Your invite link <span className="hint">share it by email or in your app</span></label>
+                      <label>Link to your users <span className="hint">CSV, a segment, or a shareable invite</span></label>
                       <input className="input" placeholder="https://app.northwind.com/users/power-segment" value={link} onChange={(e) => setLink(e.target.value)} />
                       <div className="chips">
                         {[["power", "Power users"], ["early", "Early adopters"], ["all", "All users"]].map(([k, l]) => (
@@ -252,7 +252,7 @@ function LaunchScreen({ product }) {
       <div className="launch-card">
         <div className="launch-ring" />
         <h2 className="serif">Going live</h2>
-        <p>Edda is setting up your learning program.</p>
+        <p>Edda is taking it from here — setting up your program and reaching out.</p>
         <div className="launch-log">
           {lines.slice(0, shown).map((l, i) => (
             <div className="row" key={i}><Icon name="check" size={15} sw={2.4} /> {l}</div>
