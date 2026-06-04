@@ -1,5 +1,5 @@
 /* ============================================================
-   SUBSPACE — interactions
+   OBSERVANT — interactions
    ============================================================ */
 (function () {
   'use strict';
@@ -76,13 +76,13 @@
   /* ---------- animated 1:1 chat ---------- */
   // Script: [type, text, meta]   type: them | me | relay | typing
   const chatScript = [
-    { type: 'them', text: "Hi Dana — it's Subspace. You just shipped your third weekly export. Mind if I ask what you do with it once it leaves the app?", meta: 'Subspace · auto-started' },
+    { type: 'them', text: "Hi Dana — it's Observant. You just shipped your third weekly export. Mind if I ask what you do with it once it leaves the app?", meta: 'Observant · auto-started' },
     { type: 'typing', after: 900 },
     { type: 'me', text: "Honestly I paste it into a Google Sheet and rebuild half of it by hand.", meta: 'Dana · power user' },
     { type: 'relay', tag: 'Relayed from your product team', text: "Would she switch to a live, shareable dashboard instead of the export?" },
     { type: 'typing', after: 700 },
     { type: 'me', text: "A live dashboard? Yes — that's exactly the thing I keep wishing existed.", meta: 'Dana' },
-    { type: 'relay', tag: 'Your team requested', text: "A 15-min live 1:1 with Dana — Subspace is finding a time." },
+    { type: 'relay', tag: 'Your team requested', text: "A 15-min live 1:1 with Dana — Observant is finding a time." },
   ];
 
   function buildMessage(item) {

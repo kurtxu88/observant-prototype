@@ -1,5 +1,5 @@
 /* ============================================================
-   SUBSPACE — /how-it-works interactions (reveals + rich 1:1 demo)
+   OBSERVANT — /how-it-works interactions (reveals + rich 1:1 demo)
    ============================================================ */
 (function () {
   'use strict';
@@ -24,10 +24,10 @@
 
   /* ---------- rich 1:1 demo ---------- */
   const script = [
-    { type: 'them', text: "Marcus — I noticed you hit an error twice this afternoon while bulk-importing. What were you trying to get done right then?", meta: 'Subspace · behavior-triggered · 4:06pm' },
+    { type: 'them', text: "Marcus — I noticed you hit an error twice this afternoon while bulk-importing. What were you trying to get done right then?", meta: 'Observant · behavior-triggered · 4:06pm' },
     { type: 'typing', after: 1000 },
     { type: 'me', text: "Importing my whole Q2 contact list. It choked on the rate limit around 4pm.", meta: 'Marcus · power user' },
-    { type: 'them', text: "Got it. Is that a once-a-quarter push, or something you do more often?", meta: 'Subspace' },
+    { type: 'them', text: "Got it. Is that a once-a-quarter push, or something you do more often?", meta: 'Observant' },
     { type: 'typing', after: 850 },
     { type: 'me', text: "Honestly closer to weekly. It's the most annoying part of my week.", meta: 'Marcus' },
     { type: 'relay', tag: 'Relayed from your product team', text: "Would a scheduled background import solve this, or do you need it instant?" },
@@ -35,7 +35,7 @@
     { type: 'me', text: "Background is fine — I just need it to finish without babysitting it.", meta: 'Marcus' },
     { type: 'relay', tag: 'Your team requested', text: "A live 15-min 1:1 with Marcus to watch the workflow." },
     { type: 'typing', after: 900 },
-    { type: 'them', text: "Happy to set that up. Marcus — the team would love 15 minutes to see this live. Does Thursday 2pm work?", meta: 'Subspace' },
+    { type: 'them', text: "Happy to set that up. Marcus — the team would love 15 minutes to see this live. Does Thursday 2pm work?", meta: 'Observant' },
     { type: 'typing', after: 850 },
     { type: 'me', text: "Thursday works. Send the invite.", meta: 'Marcus' },
     { type: 'relay', tag: 'Scheduled', text: "Live 1:1 booked · Thu 2:00pm · invite sent to Marcus." },

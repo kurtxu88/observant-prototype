@@ -1,5 +1,5 @@
 /* ============================================================
-   SUBSPACE — /mcp interactions (reveals + terminal line reveal)
+   OBSERVANT — /mcp interactions (reveals + terminal line reveal)
    ============================================================ */
 (function () {
   'use strict';

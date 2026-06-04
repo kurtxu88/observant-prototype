@@ -1,5 +1,5 @@
 /* ============================================================
-   SUBSPACE app — root (setup ⇄ portal, IM slide-over)
+   OBSERVANT app — root (setup ⇄ portal, IM slide-over)
    ============================================================ */
 const { useState: useStateM } = React;
 

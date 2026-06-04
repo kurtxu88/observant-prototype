@@ -1,5 +1,5 @@
 /* ============================================================
-   SUBSPACE app — Setup flow (build a learning program)
+   OBSERVANT app — Setup flow (build a learning program)
    ============================================================ */
 const { useState: useStateS, useEffect: useEffectS } = React;
 
@@ -58,7 +58,7 @@ function SetupFlow({ onLaunch, onExit }) {
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const tierLabel = { oneoff: "One-off study", "1mo": "1-month program", "6mo": "6-month continuous" };
-  const surfaceLabel = { product: "In your product", browser: "Browser companion", email: "Email", app: "Subspace app" };
+  const surfaceLabel = { product: "In your product", browser: "Browser companion", email: "Email", app: "Observant app" };
   const sourceLabel = source === "own" ? `Your own users · ${link || "—"}` : source === "recruit" ? "Recruited vetted panel (Prolific)" : "—";
 
   const launch = () => {
@@ -117,7 +117,7 @@ function SetupFlow({ onLaunch, onExit }) {
           <main className="setup-main">
             <div className="setup-stage">
               {step === 0 && (
-                <Step head={{ eyebrow: "Step 1", h1: "What do you want to learn?", p: "Brief Subspace like you'd brief a researcher. It encodes real qualitative methodology — you bring the question." }}>
+                <Step head={{ eyebrow: "Step 1", h1: "What do you want to learn?", p: "Brief Observant like you'd brief a researcher. It encodes real qualitative methodology — you bring the question." }}>
                   <div className="field">
                     <label>Your learning goal</label>
                     <textarea className="textarea" placeholder="e.g. Why do power users export data and rebuild it by hand instead of using our dashboards?" value={goal} onChange={(e) => setGoal(e.target.value)} />
@@ -128,16 +128,16 @@ function SetupFlow({ onLaunch, onExit }) {
                     </div>
                   </div>
                   <div className="field">
-                    <label>Product <span className="hint">what Subspace will reference in conversations</span></label>
+                    <label>Product <span className="hint">what Observant will reference in conversations</span></label>
                     <input className="input" value={product} onChange={(e) => setProduct(e.target.value)} />
                   </div>
                 </Step>
               )}
 
               {step === 1 && (
-                <Step head={{ eyebrow: "Step 2", h1: "Who you learn from.", p: "Subspace finds the right people for you — bring your own, or have Subspace recruit a vetted panel. Start with the users worth listening to." }}>
+                <Step head={{ eyebrow: "Step 2", h1: "Who you learn from.", p: "Observant finds the right people for you — bring your own, or have Observant recruit a vetted panel. Start with the users worth listening to." }}>
                   <div className="opt-grid two">
-                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Drop a link to your users. Subspace opens a private 1:1 line with each." tag="Recommended" />
+                    <OptCard on={source === "own"} onClick={() => setSource("own")} icon="link" name="Bring your own" desc="Drop a link to your users. Observant opens a private 1:1 line with each." tag="Recommended" />
                     <OptCard on={source === "recruit"} onClick={() => setSource("recruit")} icon="users" name="Recruit a panel" desc="We recruit a vetted panel for you — Prolific is the day-one bridge." tag="No users yet?" />
                   </div>
                   {source === "own" && (
@@ -161,7 +161,7 @@ function SetupFlow({ onLaunch, onExit }) {
               )}
 
               {step === 2 && (
-                <Step head={{ eyebrow: "Step 3", h1: "How continuous?", p: "Subspace runs like a diary study — the longer it runs, the more it learns. You can change this anytime." }}>
+                <Step head={{ eyebrow: "Step 3", h1: "How continuous?", p: "Observant runs like a diary study — the longer it runs, the more it learns. You can change this anytime." }}>
                   <div className="opt-grid three">
                     <OptCard on={tier === "oneoff"} onClick={() => setTier("oneoff")} icon="bolt" name="One-off" desc="A single round of 1:1s. Good for a focused question." />
                     <OptCard on={tier === "1mo"} onClick={() => setTier("1mo")} icon="clock" name="1 month" desc="A short rolling study with follow-ups in the moment." />
@@ -176,7 +176,7 @@ function SetupFlow({ onLaunch, onExit }) {
                     {[["product", "globe", "In your product", "An embedded companion inside Northwind."],
                       ["browser", "search", "Browser companion", "A lightweight extension that travels with them."],
                       ["email", "mail", "Email", "Quiet, asynchronous check-ins."],
-                      ["app", "phone", "Subspace app", "A dedicated space on their phone."]].map(([k, ic, nm, d]) => (
+                      ["app", "phone", "Observant app", "A dedicated space on their phone."]].map(([k, ic, nm, d]) => (
                       <OptCard key={k} multi on={surfaces.includes(k)} onClick={() => toggle(surfaces, setSurfaces, k)} icon={ic} name={nm} desc={d} />
                     ))}
                   </div>
@@ -184,7 +184,7 @@ function SetupFlow({ onLaunch, onExit }) {
               )}
 
               {step === 4 && (
-                <Step head={{ eyebrow: "Step 5", h1: "Review & launch.", p: "Subspace will open private 1:1 lines and begin the moment you launch." }}>
+                <Step head={{ eyebrow: "Step 5", h1: "Review & launch.", p: "Observant will open private 1:1 lines and begin the moment you launch." }}>
                   <div className="review">
                     <ReviewRow k="Learning goal" v={goal} onEdit={() => setStep(0)} />
                     <ReviewRow k="Product" v={product} onEdit={() => setStep(0)} />
@@ -238,9 +238,9 @@ function ReviewRow({ k, v, sub, onEdit }) {
 function LaunchScreen({ product }) {
   const lines = [
     "Opening private 1:1 lines…",
-    "Encoding your brief into Subspace's methodology…",
+    "Encoding your brief into Observant's methodology…",
     `Syncing with ${product}…`,
-    "Subspace is reaching out to your first users.",
+    "Observant is reaching out to your first users.",
   ];
   const [shown, setShown] = useStateS(0);
   useEffectS(() => {
@@ -252,7 +252,7 @@ function LaunchScreen({ product }) {
       <div className="launch-card">
         <div className="launch-ring" />
         <h2 className="serif">Going live</h2>
-        <p>Subspace is taking it from here — setting up your program and reaching out.</p>
+        <p>Observant is taking it from here — setting up your program and reaching out.</p>
         <div className="launch-log">
           {lines.slice(0, shown).map((l, i) => (
             <div className="row" key={i}><Icon name="check" size={15} sw={2.4} /> {l}</div>
