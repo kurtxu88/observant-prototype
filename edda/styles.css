@@ -196,11 +196,24 @@ p + p { margin-top: 1em; }
 /* metrics column */
 .hero-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(1.5rem, 3vw, 2.75rem); margin-top: clamp(2.75rem, 5vw, 4.25rem); padding-top: clamp(2rem, 4vw, 3rem); border-top: 1px solid var(--border); text-align: left; }
 @media (max-width: 880px) {
-  .hero-grid { grid-template-columns: 1fr; gap: clamp(2.25rem, 8vw, 3rem); }
+  /* single column that can shrink below the screenshot's min-content (prevents page-wide overflow) */
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: clamp(2rem, 7vw, 2.75rem); }
   .hero-text { text-align: center; }
   .hero .lead { margin-inline: auto; }
   .hero-actions { justify-content: center; }
-  .hero-metrics { grid-template-columns: 1fr; gap: 1.5rem; }
+  .hero-showcase, .shot, .shot-frame { min-width: 0; width: 100%; }
+  .hero-metrics { grid-template-columns: 1fr; gap: 0; }
+  .hero-metrics .metric { padding: 1.15rem 0 1.15rem 1.3rem; border-top: 1px solid var(--border); }
+  .hero-metrics .metric:first-child { border-top: none; }
+}
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+}
+@media (max-width: 480px) {
+  /* keep the screenshot header tidy on small screens */
+  .shot-status { display: none; }
+  .panel.flush { padding: 0.95rem 0.95rem 1.1rem; }
+  .hero { padding-top: clamp(2rem, 6vw, 3rem); }
 }
 .metric { padding-left: 1.3rem; border-left: 2px solid var(--accent-soft); }
 .metric .num { font-family: var(--font-display); font-size: clamp(2.1rem, 3.1vw, 2.9rem); line-height: 1; letter-spacing: -0.02em; color: var(--text-primary); display: flex; align-items: baseline; gap: 0.14em; }
@@ -457,6 +470,10 @@ p + p { margin-top: 1em; }
 /* ---------- who list ---------- */
 .who-list { list-style: none; padding: 0; margin: 2rem 0 0; display: flex; flex-direction: column; gap: 1.3rem; }
 .who-list li { display: flex; flex-direction: column; gap: 0.3rem; padding-left: 1.2rem; border-left: 2px solid var(--accent-soft); }
+.who-list-2up { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2.75rem; margin-top: 2.9rem; }
+@media (max-width: 720px) { .who-list-2up { grid-template-columns: 1fr; gap: 1.4rem; } }
+#who .section-head { max-width: 64ch; }
+#who .section-head .lead { margin-top: 1.6rem; }
 .who-k { font-weight: 600; font-size: 1rem; color: var(--text-primary); }
 .who-d { font-size: 0.95rem; color: var(--text-secondary); }
 
