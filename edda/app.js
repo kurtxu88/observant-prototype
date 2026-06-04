@@ -156,6 +156,32 @@
   window.addEventListener('scroll', () => chatBodies.forEach((b) => { if (inView(b)) startChat(b); }), { passive: true });
   setTimeout(() => chatBodies.forEach(startChat), 2800);
 
+  /* ---------- count-up (e.g. "Join 1,248 builders") ---------- */
+  function countUp(el) {
+    const target = parseInt(el.dataset.count, 10);
+    if (!target) return;
+    const dur = 1400, start = performance.now();
+    const fmt = (n) => n.toLocaleString('en-US');
+    function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.floor(eased * target));
+      if (p < 1) requestAnimationFrame(tick);
+      else el.textContent = fmt(target);
+    }
+    requestAnimationFrame(tick);
+  }
+  const counters = Array.from(document.querySelectorAll('[data-count]'));
+  const counted = new WeakSet();
+  const startCount = (el) => { if (counted.has(el)) return; counted.add(el); countUp(el); };
+  if ('IntersectionObserver' in window) {
+    const cObs = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { startCount(e.target); cObs.unobserve(e.target); } });
+    }, { threshold: 0.6 });
+    counters.forEach((el) => cObs.observe(el));
+  }
+  setTimeout(() => counters.forEach(startCount), 2600);
+
   /* ---------- year ---------- */
   const yr = document.getElementById('year');
   if (yr) yr.textContent = new Date().getFullYear();
