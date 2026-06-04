@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA app — root (setup ⇄ portal, IM slide-over)
+   SUBSPACE app — root (setup ⇄ portal, IM slide-over)
    ============================================================ */
 const { useState: useStateM } = React;
 

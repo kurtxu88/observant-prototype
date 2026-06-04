@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA — /mcp interactions (reveals + terminal line reveal)
+   SUBSPACE — /mcp interactions (reveals + terminal line reveal)
    ============================================================ */
 (function () {
   'use strict';

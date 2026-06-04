@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA app — 1:1 IM surface (slide-over conversation)
+   SUBSPACE app — 1:1 IM surface (slide-over conversation)
    ============================================================ */
 const { useState: useStateI, useEffect: useEffectI, useRef: useRefI } = React;
 
@@ -51,7 +51,7 @@ function IMSurface({ user, onClose }) {
     play([
       { msg: { t: "relay", tag: "Relayed from your product team", text: q }, post: 700 },
       { typing: 950 },
-      { msg: { t: "them", text: `One more from the ${"Northwind"} team — ${q.charAt(0).toLowerCase() + q.slice(1)}`, meta: "Edda · relaying" }, post: 1500 },
+      { msg: { t: "them", text: `One more from the ${"Northwind"} team — ${q.charAt(0).toLowerCase() + q.slice(1)}`, meta: "Subspace · relaying" }, post: 1500 },
       { typing: 1200 },
       { msg: { t: "user", text: CANNED_REPLIES[Math.floor(Math.random() * CANNED_REPLIES.length)], meta: fname }, post: 300 },
     ]);
@@ -62,7 +62,7 @@ function IMSurface({ user, onClose }) {
     play([
       { msg: { t: "relay", tag: "Your team requested", text: `A live 15-min 1:1 with ${fname}.` }, post: 700 },
       { typing: 950 },
-      { msg: { t: "them", text: `Happy to arrange that. ${fname} — the Northwind team would love 15 minutes to dig in. Does Thursday at 2pm work?`, meta: "Edda" }, post: 1600 },
+      { msg: { t: "them", text: `Happy to arrange that. ${fname} — the Northwind team would love 15 minutes to dig in. Does Thursday at 2pm work?`, meta: "Subspace" }, post: 1600 },
       { typing: 1100 },
       { msg: { t: "user", text: "Thursday works. Send the invite.", meta: fname }, post: 400 },
       { msg: { t: "relay", tag: "Scheduled", text: `Live 1:1 booked · Thu 2:00pm · calendar invite sent to ${fname}.` }, post: 300 },
@@ -89,10 +89,10 @@ function IMSurface({ user, onClose }) {
         </div>
 
         <footer className="im-foot">
-          <span className="foot-label">Relay a question through Edda</span>
+          <span className="foot-label">Relay a question through Subspace</span>
           <div className="relay-input">
             <textarea
-              className="textarea" placeholder={`Ask ${fname} something — Edda threads it into the conversation…`}
+              className="textarea" placeholder={`Ask ${fname} something — Subspace threads it into the conversation…`}
               value={draft} onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) relay(); }}
             />

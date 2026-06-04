@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA app — Portal (shell · programs · detail · insights · panel)
+   SUBSPACE app — Portal (shell · programs · detail · insights · panel)
    ============================================================ */
 const { useState: useStateP } = React;
 
@@ -114,7 +114,7 @@ function ProgramsList({ programs, onOpen, onNew }) {
         <button className="prog-card new-card" onClick={onNew} type="button">
           <span className="plus-ic"><Icon name="plus" size={20} /></span>
           <span style={{ fontWeight: 600 }}>New program</span>
-          <span style={{ fontSize: "0.82rem" }}>Brief Edda on what to learn next</span>
+          <span style={{ fontSize: "0.82rem" }}>Brief Subspace on what to learn next</span>
         </button>
       </div>
     </div>
@@ -173,7 +173,7 @@ function ProgramDetail({ prog, onOpenIM }) {
           ))}
           {members.length === 0 && (
             <div style={{ padding: "2.5rem 1.25rem", textAlign: "center", color: "var(--text-muted)" }}>
-              Edda is opening the first 1:1 lines — conversations will appear here shortly.
+              Subspace is opening the first 1:1 lines — conversations will appear here shortly.
             </div>
           )}
         </div>
@@ -251,7 +251,7 @@ function PanelView({ members, onOpenIM }) {
       <div className="page-head">
         <div>
           <h1>Panel</h1>
-          <div className="sub">Everyone on a private 1:1 line with Edda, across all programs.</div>
+          <div className="sub">Everyone on a private 1:1 line with Subspace, across all programs.</div>
         </div>
       </div>
       <div className="panel-box">

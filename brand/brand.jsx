@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA — Brand / logo explorations (design canvas content)
+   SUBSPACE — Brand / logo explorations (design canvas content)
    Marks built from type + simple geometry only (dots, rings, tiles).
    ============================================================ */
 const { useEffect } = React;
@@ -28,7 +28,7 @@ function Brand() {
         <DCArtboard id="w-a" label="A · The full stop" width={420} height={240}>
           <Board>
             <div style={{ textAlign: "center" }}>
-              <div className="lw">edda<span className="ac">.</span></div>
+              <div className="lw">subspace<span className="ac">.</span></div>
               <Cap>a period, not a bullet — a complete, recorded observation</Cap>
             </div>
           </Board>
@@ -38,7 +38,7 @@ function Brand() {
           <Board>
             <div style={{ textAlign: "center" }}>
               <div className="lw" style={{ display: "inline-flex", alignItems: "center", gap: "0.34em" }}>
-                <span className="pair"><i></i><i></i></span>edda
+                <span className="pair"><i></i><i></i></span>subspace
               </div>
               <Cap>two dots = a 1:1 — the mark and the positioning are the same thing</Cap>
             </div>
@@ -116,7 +116,7 @@ function Brand() {
       </DCSection>
 
       {/* ============ RECOMMENDED SYSTEM ============ */}
-      <DCSection id="system" title="Recommended · “the pair”" subtitle="Wordmark edda + a two-dot mark that means 1:1 — and a reusable device across the UI">
+      <DCSection id="system" title="Recommended · “the pair”" subtitle="Wordmark subspace + a two-dot mark that means 1:1 — and a reusable device across the UI">
 
         <DCArtboard id="s-icon" label="App icon" width={300} height={300}>
           <Board>
@@ -131,7 +131,7 @@ function Brand() {
           <Board>
             <div style={{ textAlign: "center" }}>
               <div className="lw" style={{ display: "inline-flex", alignItems: "center", gap: "0.34em", fontSize: "3.4rem" }}>
-                <span className="pair"><i></i><i></i></span>edda
+                <span className="pair"><i></i><i></i></span>subspace
               </div>
               <div className="tagline">the modern user-learning pipeline</div>
             </div>
@@ -142,7 +142,7 @@ function Brand() {
           <Board dark>
             <div style={{ textAlign: "center" }}>
               <div className="lw dark" style={{ display: "inline-flex", alignItems: "center", gap: "0.34em", fontSize: "3.4rem" }}>
-                <span className="pair"><i></i><i></i></span>edda
+                <span className="pair"><i></i><i></i></span>subspace
               </div>
               <div className="tagline dark">1:1, continuously, at scale</div>
             </div>

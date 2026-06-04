@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA app — shared UI primitives + icons
+   SUBSPACE app — shared UI primitives + icons
    Exposed on window for cross-file use (Babel scopes per script)
    ============================================================ */
 const { useState, useEffect, useRef, useCallback } = React;
@@ -50,7 +50,7 @@ function Avatar({ name, color = "rust", cls = "conv-ava", style = {} }) {
 function Wordmark({ size }) {
   return (
     <span className="wordmark" style={size ? { fontSize: size } : null}>
-      edda<span className="dot" />
+      subspace<span className="dot" />
     </span>
   );
 }

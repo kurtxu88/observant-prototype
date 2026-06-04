@@ -1,5 +1,5 @@
 /* ============================================================
-   EDDA app — seed data (demo workspace: "Northwind")
+   SUBSPACE app — seed data (demo workspace: "Northwind")
    ============================================================ */
 
 const PANEL = {
@@ -7,9 +7,9 @@ const PANEL = {
     id: "dana", name: "Dana K.", color: "rust", cohort: "Power user", surface: "in your product",
     last: "A live dashboard is exactly the thing I keep wishing existed.", time: "2m", live: true,
     thread: [
-      { t: "them", text: "Hi Dana — it's Edda. You just shipped your third weekly export. Mind if I ask what you do with it once it leaves the app?", meta: "Edda · auto-started · Mon" },
+      { t: "them", text: "Hi Dana — it's Subspace. You just shipped your third weekly export. Mind if I ask what you do with it once it leaves the app?", meta: "Subspace · auto-started · Mon" },
       { t: "user", text: "Honestly I paste it into a Google Sheet and rebuild half of it by hand.", meta: "Dana · Mon" },
-      { t: "them", text: "That sounds tedious. What's the part you rebuild — the formatting, or the actual numbers?", meta: "Edda" },
+      { t: "them", text: "That sounds tedious. What's the part you rebuild — the formatting, or the actual numbers?", meta: "Subspace" },
       { t: "user", text: "The layout, mostly. I need a version my whole team can glance at without me explaining it.", meta: "Dana" },
     ],
   },
@@ -17,24 +17,24 @@ const PANEL = {
     id: "marcus", name: "Marcus T.", color: "green", cohort: "Power user", surface: "browser companion",
     last: "I hit the rate limit again around 4pm.", time: "18m", live: true,
     thread: [
-      { t: "them", text: "Hey Marcus — noticed you ran into an error twice this afternoon. What were you trying to do right then?", meta: "Edda · behavior-triggered" },
+      { t: "them", text: "Hey Marcus — noticed you ran into an error twice this afternoon. What were you trying to do right then?", meta: "Subspace · behavior-triggered" },
       { t: "user", text: "Bulk-importing my Q2 contacts. I hit the rate limit again around 4pm.", meta: "Marcus" },
-      { t: "them", text: "Got it. Is bulk import usually a once-a-quarter thing, or more often?", meta: "Edda" },
+      { t: "them", text: "Got it. Is bulk import usually a once-a-quarter thing, or more often?", meta: "Subspace" },
     ],
   },
   priya: {
     id: "priya", name: "Priya S.", color: "blue", cohort: "Early adopter", surface: "email",
     last: "Day one — still figuring out where things are.", time: "1h", live: false,
     thread: [
-      { t: "them", text: "Welcome to Northwind, Priya! I'm Edda — I'll check in now and then to learn what's working for you. What made you sign up this week?", meta: "Edda · onboarding · day 1" },
+      { t: "them", text: "Welcome to Northwind, Priya! I'm Subspace — I'll check in now and then to learn what's working for you. What made you sign up this week?", meta: "Subspace · onboarding · day 1" },
       { t: "user", text: "My old tool got acquired and shut down. Day one here — still figuring out where things are.", meta: "Priya" },
     ],
   },
   leah: {
-    id: "leah", name: "Leah M.", color: "plum", cohort: "Recruited", surface: "Edda app",
+    id: "leah", name: "Leah M.", color: "plum", cohort: "Recruited", surface: "Subspace app",
     last: "I'd probably stay if the mobile app caught up.", time: "3h", live: false,
     thread: [
-      { t: "them", text: "Thanks for joining the panel, Leah. You mentioned you've been evaluating a few tools — what would make you commit to one?", meta: "Edda · churn follow-up" },
+      { t: "them", text: "Thanks for joining the panel, Leah. You mentioned you've been evaluating a few tools — what would make you commit to one?", meta: "Subspace · churn follow-up" },
       { t: "user", text: "I'd probably stay if the mobile app caught up. Desktop is great, mobile feels like an afterthought.", meta: "Leah" },
     ],
   },
@@ -42,7 +42,7 @@ const PANEL = {
     id: "owen", name: "Owen R.", color: "gold", cohort: "Power user", surface: "in your product",
     last: "The API is the whole reason I'm here.", time: "5h", live: false,
     thread: [
-      { t: "them", text: "Owen — you're in the top 1% of API usage this month. What are you building on top of us?", meta: "Edda · behavior-triggered" },
+      { t: "them", text: "Owen — you're in the top 1% of API usage this month. What are you building on top of us?", meta: "Subspace · behavior-triggered" },
       { t: "user", text: "An internal ops dashboard for my team. The API is the whole reason I'm here.", meta: "Owen" },
     ],
   },
