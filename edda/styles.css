@@ -40,7 +40,7 @@
 /* ---------- reset ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
-html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; overflow-x: hidden; }
 body {
   font-family: var(--font-sans);
   background: var(--canvas);
@@ -286,9 +286,7 @@ p + p { margin-top: 1em; }
   .hero-metrics .metric { padding: 1.15rem 0 1.15rem 1.3rem; border-top: 1px solid var(--border); }
   .hero-metrics .metric:first-child { border-top: none; }
 }
-@media (max-width: 640px) {
-  .nav-links { display: none; }
-}
+.nav-burger { display: none; }
 @media (max-width: 480px) {
   /* keep the screenshot header tidy on small screens */
   .shot-status { display: none; }
@@ -682,3 +680,24 @@ p + p { margin-top: 1em; }
 .mcp-prompt { color: oklch(0.72 0.12 45); margin-right: 0.6em; }
 .mcp-link { font-weight: 600; color: var(--accent); font-size: 0.92rem; white-space: nowrap; }
 .mcp-link:hover { color: var(--accent-hover); }
+
+/* ---------- mobile nav (hamburger, CSS-only toggle) ---------- */
+@media (max-width: 940px) {
+  .nav-burger { display: inline-flex; flex-direction: column; justify-content: center; gap: 5px; width: 32px; height: 32px; cursor: pointer; padding: 0; }
+  .nav-burger span { display: block; width: 20px; height: 2px; background: var(--text-primary); border-radius: 2px; transition: transform .25s ease, opacity .2s ease; }
+  .nav-links {
+    display: flex; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--canvas); border-bottom: 1px solid var(--border);
+    box-shadow: 0 16px 30px -18px oklch(0.3 0.02 60 / .35);
+    padding: 0.2rem var(--gutter) 0.7rem;
+    max-height: 0; overflow: hidden; opacity: 0; pointer-events: none;
+    transition: max-height .3s ease, opacity .2s ease, padding .3s ease;
+  }
+  .nav-links a { padding: 0.9rem 0.1rem; font-size: 1.05rem; border-bottom: 1px solid var(--border); }
+  .nav-links a:last-child { border-bottom: none; }
+  .nav-toggle:checked ~ .nav-links { max-height: 340px; opacity: 1; pointer-events: auto; padding: 0.2rem var(--gutter) 0.9rem; }
+  .nav-toggle:checked ~ .nav-cta .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle:checked ~ .nav-cta .nav-burger span:nth-child(2) { opacity: 0; }
+  .nav-toggle:checked ~ .nav-cta .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+}
