@@ -88,3 +88,11 @@
 @media (max-width: 520px) {
   .surfaces { grid-template-columns: 1fr; }
 }
+
+/* channel list (right column of "Where it lives") */
+.chan-list { display: flex; flex-direction: column; gap: 1.5rem; }
+.chan { display: flex; gap: 0.95rem; align-items: flex-start; }
+.chan-ic { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-tint); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+.chan-b b { display: block; font-family: var(--font-sans); font-weight: 600; font-size: 1.04rem; letter-spacing: -0.01em; color: var(--text-primary); }
+.chan-b p { margin-top: 0.28rem; font-size: 0.93rem; color: var(--text-secondary); line-height: 1.45; }
+.note-line { margin-top: 1.5rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); line-height: 1.55; }
