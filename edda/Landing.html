@@ -218,45 +218,43 @@
 <!-- ============================ WHAT IT DOES ============================ -->
 <section class="section" id="capabilities">
   <div class="wrap split flip">
-    <!-- synthesis snapshot -->
+    <!-- MCP: insight → agent-ready PRD → build -->
     <div class="reveal">
-      <div class="synth">
-        <div class="synth-head">
-          <span class="dot3"><i></i><i></i><i></i></span>
-          <span class="title">what your users are telling you</span>
-          <span class="badge">252 users</span>
+      <div class="ide">
+        <div class="ide-bar">
+          <span class="ide-dots"><i></i><i></i><i></i></span>
+          <span class="ide-title">Claude Code — northwind</span>
+          <span class="ide-mcp"><span class="live-dot"></span>observant MCP</span>
         </div>
-        <div class="synth-body">
-          <div class="synth-q">“Why do power users rebuild the export by hand?”</div>
-          <div class="synth-theme reveal">
-            <div class="t-head"><span class="t-name">Wants a live, shareable view</span><span class="t-pct">61%</span></div>
-            <div class="synth-bar"><i data-w="61"></i></div>
+        <div class="ide-body">
+          <div class="ln user">› why do power users rebuild the export by hand?</div>
+          <div class="ln tool">⎿ observant.ask("export workflow") · 252 users</div>
+          <div class="ln out">61% want a live, shareable view — grounded in 154 quotes</div>
+          <div class="ln agent">↳ writing an agent-ready PRD…</div>
+          <div class="ide-prd">
+            <div class="prd-top"><span class="prd-k">PRD.md</span><span class="prd-tag">grounded in real users</span></div>
+            <div class="prd-ln">## Live, shareable dashboard</div>
+            <div class="prd-ln dim">— replace CSV export with a live view + share link</div>
+            <div class="prd-ln dim">— acceptance: no manual rebuild · 61% asked for this</div>
           </div>
-          <div class="synth-theme">
-            <div class="t-head"><span class="t-name">Reformats for stakeholders</span><span class="t-pct">44%</span></div>
-            <div class="synth-bar"><i data-w="44"></i></div>
-          </div>
-          <div class="synth-theme dim">
-            <div class="t-head"><span class="t-name">Doesn't trust the raw numbers</span><span class="t-pct">18%</span></div>
-            <div class="synth-bar"><i data-w="18"></i></div>
-          </div>
-          <div class="synth-quote">
-            <p>“I paste it into a sheet and rebuild half of it. A live dashboard is exactly the thing I keep wishing existed.”</p>
-            <div class="src">— Dana K. · power user · 3 weeks in</div>
-          </div>
+          <div class="ln agent ok">✓ handed to your agent — building 3 components</div>
         </div>
       </div>
     </div>
 
     <div class="split-text reveal d1">
-      <span class="eyebrow">What you get</span>
-      <h2 class="h2">Ship the right thing,<br />faster.</h2>
-      <p class="lead">Observant turns what your users actually do and say into clear direction — so you can iterate quickly, find product-market fit sooner, and stop guessing what to build next.</p>
+      <span class="eyebrow">Wired into your build</span>
+      <h2 class="h2">From user truth<br />to shipped code.</h2>
+      <p class="lead">Observant installs as an <strong>MCP server</strong> — so your coding agent (Claude Code, Cursor, your terminal) can ask it about your users mid-build and get the answer from real conversations. It turns that truth into an <strong>agent-ready PRD</strong> your agent builds from directly. The loop from what users need to shipped code, closed.</p>
+      <div class="mcp-strip">
+        <span class="mcp-cmd"><span class="mcp-prompt">$</span>claude mcp add observant</span>
+        <a href="MCP.html" class="mcp-link">How the MCP works →</a>
+      </div>
       <div class="caps">
-        <div class="cap"><span class="cap-k">·</span><span class="cap-name">Iterate faster</span><span class="cap-desc">Turn real user reactions into your next change in days, not quarters</span></div>
+        <div class="cap"><span class="cap-k">·</span><span class="cap-name">Iterate faster</span><span class="cap-desc">Real user reactions into your next change in days, not quarters</span></div>
         <div class="cap"><span class="cap-k">·</span><span class="cap-name">Find PMF sooner</span><span class="cap-desc">See what's landing and what's not, continuously</span></div>
         <div class="cap"><span class="cap-k">·</span><span class="cap-name">Catch churn &amp; drop-off early</span><span class="cap-desc">Problems surface while you can still fix them</span></div>
-        <div class="cap cap-open"><span class="cap-k">+</span><span class="cap-name">Never build blind</span><span class="cap-desc">Always know the why behind the numbers — in your users' own words</span></div>
+        <div class="cap cap-open"><span class="cap-k">+</span><span class="cap-name">Integrate with your data</span><span class="cap-desc">Connect product analytics and your own user data — Observant ties the why to the what</span></div>
       </div>
     </div>
   </div>
