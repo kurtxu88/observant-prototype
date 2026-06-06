@@ -1,10 +1,10 @@
-# Edda
+# Observant
 
 **An AI that learns from your users — 1:1, continuously, at scale.**
 
-Edda runs a continuous, one-on-one learning loop with the users worth listening to: it onboards
+Observant runs a continuous, one-on-one learning loop with the users worth listening to: it onboards
 them, watches real behavior, follows up in the moment, and surfaces insight — so a builder never
-builds blind. (Formerly *AlphaCommons*.)
+builds blind. (Formerly *AlphaCommons*, then *Edda*.)
 
 This repo contains the **launch-ready V1 marketing site + an interactive product prototype**, built
 as self-contained HTML/CSS/JS (no build step). It is the **design front end** — the real backend
@@ -20,11 +20,11 @@ No build, no dependencies. Serve the folder statically:
 # from the repo root
 python3 -m http.server 8000
 # then open:
-#   http://localhost:8000/edda/Landing.html      (marketing site)
+#   http://localhost:8000/observant/Landing.html      (marketing site)
 #   http://localhost:8000/app/App.html            (product prototype)
 ```
 
-or `npx serve .` — or just open `edda/Landing.html` directly in a browser.
+or `npx serve .` — or just open `observant/Landing.html` directly in a browser.
 
 > The product app (`app/`) uses React + Babel from a CDN and is transpiled in-browser. That's fine
 > for a prototype; a production build should precompile (see **Handoff notes** below).
@@ -34,7 +34,7 @@ or `npx serve .` — or just open `edda/Landing.html` directly in a browser.
 ## What's in here
 
 ```
-edda/                         Marketing site (vanilla HTML/CSS/JS)
+observant/                         Marketing site (vanilla HTML/CSS/JS)
 ├─ Landing.html               Home — capacity hero, social proof, how-it-learns,
 │                             capabilities, pricing teaser, FAQ, CTA
 ├─ How-It-Works.html          Deep mechanics — old-way compare, the loop timeline,
@@ -43,7 +43,7 @@ edda/                         Marketing site (vanilla HTML/CSS/JS)
 ├─ how.css                    /how-it-works-specific sections
 ├─ app.js                     Landing interactions (reveals, animated chat, FAQ)
 ├─ how.js                     How-it-works interactions (reveals, rich 1:1 demo)
-└─ Edda-standalone.html       GENERATED offline single-file bundle of Landing (do not hand-edit)
+└─ Observant-standalone.html       GENERATED offline single-file bundle of Landing (do not hand-edit)
 
 app/                          Product prototype (React 18 + Babel, in-browser)
 ├─ App.html                   Entry — loads React/Babel + the .jsx modules
@@ -64,8 +64,8 @@ The marketing site's **Get started / pricing / sign-in** CTAs link to `../app/Ap
 
 ## Design system (locked)
 
-- **Feel:** editorial, warm, calm, literary — the Edda / Ólafur Arnalds hush. Nordic-minimal,
-  anthropologist/documentary-observer tone. Edda is personified ("Edda reached out to Dana").
+- **Feel:** editorial, warm, calm, literary — the Ólafur Arnalds hush. Nordic-minimal,
+  anthropologist/documentary-observer tone. Observant is personified ("Observant reached out to Dana").
 - **Type:** `Spectral` (serif display — the headline voice) · `Hanken Grotesk` (sans UI/body) ·
   `IBM Plex Mono` (eyebrows/labels). Loaded from Google Fonts.
 - **Color tokens** (CSS custom properties in `styles.css` / `app.css`, all in `oklch`):
@@ -87,7 +87,7 @@ The marketing site's **Get started / pricing / sign-in** CTAs link to `../app/Ap
 
 **Open (priority order)**
 - [ ] `/mcp` page — "Ready for your agentic workflow"
-- [ ] Brand identity / real logo (current wordmark is a placeholder lowercase serif `edda`)
+- [ ] Brand identity / real logo (current wordmark is a placeholder lowercase serif `observant`)
 - [ ] Real pricing tiers (current numbers are indicative placeholders)
 - [ ] Real social-proof logos (currently text wordmarks) + a testimonial/quote block
 - [ ] More product mockups; reconcile against the real `alphacommons-v2` tokens/components

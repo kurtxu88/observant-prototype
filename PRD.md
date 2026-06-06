@@ -1,8 +1,8 @@
-# Edda — PRD (positioning + messaging)
+# Observant — PRD (positioning + messaging)
 
 _Last updated: 2026-06-03_
 
-Product requirements for the Edda marketing site + product framing. This is the **autopilot reposition**
+Product requirements for the Observant marketing site + product framing. This is the **autopilot reposition**
 (June 2026). The short canonical version lives in `CLAUDE.md` → _Positioning (LOCKED)_; this doc is the
 fuller rationale. Read `README.md` for repo structure.
 
@@ -23,7 +23,7 @@ Getting user feedback is manual, scattered, and reactive. It stops the moment th
 it, and none of it compounds. The builder is the bottleneck on their own learning.
 
 ## Value proposition
-Edda takes the **entire** user-learning loop off your plate and runs it on its own:
+Observant takes the **entire** user-learning loop off your plate and runs it on its own:
 
 1. **Finds your users** — your power users, or a vetted panel we recruit for you.
 2. **Runs the conversations** — a private 1:1 line with each user, in context.
@@ -44,7 +44,7 @@ never build blind, and stop spending your own time chasing feedback.
 
 ## Locked copy (mirrors CLAUDE.md)
 - **Hero:** "Put user learning on autopilot."
-- **Sub:** "Edda finds your users, runs the conversations, and follows up continuously — so insight flows in
+- **Sub:** "Observant finds your users, runs the conversations, and follows up continuously — so insight flows in
   while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback."
 - **Category:** user learning on autopilot.
 - **CTA:** "Turn on learning mode."

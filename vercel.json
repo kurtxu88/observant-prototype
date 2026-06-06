@@ -4,16 +4,16 @@
   "outputDirectory": ".",
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/", "destination": "/edda/Landing.html" },
-    { "source": "/Landing.html", "destination": "/edda/Landing.html" },
-    { "source": "/Landing-v1-panel.html", "destination": "/edda/Landing-v1-panel.html" },
-    { "source": "/How-It-Works.html", "destination": "/edda/How-It-Works.html" },
-    { "source": "/MCP.html", "destination": "/edda/MCP.html" },
-    { "source": "/styles.css", "destination": "/edda/styles.css" },
-    { "source": "/how.css", "destination": "/edda/how.css" },
-    { "source": "/mcp.css", "destination": "/edda/mcp.css" },
-    { "source": "/app.js", "destination": "/edda/app.js" },
-    { "source": "/how.js", "destination": "/edda/how.js" },
-    { "source": "/mcp.js", "destination": "/edda/mcp.js" }
+    { "source": "/", "destination": "/observant/Landing.html" },
+    { "source": "/Landing.html", "destination": "/observant/Landing.html" },
+    { "source": "/Landing-v1-panel.html", "destination": "/observant/Landing-v1-panel.html" },
+    { "source": "/How-It-Works.html", "destination": "/observant/How-It-Works.html" },
+    { "source": "/MCP.html", "destination": "/observant/MCP.html" },
+    { "source": "/styles.css", "destination": "/observant/styles.css" },
+    { "source": "/how.css", "destination": "/observant/how.css" },
+    { "source": "/mcp.css", "destination": "/observant/mcp.css" },
+    { "source": "/app.js", "destination": "/observant/app.js" },
+    { "source": "/how.js", "destination": "/observant/how.js" },
+    { "source": "/mcp.js", "destination": "/observant/mcp.js" }
   ]
 }

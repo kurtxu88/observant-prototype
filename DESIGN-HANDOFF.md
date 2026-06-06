@@ -1,4 +1,4 @@
-# Edda — Design Handoff
+# Observant — Design Handoff
 
 _For a designer (e.g. Claude Design) picking up the visual design. Read `README.md` (structure),
 `CLAUDE.md` (positioning/voice), and `PRD.md` (messaging) first. This doc focuses on **what's
@@ -7,7 +7,7 @@ unresolved and what to design**._
 ---
 
 ## TL;DR — what needs design love
-1. **Hero headline treatment** ("Meet Edda" + "Put user learning on autopilot.") — not working yet; needs a unified, confident treatment.
+1. **Hero headline treatment** ("Meet Observant" + "Put user learning on autopilot.") — not working yet; needs a unified, confident treatment.
 2. **Hero layout** — the copy block should stand on its own; **below it, the live-conversation screenshot (left) and the 3 metrics (right), side by side.** (Currently the screenshot is centered and the metrics are a separate full-width row beneath it.)
 3. **Reconcile the brand tension**: the system is warm / serif / literary (Spectral, terracotta), but recent direction pulls toward a **modern bold-sans hero** (à la the "Meet Jack" landing). Pick a lane and make it cohesive across all pages.
 4. Polish the hero "screenshot" — it's a hand-built CSS/JS mock, not a real product shot.
@@ -16,20 +16,20 @@ unresolved and what to design**._
 
 ## Run it (no build step)
 ```bash
-cd ~/edda
+cd ~/observant
 python3 -m http.server 8000
-# Marketing:  http://localhost:8000/edda/Landing.html  ·  How-It-Works.html  ·  MCP.html
+# Marketing:  http://localhost:8000/observant/Landing.html  ·  How-It-Works.html  ·  MCP.html
 # Prototype:  http://localhost:8000/app/App.html  (App.html?view=app opens the portal)
 ```
-Repo: `https://github.com/xualaya/edda` (private, branch `main`).
+Repo: `https://github.com/xualaya/observant` (private, branch `main`).
 
 ## File map
 ```
-edda/        marketing site (vanilla HTML/CSS/JS, no framework)
+observant/        marketing site (vanilla HTML/CSS/JS, no framework)
   Landing.html · How-It-Works.html · MCP.html
   styles.css (design system + Landing)  how.css  mcp.css
   app.js (reveals, animated chat, count-up)  how.js  mcp.js
-  Edda-standalone.html  ← GENERATED bundle of Landing, STALE, do not hand-edit
+  Observant-standalone.html  ← GENERATED bundle of Landing, STALE, do not hand-edit
 app/         product prototype (React 18 via CDN + in-browser Babel)
   App.html  ui.jsx  data.jsx  setup.jsx  portal.jsx  im.jsx  main.jsx  app.css
 brand/       brand explorations
@@ -38,7 +38,7 @@ brand/       brand explorations
 ## Design system (current)
 - **Type:** `Spectral` (serif display) · `Hanken Grotesk` (sans body/UI) · `IBM Plex Mono` (eyebrows/labels). Google Fonts, imported at top of `styles.css`.
 - **Color tokens** (oklch CSS custom properties, top of `styles.css` / `app/app.css`): `--canvas` (warm off-white), `--surface`, `--panel`, `--text-primary` `--text-secondary` `--text-muted`, `--accent` (terracotta, used sparingly), `--accent-soft` `--accent-tint`, `--border` `--border-strong`, `--success`, `--night` (dark band). **Reuse tokens — no new hex.**
-- **Voice/feel:** editorial, warm, calm, literary, Nordic-minimal. Edda is personified ("Edda reached out to Dana").
+- **Voice/feel:** editorial, warm, calm, literary, Nordic-minimal. Observant is personified ("Observant reached out to Dana").
 - **Reveal pattern:** `.reveal` + `.d1/.d2/.d3` stagger, driven by `app.js` (IntersectionObserver + scroll fallback + setTimeout safety). Keep this if adding sections.
 
 ---
@@ -53,9 +53,9 @@ brand/       brand explorations
 ## The hero, in detail (primary work)
 
 **Copy (locked):**
-- Line 1: **Meet Edda**
+- Line 1: **Meet Observant**
 - Line 2: **Put user learning on autopilot.**
-- Sub: _Edda talks to each of your users one-on-one and keeps learning from them automatically, following up the moment something happens, so insight flows in while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback._
+- Sub: _Observant talks to each of your users one-on-one and keeps learning from them automatically, following up the moment something happens, so insight flows in while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback._
 - CTAs: **Turn on learning mode** (primary) · **See how it works** (ghost)
 - Social line: **Join 1,248 builders today →** (animated count-up; `1,248` is a PLACEHOLDER)
 
@@ -63,10 +63,10 @@ brand/       brand explorations
 
 **Headline treatments explored (none final — designer to decide & unify):**
 1. Solid sans, one color, two lines (most unified)
-2. "MEET EDDA" mono kicker + big sans headline
+2. "MEET OBSERVANT" mono kicker + big sans headline
 3. Kicker + sans headline with terracotta accent on "on autopilot"
 4. Kicker + serif (Spectral) headline with accent — closest to current brand
-5. Jack-faithful: small grey "MEET EDDA" label above a big sans line
+5. Jack-faithful: small grey "MEET OBSERVANT" label above a big sans line
 6. Serif, two lines, accent on "on autopilot", drop "Meet"
 
 Open decisions: **serif vs sans** · **single-color vs two-tone** · **kicker vs same-size** · **keep/drop the terracotta accent** on "on autopilot".
@@ -82,9 +82,9 @@ Open decisions: **serif vs sans** · **single-color vs two-tone** · **kicker vs
 - **Builder count `1,248`** — placeholder; `TODO` comments in `Landing.html` mark the `data-count` + visible number.
 - **"Read the docs"** → `https://api.usercodified.com/docs` — currently behind an invite-only login wall; no public docs page yet.
 - **Pricing** + **FAQ** copy/structure are ON HOLD (founder hasn't finalized) — safe to restyle, but don't rewrite content.
-- **`Edda-standalone.html`** is a stale generated bundle — ignore/regenerate, don't hand-edit.
-- **Brand/logo:** wordmark is a placeholder lowercase serif `edda` + dot — needs a real mark and visual language.
-- App prototype surfaces dropped the "Edda app" channel (keep product / browser / email).
+- **`Observant-standalone.html`** is a stale generated bundle — ignore/regenerate, don't hand-edit.
+- **Brand/logo:** wordmark is a placeholder lowercase serif `observant` + dot — needs a real mark and visual language.
+- App prototype surfaces dropped the "Observant app" channel (keep product / browser / email).
 
 ## Founder's style preferences (from prior feedback)
 - Wants the hero to feel **strong/confident**, not delicate.
@@ -94,4 +94,4 @@ Open decisions: **serif vs sans** · **single-color vs two-tone** · **kicker vs
 
 ---
 
-_Last updated: 2026-06-03. Current `main` head reflects the Jack-style hero attempt (bold sans, "Meet Edda" + grey descriptor, screenshot stacked below, metrics row beneath)._
+_Last updated: 2026-06-03. Current `main` head reflects the Jack-style hero attempt (bold sans, "Meet Observant" + grey descriptor, screenshot stacked below, metrics row beneath)._
