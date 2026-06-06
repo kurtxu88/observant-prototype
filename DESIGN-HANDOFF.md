@@ -1,14 +1,14 @@
 # Observant — Design Handoff
 
-_For a designer (e.g. Claude Design) picking up the visual design. Read `README.md` (structure),
-`CLAUDE.md` (positioning/voice), and `PRD.md` (messaging) first. This doc focuses on **what's
-unresolved and what to design**._
+_For a designer picking up the visual design. Read `README.md` for structure, then use
+`observant/Landing.html` as the canonical messaging source. `PRD.md` explains positioning rationale;
+this doc captures design context and historical notes._
 
 ---
 
 ## TL;DR — what needs design love
-1. **Hero headline treatment** ("Meet Observant" + "Put user learning on autopilot.") — not working yet; needs a unified, confident treatment.
-2. **Hero layout** — the copy block should stand on its own; **below it, the live-conversation screenshot (left) and the 3 metrics (right), side by side.** (Currently the screenshot is centered and the metrics are a separate full-width row beneath it.)
+1. **Hero headline treatment** — current live copy is in `observant/Landing.html`; keep future design work anchored there.
+2. **Hero layout** — currently a split hero with copy left and live-conversation screenshot right, with metrics below. If revisiting, keep the page compact and demo-forward.
 3. **Reconcile the brand tension**: the system is warm / serif / literary (Spectral, terracotta), but recent direction pulls toward a **modern bold-sans hero** (à la the "Meet Jack" landing). Pick a lane and make it cohesive across all pages.
 4. Polish the hero "screenshot" — it's a hand-built CSS/JS mock, not a real product shot.
 

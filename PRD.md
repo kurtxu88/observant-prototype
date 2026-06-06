@@ -3,8 +3,8 @@
 _Last updated: 2026-06-03_
 
 Product requirements for the Observant marketing site + product framing. This is the **autopilot reposition**
-(June 2026). The short canonical version lives in `CLAUDE.md` → _Positioning (LOCKED)_; this doc is the
-fuller rationale. Read `README.md` for repo structure.
+(June 2026). `observant/Landing.html` is the canonical message source; this doc is supporting rationale.
+Read `README.md` for repo structure.
 
 ## One-liner
 **Put user learning on autopilot.**
@@ -42,10 +42,12 @@ never build blind, and stop spending your own time chasing feedback.
 - **Pedigree as trust, not as headline.** Methodology built leading 0→1 research at Robinhood / Instagram /
   Airbnb — encoded so it runs whether you have a research team or not.
 
-## Locked copy (mirrors CLAUDE.md)
-- **Hero:** "Put user learning on autopilot."
-- **Sub:** "Observant finds your users, runs the conversations, and follows up continuously — so insight flows in
-  while you ship. Built for startups and AI-native teams with no research team and no time to chase feedback."
+## Current copy source
+Use `observant/Landing.html` for exact public-facing copy. The current landing opens with:
+
+- **Hero:** "Imagine if user learning runs itself."
+- **Sub:** "Observant talks to each of your users one-on-one and keeps learning automatically — following up in
+  the moment, relaying your team's questions live, so insight flows in while you ship."
 - **Category:** user learning on autopilot.
 - **CTA:** "Turn on learning mode."
 

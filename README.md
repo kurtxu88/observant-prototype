@@ -1,14 +1,18 @@
 # Observant
 
-**An AI that learns from your users — 1:1, continuously, at scale.**
+**Imagine if user learning runs itself.**
 
-Observant runs a continuous, one-on-one learning loop with the users worth listening to: it onboards
-them, watches real behavior, follows up in the moment, and surfaces insight — so a builder never
-builds blind. (Formerly *AlphaCommons*, then *Edda*.)
+Observant talks to each of your users one-on-one and keeps learning automatically — following up in
+the moment, relaying your team's questions live, so insight flows in while you ship. (Formerly
+*AlphaCommons*, then *Edda*.)
 
 This repo contains the **launch-ready V1 marketing site + an interactive product prototype**, built
 as self-contained HTML/CSS/JS (no build step). It is the **design front end** — the real backend
 (the agent, the IM/diary engine, the credit ledger) is a separate engineering track.
+
+For messaging, positioning, and exact public-facing copy, treat `observant/Landing.html` as the
+source of truth. Supporting docs may explain rationale, but the landing page carries the current
+message.
 
 ---
 
@@ -86,13 +90,14 @@ The marketing site's **Get started / pricing / sign-in** CTAs link to `../app/Ap
 - [x] Product prototype: setup flow → portal → program detail → 1:1 IM (with working relay + live-1:1 request)
 
 **Open (priority order)**
-- [ ] `/mcp` page — "Ready for your agentic workflow"
+- [x] `/mcp` page — "Ready for your agentic workflow"
 - [ ] Brand identity / real logo (current wordmark is a placeholder lowercase serif `observant`)
 - [ ] Real pricing tiers (current numbers are indicative placeholders)
 - [ ] Real social-proof logos (currently text wordmarks) + a testimonial/quote block
 - [ ] More product mockups; reconcile against the real `alphacommons-v2` tokens/components
 
-See `CLAUDE.md` for conventions and a deeper handoff brief.
+Use `observant/Landing.html` as the messaging source, and `DESIGN-HANDOFF.md` / `PRD.md` only as
+supporting historical context.
 
 ---
 
