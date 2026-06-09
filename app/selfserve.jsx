@@ -313,7 +313,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
-          <span className="eyebrow">Set up the program</span>
+          <span className="eyebrow">Getting started</span>
           <h1>Set up Observant.</h1>
           <p>A few choices and Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
           <ol className="ss-checks ss-onboard-rail">
