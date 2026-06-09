@@ -3,13 +3,15 @@
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
-const SS_STATE_VERSION = 2;
+const SS_STATE_VERSION = 3;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
   email: "maya@northwind.ai",
   companyName: "Northwind",
   productUrl: "https://northwind.ai",
+  productDescription: "A reporting and analytics tool for ops and data teams.",
+  userBase: "Ops leads and analysts at 50–500 person B2B companies.",
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
 };
 
@@ -18,7 +20,9 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
   email: "founder@example.com",
   companyName: "Your product",
   productUrl: "https://yourproduct.example",
-  learningGoal: "Learn what users need next.",
+  productDescription: "What your product helps people do.",
+  userBase: "The people who use your product today.",
+  learningGoal: "",
 };
 
 const SS_GROUP_OPTIONS = [
@@ -30,9 +34,25 @@ const SS_GROUP_OPTIONS = [
 ];
 
 const SS_SURFACE_OPTIONS = [
-  { id: "product", label: "In-product", icon: "globe" },
-  { id: "browser", label: "Browser companion", icon: "search" },
   { id: "email", label: "Email", icon: "mail" },
+  { id: "slack", label: "Slack", icon: "chat" },
+  { id: "discord", label: "Discord", icon: "chat" },
+  { id: "product", label: "In-product", icon: "globe" },
+];
+
+// People-first: how the always-on panel is built.
+const SS_AUDIENCE_OPTIONS = [
+  { id: "representative", label: "A representative mix", text: "Reach across user types so you understand the whole picture, not one ready-made answer.", tag: "Recommended" },
+  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let whoever wants in opt in. Best when you're early.", tag: "Early-stage" },
+  { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to say yes.", tag: "Fastest yes" },
+];
+
+// What you offer people for opting in as a feedback partner.
+const SS_COMPENSATION_OPTIONS = [
+  { id: "giftcard", label: "Gift cards", text: "A simple thank-you per conversation. Universal and easy.", tag: "Default" },
+  { id: "productcredits", label: "Your product credits", text: "Credit inside your own product — keeps them engaged with you.", tag: "Sticky" },
+  { id: "accountcredits", label: "Account credits", text: "Apply credit toward their plan or usage." },
+  { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring sessions." },
 ];
 
 const SS_SIGNAL_OPTIONS = [
@@ -87,16 +107,24 @@ function ssCreateWorkspace(input, fallback) {
     email: ssTrim(merged.email, base.email),
     companyName: product,
     productUrl: ssTrim(merged.productUrl, "https://" + ssSlug(product).replace(/-/g, "") + ".com"),
-    learningGoal: ssTrim(merged.learningGoal, base.learningGoal),
+    productDescription: ssTrim(merged.productDescription, base.productDescription),
+    userBase: ssTrim(merged.userBase, base.userBase),
+    learningGoal: ssTrim(merged.learningGoal, base.learningGoal === undefined ? "" : base.learningGoal),
     createdAt: merged.createdAt || new Date().toISOString(),
   };
 }
 
 function ssCreateSetup(workspace) {
   return {
-    usersSource: "",
+    // People-first program. Solid defaults so a first version is usable out of the box.
+    audienceMode: "representative",
+    compensation: "giftcard",
+    consentAck: true,
+    usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-    surfaces: { product: false, browser: false, email: false },
+    // Email leads as the MVP surface; Slack/Discord are channel substitutes; in-product is day-1.
+    surfaces: { email: true, slack: false, discord: false, product: false },
+    // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
       export_completed: false,
@@ -124,7 +152,7 @@ function ssCreatePeople(workspace) {
       name: "Marcus T.",
       color: "green",
       segment: "Power user",
-      surface: "Browser companion",
+      surface: "Slack",
       status: "Active now",
       memory: "Uses " + product + " for weekly ops reporting and wants share links.",
       last: "I need a link my ops lead can read, not another CSV.",
@@ -154,7 +182,7 @@ function ssCreatePeople(workspace) {
       name: "Leah M.",
       color: "rust",
       segment: "Upgrade evaluator",
-      surface: "Browser companion",
+      surface: "Discord",
       status: "Watching",
       memory: "Paused on the upgrade page after comparing reporting permissions.",
       last: "I need to know whether the team can see this before we upgrade.",
@@ -269,7 +297,7 @@ function ssCreateLoops() {
       conversationIds: ["dana", "marcus", "owen"],
       peopleIds: ["dana", "marcus", "owen"],
       eventIds: ["evt-1", "evt-2"],
-      surfaceIds: ["product", "browser"],
+      surfaceIds: ["email", "slack"],
     },
     {
       id: "loop-onboarding",
@@ -299,7 +327,7 @@ function ssCreateLoops() {
       conversationIds: ["leah"],
       peopleIds: ["leah"],
       eventIds: ["evt-4"],
-      surfaceIds: ["browser"],
+      surfaceIds: ["discord"],
     },
   ];
 }
@@ -728,6 +756,8 @@ Object.assign(window, {
   SS_DEFAULT_WORKSPACE,
   SS_GROUP_OPTIONS,
   SS_SURFACE_OPTIONS,
+  SS_AUDIENCE_OPTIONS,
+  SS_COMPENSATION_OPTIONS,
   SS_SIGNAL_OPTIONS,
   SS_SIMULATION_STAGES,
   SelfServeData: {

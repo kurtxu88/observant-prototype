@@ -16,6 +16,8 @@ const SS_EMPTY_WORKSPACE_FORM = {
   email: "",
   companyName: "",
   productUrl: "",
+  productDescription: "",
+  userBase: "",
   learningGoal: "",
 };
 
@@ -83,7 +85,7 @@ function ssLoopEvents(state, loop) {
 }
 
 function ssSurfaceLabel(surface) {
-  const labels = { product: "In-product", browser: "Browser companion", email: "Email" };
+  const labels = { email: "Email", slack: "Slack", discord: "Discord", product: "In-product" };
   return labels[surface] || surface;
 }
 
@@ -210,28 +212,28 @@ function SelfServeApp() {
 function EntryScreen({ onCreate }) {
   const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const canCreate = form.companyName.trim() && form.learningGoal.trim();
+  const canCreate = form.companyName.trim();
 
   return (
     <div className="ss-entry">
       <div className="ss-entry-left">
         <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
         <div className="ss-entry-copy">
-          <span className="eyebrow">Self-serve setup</span>
-          <h1>Create your Observant workspace.</h1>
-          <p>Turn on learning mode for your product. Observant will open private lines, remember user context, and surface what is changing while you ship.</p>
+          <span className="eyebrow">Step 1 · Product context</span>
+          <h1>Tell Observant about your product.</h1>
+          <p>This is all Observant needs to start. From here it knows <b>who to learn from</b> and how to <b>run the program for you</b> — continuous, one-on-one, on its own.</p>
         </div>
         <div className="ss-proof-grid" aria-label="Product signals">
-          <div><b>24/7</b><span>learning mode</span></div>
-          <div><b>1:1</b><span>private user lines</span></div>
+          <div><b>1:1</b><span>with every user</span></div>
+          <div><b>Always on</b><span>set it and forget it</span></div>
           <div><b>MCP</b><span>agent-ready output</span></div>
         </div>
       </div>
 
       <main className="ss-entry-card">
         <div className="ss-card-head">
-          <span className="eyebrow gray">Workspace</span>
-          <h2>Start with your product.</h2>
+          <span className="eyebrow gray">About your product</span>
+          <h2>Start with the basics.</h2>
         </div>
         <div className="ss-form-grid">
           <Field label="Your name">
@@ -246,59 +248,58 @@ function EntryScreen({ onCreate }) {
           <Field label="Product URL">
             <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
           </Field>
-          <Field label="Primary learning goal" wide>
-            <textarea className="textarea" value={form.learningGoal} placeholder="Learn why users start, stall, or hesitate before adopting the product." onChange={(e) => update("learningGoal", e.target.value)} />
+          <Field label="What does it do?" wide>
+            <textarea className="textarea" value={form.productDescription} placeholder="A reporting tool for ops teams. / A habit app for runners. — a sentence is plenty." onChange={(e) => update("productDescription", e.target.value)} />
+          </Field>
+          <Field label="Who uses it today?" wide>
+            <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
+          </Field>
+          <Field label="Anything specific you want to learn? (optional)" wide>
+            <textarea className="textarea" value={form.learningGoal} placeholder="You don't need a fixed question — Observant learns continuously. But if there's one thing on your mind, drop it here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
         <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Create workspace <Icon name="arrow" size={16} /></Btn>
-          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Continue with sample workspace</Btn>
+          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Continue <Icon name="arrow" size={16} /></Btn>
+          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Use the sample workspace</Btn>
         </div>
-        <p className="ss-fineprint">Custom workspaces use synthetic users. No real signup, billing, or data connection is created.</p>
+        <p className="ss-fineprint">This is a synthetic demo. No real signup, billing, or data connection is created — Observant generates example users so you can see the whole flow.</p>
       </main>
     </div>
   );
 }
 
-function ActivationScreen({ state, patchState, onLaunch, copied, copyText, resetWorkspace }) {
-  const readiness = SelfServeData.readiness(state.setup);
+const SS_ONBOARD_STEPS = [
+  { id: "audience", t: "Who to listen to", d: "Pick who Observant learns from" },
+  { id: "program", t: "The program", d: "Consent, compensation, expectations" },
+  { id: "surfaces", t: "Where it happens", d: "Email, Slack, Discord, in-product" },
+  { id: "review", t: "Turn it on", d: "Review and go live" },
+];
+
+function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
-  const custom = ssWorkspaceIsCustom(state);
+  const setup = state.setup;
+  const [step, setStep] = useStateSS(0);
 
-  const setUsersSource = (source) => {
-    patchState((current) => ({
-      ...current,
-      setup: { ...current.setup, usersSource: source },
-      activity: ["User source selected: " + source + ".", ...current.activity],
-    }));
-  };
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const setAudience = (id) => patchSetup({ audienceMode: id });
+  const setCompensation = (id) => patchSetup({ compensation: id });
+  const toggleSurface = (surface) => patchState((current) => ({
+    ...current,
+    setup: { ...current.setup, surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] } },
+  }));
+  const toggleEvent = (eventName) => patchState((current) => ({
+    ...current,
+    setup: { ...current.setup, events: { ...current.setup.events, [eventName]: !current.setup.events[eventName] } },
+  }));
 
-  const toggleSurface = (surface) => {
-    patchState((current) => ({
-      ...current,
-      setup: {
-        ...current.setup,
-        surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] },
-      },
-    }));
-  };
+  const surfaceCount = Object.values(setup.surfaces).filter(Boolean).length;
+  const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
+  const compensation = SS_COMPENSATION_OPTIONS.find((opt) => opt.id === setup.compensation) || SS_COMPENSATION_OPTIONS[0];
+  const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
+  const canLaunch = surfaceCount > 0;
 
-  const toggleEvent = (eventName) => {
-    patchState((current) => ({
-      ...current,
-      setup: {
-        ...current.setup,
-        events: { ...current.setup.events, [eventName]: !current.setup.events[eventName] },
-      },
-    }));
-  };
-
-  const updateGoal = (value) => {
-    patchState((current) => ({ ...current, workspace: { ...current.workspace, learningGoal: value } }));
-  };
-
-  const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${product.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"></script>`;
-  const webhook = `POST https://api.observant.ai/v1/events\nAuthorization: Bearer <server-issued token>\n{\n  "event": "feature_opened",\n  "user_id": "synthetic_user_123",\n  "properties": { "workspace": "${product}" }\n}`;
+  const next = () => setStep((s) => Math.min(s + 1, SS_ONBOARD_STEPS.length - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (
     <div className="ss-activation">
@@ -306,91 +307,130 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
         <Wordmark size="1.45rem" />
         <div className="ss-top-right">
           <span>{product}</span>
-          <button type="button" onClick={resetWorkspace}>Reset workspace</button>
+          <button type="button" onClick={resetWorkspace}>Start over</button>
         </div>
       </header>
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
-          <span className="eyebrow">Activation</span>
-          <h1>Turn on learning mode.</h1>
-          <p>{custom ? "Choose the surfaces and synthetic signals Observant should simulate before your real install exists." : "Connect the minimum pieces Observant needs to keep learning from your users."}</p>
-          <Checklist readiness={readiness} launched={state.launched} />
+          <span className="eyebrow">Set up the program</span>
+          <h1>People first.</h1>
+          <p>You decide who to learn from. Observant runs the one-on-one learning for you — continuously, on its own.</p>
+          <ol className="ss-checks ss-onboard-rail">
+            {SS_ONBOARD_STEPS.map((s, i) => (
+              <li key={s.id} className={i === step ? "active" : i < step ? "done" : ""}>
+                <span>{i < step ? <Icon name="check" size={13} sw={2.4} /> : i + 1}</span>
+                <div className="ss-check-label"><b>{s.t}</b><em>{s.d}</em></div>
+              </li>
+            ))}
+          </ol>
         </aside>
 
         <main className="ss-activation-main">
-          <section className="ss-panel">
-            <PanelTitle k="Workspace" title="Create workspace" status="Complete" />
-            <div className="ss-workspace-card">
-              <Avatar name={product} color="oklch(0.255 0.018 58)" />
-              <div>
-                <h3>{product}</h3>
-                <p>{state.workspace.productUrl}</p>
+          {step === 0 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 1" title="Who do you want to keep learning from?" status="People-first" />
+              <p className="ss-step-lead">Start with the people, not a question. Observant opens a continuous one-on-one line with whoever opts in — and keeps learning as you ship.</p>
+              <div className="ss-card-grid">
+                {SS_AUDIENCE_OPTIONS.map((opt) => (
+                  <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
+                ))}
               </div>
-              <span className="ss-status success">Ready</span>
-            </div>
-          </section>
+              <div className="ss-callout">
+                <b>Set expectations up front.</b>
+                <span>Usually 1–5% of users opt in — often your power users. That's normal, and good: depth from the people who care most beats shallow reach.</span>
+              </div>
+            </section>
+          )}
 
-          <section className="ss-panel">
-            <PanelTitle k="Learning goal" title="Define what Observant should learn" status="Saved" />
-            <textarea className="textarea" value={state.workspace.learningGoal} onChange={(e) => updateGoal(e.target.value)} />
-          </section>
+          {step === 1 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
+              <p className="ss-step-lead">Observant runs the research ops. You decide the terms once, and can change them later.</p>
+              <div className="ss-program-block">
+                <h3>Consent</h3>
+                <p>You send the invite — Observant never reaches your users without you. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap.</p>
+              </div>
+              <div className="ss-program-block">
+                <h3>Compensation</h3>
+                <p>What people get for their time.</p>
+                <div className="ss-card-grid two">
+                  {SS_COMPENSATION_OPTIONS.map((opt) => (
+                    <SelectCard key={opt.id} active={setup.compensation === opt.id} icon="spark" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setCompensation(opt.id)} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
-          <section className="ss-panel">
-            <PanelTitle k="Users" title="Choose who Observant learns from" status={readiness.users ? "Selected" : "Required"} />
-            <div className="ss-card-grid two">
-              <SelectCard
-                active={state.setup.usersSource === "invite"}
-                icon="link"
-                title={custom ? "Use synthetic lookalikes" : "Invite your users"}
-                text={custom ? "Simulate people who match your target users without contacting anyone real." : "Share an invite link with power users, early adopters, or a segment from your product."}
-                detail={custom ? "No real users contacted" : state.setup.inviteUrl}
-                onClick={() => setUsersSource("invite")}
-              />
-              <SelectCard
-                active={state.setup.usersSource === "recruit"}
-                icon="users"
-                title={custom ? "Generate a test panel" : "Recruit a vetted group"}
-                text={custom ? "Create a synthetic panel for your first learning loops." : "Start before launch with screened people who match your best-customer profile."}
-                detail={custom ? "Generated for this prototype" : "Managed by Observant"}
-                onClick={() => setUsersSource("recruit")}
-              />
-            </div>
-          </section>
+          {step === 2 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 3" title="Where the conversations happen" status={surfaceCount + " on"} />
+              <p className="ss-step-lead">Each person gets a private one-on-one line — never a noisy shared channel. <b>Email is the fastest way to start.</b> Slack or Discord work if you already talk to users there.</p>
+              <div className="ss-card-grid two">
+                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The simplest place to start." onClick={() => toggleSurface("email")} />
+                <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
+                <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
+                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product" text="A private line inside " product={product} onClick={() => toggleSurface("product")} />
+              </div>
+              <p className="ss-fineprint">In-product needs a one-time identity setup so Observant always knows who it's talking to (see the docs). Email, Slack, and Discord need none of that — which is why they're the quickest to launch.</p>
 
-          <section className="ss-panel">
-            <PanelTitle k="Surfaces" title={custom ? "Choose simulated surfaces" : "Connect where conversations happen"} status={readiness.surfaces ? readiness.connectedSurfaces + " connected" : "Required"} />
-            <div className="ss-card-grid three">
-              <SurfaceCard active={state.setup.surfaces.product} icon="globe" title="In-product" text="Open a private line inside " product={product} onClick={() => toggleSurface("product")} />
-              <SurfaceCard active={state.setup.surfaces.browser} icon="search" title="Browser companion" text="Catch web behavior and follow up in context." onClick={() => toggleSurface("browser")} />
-              <SurfaceCard active={state.setup.surfaces.email} icon="mail" title="Email" text="Keep quiet async lines open for users who prefer inbox replies." onClick={() => toggleSurface("email")} />
-            </div>
-            <CodeBlock label="Embed snippet" text={snippet} copied={copied === "embed"} onCopy={() => copyText("embed", snippet)} />
-          </section>
+              <details className="ss-advanced">
+                <summary>
+                  <b>Advanced — behavior triggers</b>
+                  <span>Optional. Follow up automatically when a user does something specific. Most useful once you have thousands of users.</span>
+                </summary>
+                <div className="ss-event-grid">
+                  {Object.keys(setup.events).map((eventName) => (
+                    <button type="button" key={eventName} className={`ss-event${setup.events[eventName] ? " on" : ""}`} onClick={() => toggleEvent(eventName)}>
+                      <span><Icon name={setup.events[eventName] ? "check" : "bolt"} size={15} /></span>
+                      <b>{eventName}</b>
+                    </button>
+                  ))}
+                </div>
+              </details>
+            </section>
+          )}
 
-          <section className="ss-panel">
-            <PanelTitle k="Events" title={custom ? "Choose simulated behavior signals" : "Install behavior events"} status={readiness.events ? readiness.installedEvents + " installed" : "Required"} />
-            <div className="ss-event-grid">
-              {Object.keys(state.setup.events).map((eventName) => (
-                <button type="button" key={eventName} className={`ss-event${state.setup.events[eventName] ? " on" : ""}`} onClick={() => toggleEvent(eventName)}>
-                  <span><Icon name={state.setup.events[eventName] ? "check" : "bolt"} size={15} /></span>
-                  <b>{eventName}</b>
-                </button>
-              ))}
-            </div>
-            <CodeBlock label="Webhook sample" text={webhook} copied={copied === "webhook"} onCopy={() => copyText("webhook", webhook)} />
-          </section>
+          {step === 3 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 4" title="Turn on continuous learning" status="Review" />
+              <div className="ss-review">
+                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
+                <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
+                <ReviewRowSS k="They get" v={compensation.label} sub="Opt in as a feedback partner; opt out anytime." />
+                <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
+                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
+              </div>
+              <div className="ss-launch-panel">
+                <div>
+                  <span className="eyebrow no-rule">Always on</span>
+                  <h2>Ready to start?</h2>
+                  <p>Observant opens private lines with whoever opts in and keeps learning — one-on-one, on its own. You just watch what comes back.</p>
+                </div>
+                <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on learning <Icon name="arrow" size={16} /></Btn>
+              </div>
+            </section>
+          )}
 
-          <section className="ss-launch-panel">
-            <div>
-              <span className="eyebrow no-rule">Learning mode</span>
-              <h2>Ready to start continuous learning?</h2>
-              <p>{readiness.ready ? "Observant has enough to open synthetic private lines, remember context, and surface what changes." : "Complete user source, at least one surface, and at least one event to turn learning mode on."}</p>
-            </div>
-            <Btn variant="primary" size="lg" disabled={!readiness.ready} onClick={onLaunch}>Turn on learning mode <Icon name="arrow" size={16} /></Btn>
-          </section>
+          <div className="ss-onboard-nav">
+            {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
+            <span className="count">{step + 1} / {SS_ONBOARD_STEPS.length}</span>
+            {step < SS_ONBOARD_STEPS.length - 1
+              ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
+              : <span />}
+          </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function ReviewRowSS({ k, v, sub }) {
+  return (
+    <div className="ss-review-row">
+      <span className="rk">{k}</span>
+      <span className="rv">{v}{sub ? <em>{sub}</em> : null}</span>
     </div>
   );
 }

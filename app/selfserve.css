@@ -1691,3 +1691,124 @@
     border-radius: 13px;
   }
 }
+
+/* ============================================================
+   People-first onboarding (stepped flow) — added with the pivot
+   ============================================================ */
+.ss-onboard-rail li { align-items: flex-start; }
+.ss-checks li.active { color: var(--text-primary); }
+.ss-checks li.active span {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint, oklch(0.9 0.04 50 / .5));
+}
+.ss-check-label { display: flex; flex-direction: column; gap: 0.1rem; }
+.ss-check-label b { font-size: 0.92rem; line-height: 1.2; }
+.ss-check-label em { font-style: normal; font-size: 0.78rem; color: var(--text-muted); }
+
+.ss-step-lead {
+  margin: 0.25rem 0 1.4rem;
+  color: var(--text-secondary);
+  font-size: 1.04rem;
+  line-height: 1.55;
+  max-width: 60ch;
+}
+
+.ss-callout {
+  margin-top: 1.4rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--accent-tint, oklch(0.955 0.018 52 / .6));
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.ss-callout b { font-size: 0.95rem; }
+.ss-callout span { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; }
+
+.ss-program-block { margin-bottom: 1.6rem; }
+.ss-program-block h3 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.18rem;
+  margin-bottom: 0.35rem;
+}
+.ss-program-block > p {
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  margin-bottom: 0.9rem;
+  max-width: 62ch;
+}
+
+.ss-advanced {
+  margin-top: 1.5rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+}
+.ss-advanced summary {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  list-style: none;
+}
+.ss-advanced summary::-webkit-details-marker { display: none; }
+.ss-advanced summary b { font-size: 0.95rem; }
+.ss-advanced summary span { color: var(--text-muted); font-size: 0.85rem; line-height: 1.45; }
+.ss-advanced .ss-event-grid { margin-top: 1rem; }
+
+.ss-onboard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.2rem;
+}
+.ss-onboard-nav .count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.ss-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 1.3rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ss-review-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.ss-review-row:last-child { border-bottom: none; }
+.ss-review-row .rk {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding-top: 0.15rem;
+}
+.ss-review-row .rv {
+  font-size: 0.98rem;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.ss-review-row .rv em {
+  font-style: normal;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
