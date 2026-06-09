@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observant live demo - continuous learning mode</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="demo.css" />
+</head>
+<body>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="wordmark" href="Landing.html" aria-label="Observant home">observant<span class="dot"></span></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" hidden>
+    <nav class="nav-links">
+      <a href="How-It-Works.html">How it works</a>
+      <a href="MCP.html">MCP</a>
+      <a href="Landing.html#pricing">Pricing</a>
+    </nav>
+    <div class="nav-cta">
+      <label for="nav-toggle" class="nav-burger" aria-label="Open menu"><span></span><span></span><span></span></label>
+      <a href="../app/App.html?view=app" class="nav-signin">Sign in</a>
+      <a href="../app/App.html" class="btn btn-primary">Get started</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============================ HERO ============================ -->
+<section class="demo-hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="wrap demo-hero-grid">
+    <div class="demo-hero-copy">
+      <span class="eyebrow reveal">Live demo</span>
+      <h1 class="display reveal d1">Watch learning mode keep running.</h1>
+      <p class="lead reveal d2">A no-login walkthrough of Observant continuously learning from Northwind users while the team ships. It remembers what people said before, follows up when behavior changes, and lets insight compound without starting a new study.</p>
+      <div class="hero-actions reveal d3">
+        <a href="#demo" class="btn btn-primary btn-arrow" data-demo-start>Start the demo
+          <span class="btn-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a href="../app/App.html?view=app" class="btn btn-ghost">Open prototype</a>
+      </div>
+    </div>
+
+    <div class="demo-hero-card reveal d2" aria-hidden="true">
+      <div class="hero-card-top">
+        <span class="live-dot"></span>
+        <span>Learning mode · On</span>
+      </div>
+      <div class="hero-card-line"><b>252</b><span>user moments remembered</span></div>
+      <div class="hero-card-line"><b>3</b><span>private lines active now</span></div>
+      <div class="hero-card-line"><b>61%</b><span>pattern strengthening</span></div>
+      <p>Still learning in the background while Northwind ships the next change.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CONTROL ROOM ============================ -->
+<section class="section-sm" id="demo">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Learning mode</span>
+      <h2 class="h2">A control room for the loop that keeps running.</h2>
+      <p class="lead">Click through time. The important part is not one answer. It is that Observant keeps the relationship open and the signal keeps getting sharper.</p>
+    </div>
+
+    <div class="control-room reveal d1" data-control-room>
+      <div class="shot-frame">
+        <div class="shot-bar">
+          <span class="shot-dots"><i></i><i></i><i></i></span>
+          <span class="shot-pill"><span class="wordmark sm">observant<span class="dot"></span></span><span class="shot-sep">/</span>Northwind</span>
+          <span class="shot-status"><span class="live-dot"></span><span data-room-status>Still learning</span></span>
+        </div>
+
+        <div class="room-grid">
+          <aside class="time-rail" aria-label="Demo timeline">
+            <button type="button" class="time-step is-active" data-step="0">
+              <span class="time-k">Day 1</span>
+              <span class="time-t">Open lines</span>
+            </button>
+            <button type="button" class="time-step" data-step="1">
+              <span class="time-k">Day 4</span>
+              <span class="time-t">Remember context</span>
+            </button>
+            <button type="button" class="time-step" data-step="2">
+              <span class="time-k">Week 2</span>
+              <span class="time-t">Pattern grows</span>
+            </button>
+            <button type="button" class="time-step" data-step="3">
+              <span class="time-k">Today</span>
+              <span class="time-t">Relay question</span>
+            </button>
+            <button type="button" class="time-step" data-step="4">
+              <span class="time-k">Next</span>
+              <span class="time-t">Insight ships</span>
+            </button>
+          </aside>
+
+          <section class="control-stage" aria-live="polite">
+            <div class="stage-head">
+              <div>
+                <span class="stage-kicker" data-stage-kicker>Day 1 · learning mode turns on</span>
+                <h3 data-stage-title>Observant opens private lines.</h3>
+              </div>
+              <span class="stage-meter"><b data-signal-count>14</b> moments remembered</span>
+            </div>
+            <p class="stage-copy" data-stage-copy>Each user gets a private 1:1 line in the surface they already use. Observant starts with baseline intent so future follow-ups have memory.</p>
+
+            <div class="line-grid" data-lines></div>
+
+            <div class="conversation-card">
+              <div class="conversation-head">
+                <div>
+                  <span class="conversation-label" data-conversation-label>Private 1:1 · in product</span>
+                  <h4 data-conversation-title>Dana K.</h4>
+                </div>
+                <span class="conversation-state"><span class="live-dot"></span>Active</span>
+              </div>
+              <div class="conversation-body" data-conversation></div>
+            </div>
+
+            <div class="relay-panel" data-relay-panel hidden>
+              <div>
+                <span class="relay-eyebrow">Your team can steer it live</span>
+                <p>Relay one question into the active lines without restarting research.</p>
+              </div>
+              <button type="button" class="btn btn-primary" data-relay>Would a live, shareable dashboard solve this?</button>
+            </div>
+
+            <div class="insight-panel" data-insight-panel hidden>
+              <div class="insight-top">
+                <span class="insight-tag">Surfaced without a new study</span>
+                <span class="insight-live"><span class="live-dot"></span>Loop still running</span>
+              </div>
+              <h4>61% want a live, shareable view.</h4>
+              <p>The CSV export is not the problem. Power users rebuild it because they need a dashboard their team can read without explanation.</p>
+              <div class="quote-grid">
+                <blockquote>"I paste it into a sheet and rebuild half of it by hand."</blockquote>
+                <blockquote>"A link my team can open would save the weekly cleanup."</blockquote>
+              </div>
+              <div class="ide mini-ide" aria-label="Agent-ready handoff">
+                <div class="ide-bar">
+                  <span class="ide-dots"><i></i><i></i><i></i></span>
+                  <span class="ide-title">Claude Code - northwind</span>
+                  <span class="ide-mcp"><span class="live-dot"></span>observant MCP</span>
+                </div>
+                <div class="ide-body">
+                  <div class="ln user">› turn this into the next product change</div>
+                  <div class="ln tool">⎿ observant.write_prd("live dashboard")</div>
+                  <div class="ln out">✓ PRD grounded in 252 remembered moments</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="learning-side">
+            <div class="side-card">
+              <span class="side-k">Learning memory</span>
+              <ul data-memory></ul>
+            </div>
+            <div class="side-card">
+              <span class="side-k">What is compounding</span>
+              <div class="pattern-row">
+                <span>Pattern strength</span>
+                <b data-pattern-value>12%</b>
+              </div>
+              <div class="pattern-bar"><i data-pattern-bar style="width:12%"></i></div>
+              <p data-pattern-copy>Baseline conversations are opening. Nothing is stale yet; Observant is building memory.</p>
+            </div>
+            <div class="side-card activity-card">
+              <span class="side-k">Background activity</span>
+              <ol data-activity></ol>
+            </div>
+          </aside>
+        </div>
+
+        <div class="room-controls">
+          <button type="button" class="btn btn-ghost" data-back>Back</button>
+          <button type="button" class="btn btn-primary" data-next>Start</button>
+          <button type="button" class="reset-btn" data-reset>Reset demo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CTA ============================ -->
+<section class="section cta-final band-deep">
+  <div class="wrap">
+    <span class="eyebrow no-rule reveal" style="justify-content:center;display:flex">Continuous user learning</span>
+    <h2 class="display reveal d1">Turn it on once. It keeps learning.</h2>
+    <p class="lead reveal d2">Observant keeps the 1:1 lines open, remembers the context, and brings the signal back to your team while you ship.</p>
+    <div class="hero-actions reveal d2">
+      <a href="../app/App.html" class="btn btn-primary btn-arrow">Turn on learning mode
+        <span class="btn-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </a>
+      <a href="../app/App.html?view=app" class="btn btn-ghost">Explore the portal</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="wordmark lg" href="Landing.html">observant<span class="dot"></span></a>
+        <p class="tagline">User learning on autopilot - for AI-native teams.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="How-It-Works.html">How it works</a></li>
+          <li><a href="MCP.html">MCP server</a></li>
+          <li><a href="Landing.html#pricing">Pricing</a></li>
+          <li><a href="../app/App.html">Get started</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Research methodology</a></li>
+          <li><a href="#">Journal</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Data &amp; security</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-base">
+      <span>© <span id="year">2026</span> Observant. Formerly AlphaCommons.</span>
+      <span>User learning on autopilot.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="demo.js"></script>
+</body>
+</html>
