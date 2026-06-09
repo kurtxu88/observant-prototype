@@ -254,15 +254,15 @@ function EntryScreen({ onCreate }) {
           <Field label="Who uses it today?" wide>
             <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
           </Field>
-          <Field label="Anything specific you want to learn? (optional)" wide>
-            <textarea className="textarea" value={form.learningGoal} placeholder="You don't need a fixed question — Observant learns continuously. But if there's one thing on your mind, drop it here." onChange={(e) => update("learningGoal", e.target.value)} />
+          <Field label="What are some top-of-mind questions you'd like to learn from users? (optional)" wide>
+            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other surfaces. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
         <div className="ss-entry-actions">
           <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Continue <Icon name="arrow" size={16} /></Btn>
           <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Use the sample workspace</Btn>
         </div>
-        <p className="ss-fineprint">This is a synthetic demo. No real signup, billing, or data connection is created — Observant generates example users so you can see the whole flow.</p>
+        <p className="ss-fineprint">Set up your program in a couple of minutes — you can change any of this later.</p>
       </main>
     </div>
   );
@@ -880,7 +880,7 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
       </Field>
-      <p className="ss-fineprint">Goes to your always-on panel across {activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your program surfaces"}. Synthetic users only — no one real is contacted.</p>
+      <p className="ss-fineprint">Goes to your always-on panel across {activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your program surfaces"}.</p>
       <div className="ss-create-loop-actions">
         {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
         <Btn variant="primary" onClick={submit} disabled={!question.trim()}>
@@ -896,7 +896,7 @@ function CollectingProgress({ run }) {
   const current = Math.max(-1, run.stageIndex);
   const percent = run.status === "generating" ? 8 : Math.round(((current + 1) / timeline.length) * 100);
   const label = run.status === "generating"
-    ? "Preparing synthetic panel"
+    ? "Preparing your panel"
     : run.status === "running"
       ? "Still learning"
       : (timeline[current] ? timeline[current].label : "Collecting");
@@ -908,7 +908,7 @@ function CollectingProgress({ run }) {
           <span className="eyebrow no-rule">Collecting progress</span>
           <h3>{label}</h3>
         </div>
-        <em>Synthetic demo</em>
+        <em>Collecting</em>
       </div>
       <div className="ss-progress-track"><span style={{ width: percent + "%" }} /></div>
       <ol className="ss-progress-steps">
