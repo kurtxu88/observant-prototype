@@ -338,7 +338,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
               <div className="ss-callout">
                 <b>What to expect.</b>
-                <span>Usually 1–5% of users opt in, and they tend to be your most engaged. That's expected — these are the users whose feedback you most want.</span>
+                <span>Usually 5–10% of users opt in, and they tend to be your most engaged.</span>
               </div>
             </section>
           )}
