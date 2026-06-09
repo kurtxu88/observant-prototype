@@ -221,11 +221,11 @@ function EntryScreen({ onCreate }) {
         <div className="ss-entry-copy">
           <span className="eyebrow">Step 1 · Product context</span>
           <h1>Tell Observant about your product.</h1>
-          <p>This is all Observant needs to start. From here it knows <b>who to learn from</b> and how to <b>run the program for you</b> — continuous, one-on-one, on its own.</p>
+          <p>This is all Observant needs to start — enough to know <b>who to talk to</b> and how to run <b>continuous, one-on-one learning</b> for you.</p>
         </div>
         <div className="ss-proof-grid" aria-label="Product signals">
           <div><b>1:1</b><span>with every user</span></div>
-          <div><b>Always on</b><span>set it and forget it</span></div>
+          <div><b>Always on</b><span>learning runs itself</span></div>
           <div><b>MCP</b><span>agent-ready output</span></div>
         </div>
       </div>
@@ -314,8 +314,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
           <span className="eyebrow">Set up the program</span>
-          <h1>People first.</h1>
-          <p>You decide who to learn from. Observant runs the one-on-one learning for you — continuously, on its own.</p>
+          <h1>Set up Observant.</h1>
+          <p>A few choices and Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
           <ol className="ss-checks ss-onboard-rail">
             {SS_ONBOARD_STEPS.map((s, i) => (
               <li key={s.id} className={i === step ? "active" : i < step ? "done" : ""}>
@@ -329,16 +329,16 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         <main className="ss-activation-main">
           {step === 0 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 1" title="Who do you want to keep learning from?" status="People-first" />
-              <p className="ss-step-lead">Start with the people, not a question. Observant opens a continuous one-on-one line with whoever opts in — and keeps learning as you ship.</p>
+              <PanelTitle k="Step 1" title="Who do you want to learn from?" />
+              <p className="ss-step-lead">Observant opens a continuous one-on-one line with each user who opts in, and keeps learning as you ship. Choose who it should reach.</p>
               <div className="ss-card-grid">
                 {SS_AUDIENCE_OPTIONS.map((opt) => (
                   <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
                 ))}
               </div>
               <div className="ss-callout">
-                <b>Set expectations up front.</b>
-                <span>Usually 1–5% of users opt in — often your power users. That's normal, and good: depth from the people who care most beats shallow reach.</span>
+                <b>What to expect.</b>
+                <span>Usually 1–5% of users opt in, and they tend to be your most engaged. That's expected — these are the users whose feedback you most want.</span>
               </div>
             </section>
           )}
@@ -346,7 +346,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           {step === 1 && (
             <section className="ss-panel">
               <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
-              <p className="ss-step-lead">Observant runs the research ops. You decide the terms once, and can change them later.</p>
+              <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3>Consent</h3>
                 <p>You send the invite — Observant never reaches your users without you. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap.</p>
@@ -406,7 +406,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <div>
                   <span className="eyebrow no-rule">Always on</span>
                   <h2>Ready to start?</h2>
-                  <p>Observant opens private lines with whoever opts in and keeps learning — one-on-one, on its own. You just watch what comes back.</p>
+                  <p>Observant opens a one-on-one line with each user who opts in and keeps learning automatically. Insight comes back to you as it goes.</p>
                 </div>
                 <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on learning <Icon name="arrow" size={16} /></Btn>
               </div>
@@ -513,7 +513,7 @@ function HomeView({ state, patchState, navigate }) {
         <div>
           <span className="eyebrow no-rule">Always on</span>
           <h2>{custom && !state.loops.length ? "Your panel is live." : "Learning is running."}</h2>
-          <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the people who opted in for " + product + ". Ask them anything, anytime — it keeps learning on its own." : "Observant is keeping private lines open with your people and bringing what it learns back to " + product + " while you ship."}</p>
+          <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the users who opted in for " + product + ". Ask them anything, anytime — it keeps learning automatically." : "Observant is keeping one-on-one lines open with your users and bringing what it learns back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
           <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
@@ -876,7 +876,7 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
   return (
     <div className="ss-create-loop" id="create-loop">
       <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
-      <p className="ss-step-lead">Everyone who opted in is already on a continuous one-on-one line. Ask anything — Observant fans it out and gathers the answers for you. No sampling, no setup.</p>
+      <p className="ss-step-lead">Everyone who opted in is on a continuous one-on-one line. Ask anything, and Observant puts it to each of them and gathers the answers for you.</p>
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
       </Field>

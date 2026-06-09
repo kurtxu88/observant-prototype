@@ -42,15 +42,15 @@ const SS_SURFACE_OPTIONS = [
 
 // People-first: how the always-on panel is built.
 const SS_AUDIENCE_OPTIONS = [
-  { id: "representative", label: "A representative mix", text: "Reach across user types so you understand the whole picture, not one ready-made answer.", tag: "Recommended" },
-  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let whoever wants in opt in. Best when you're early.", tag: "Early-stage" },
-  { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to say yes.", tag: "Fastest yes" },
+  { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Recommended" },
+  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in. Best when you're early.", tag: "Early-stage" },
+  { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to opt in.", tag: "Most engaged" },
 ];
 
 // What you offer people for opting in as a feedback partner.
 const SS_COMPENSATION_OPTIONS = [
   { id: "giftcard", label: "Gift cards", text: "A simple thank-you per conversation. Universal and easy.", tag: "Default" },
-  { id: "productcredits", label: "Your product credits", text: "Credit inside your own product — keeps them engaged with you.", tag: "Sticky" },
+  { id: "productcredits", label: "Your product credits", text: "Credit inside your own product.", tag: "In-product" },
   { id: "accountcredits", label: "Account credits", text: "Apply credit toward their plan or usage." },
   { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring sessions." },
 ];
