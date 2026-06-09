@@ -829,6 +829,174 @@
 .ss-panel-actions {
   margin-top: 0.8rem;
 }
+.ss-start-panel p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.ss-empty-state {
+  border: 1px dashed var(--border-strong);
+  border-radius: 13px;
+  background: var(--surface);
+  padding: 1rem;
+}
+.ss-empty-state b,
+.ss-empty-state span {
+  display: block;
+}
+.ss-empty-state span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-top: 0.28rem;
+}
+.ss-panel-title-with-action {
+  margin-bottom: 0.8rem;
+}
+.ss-wide-action {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+.ss-create-loop {
+  border: 1px solid var(--accent-soft);
+  border-radius: 14px;
+  background: var(--accent-tint);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.ss-create-loop .ss-panel-title {
+  margin-bottom: 0;
+}
+.ss-create-loop h3 {
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+.ss-chip-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+.ss-choice-chip {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 0.78rem;
+  text-align: left;
+  transition: border-color .18s, background .18s, box-shadow .18s;
+}
+.ss-choice-chip:hover,
+.ss-choice-chip:focus-visible,
+.ss-choice-chip.on {
+  border-color: var(--accent-soft);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+.ss-choice-chip b,
+.ss-choice-chip span {
+  display: block;
+}
+.ss-choice-chip span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 0.18rem;
+}
+.ss-small-toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+.ss-create-loop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+.ss-progress-card {
+  border: 1px solid var(--accent-soft);
+  border-radius: 14px;
+  background: var(--accent-tint);
+  padding: 1rem;
+}
+.ss-progress-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ss-progress-head h3 {
+  margin-top: 0.3rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+.ss-progress-head em {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent-hover);
+  font-style: normal;
+  white-space: nowrap;
+}
+.ss-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: oklch(0.99 0.004 80 / .72);
+  overflow: hidden;
+  margin-top: 0.85rem;
+}
+.ss-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .35s ease;
+}
+.ss-progress-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0.9rem 0 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.ss-progress-steps li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  color: var(--text-muted);
+}
+.ss-progress-steps li > span {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.ss-progress-steps li.done {
+  color: var(--text-primary);
+}
+.ss-progress-steps li.done > span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: oklch(0.99 0.01 70);
+}
+.ss-progress-steps b,
+.ss-progress-steps p {
+  display: block;
+}
+.ss-progress-steps p {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 0.12rem;
+}
 .ss-answer-card {
   background: var(--accent-tint);
   border-color: var(--accent-soft);
@@ -1469,7 +1637,9 @@
     min-height: 280px;
   }
   .ss-loop-detail-head,
-  .ss-edit-drawer-actions {
+  .ss-edit-drawer-actions,
+  .ss-create-loop-actions,
+  .ss-progress-head {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1499,6 +1669,7 @@
   .ss-launch-panel .btn,
   .ss-danger .btn,
   .ss-edit-drawer-actions .btn,
+  .ss-create-loop-actions .btn,
   .ss-loop-detail-head .btn {
     width: 100%;
     white-space: normal;

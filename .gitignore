@@ -11,6 +11,8 @@ npm-debug.log*
 yarn-error.log*
 dist/
 .cache/
+.env*
+!.env.example
 
 # Generated artifacts — re-bundled from source, not hand-edited.
 # Uncomment to keep the offline bundle out of git:

@@ -57,16 +57,19 @@ function ssSelectedLoop(state) {
 }
 
 function ssLoopPeople(state, loop) {
+  if (!loop) return [];
   const ids = loop.peopleIds || [];
   return state.people.filter((person) => ids.includes(person.id));
 }
 
 function ssLoopConversations(state, loop) {
+  if (!loop) return [];
   const ids = loop.conversationIds || (loop.conversationId ? [loop.conversationId] : []);
   return state.conversations.filter((conversation) => ids.includes(conversation.id));
 }
 
 function ssLoopEvents(state, loop) {
+  if (!loop) return [];
   const ids = loop.eventIds || [];
   return state.events.filter((event) => ids.includes(event.id));
 }
@@ -76,9 +79,37 @@ function ssSurfaceLabel(surface) {
   return labels[surface] || surface;
 }
 
+function ssWorkspaceIsCustom(state) {
+  return state.workspaceMode === "custom";
+}
+
+function ssActiveLoopRun(state, loopId) {
+  return (state.loopRuns || []).find((run) => run.loopId === loopId);
+}
+
+async function ssPostJson(url, payload) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Request failed");
+  return response.json();
+}
+
 function ssCreateLoopDraft(state, loop) {
+  if (!loop) {
+    return {
+      loopId: "",
+      question: state.workspace.learningGoal,
+      learningGoal: state.workspace.learningGoal,
+      surfaces: { ...state.setup.surfaces },
+      events: { ...state.setup.events },
+    };
+  }
   const loopSurfaceIds = loop.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
   const loopEventIds = loop.eventIds || state.events.filter((event) => state.setup.events[event.event]).map((event) => event.id);
+  const loopSignalIds = loop.signalIds || [];
   return {
     loopId: loop.id,
     question: loop.question,
@@ -86,7 +117,7 @@ function ssCreateLoopDraft(state, loop) {
     surfaces: Object.fromEntries(Object.keys(state.setup.surfaces).map((surface) => [surface, loopSurfaceIds.includes(surface)])),
     events: Object.fromEntries(Object.keys(state.setup.events).map((eventName) => {
       const event = state.events.find((item) => item.event === eventName);
-      return [eventName, event ? loopEventIds.includes(event.id) : !!state.setup.events[eventName]];
+      return [eventName, loopSignalIds.includes(eventName) || (event ? loopEventIds.includes(event.id) : !!state.setup.events[eventName])];
     })),
   };
 }
@@ -99,8 +130,21 @@ function SelfServeApp() {
     if (state) ssSaveState(state);
   }, [state]);
 
-  const createWorkspace = (form) => {
-    setState(SelfServeData.createInitialState(form));
+  useEffectSS(() => {
+    if (!state || !state.loopRuns || !state.loopRuns.length) return undefined;
+    const collecting = state.loopRuns.find((run) => {
+      const timeline = run.timeline || SS_SIMULATION_STAGES;
+      return run.status === "collecting" && run.stageIndex < timeline.length - 1;
+    });
+    if (!collecting) return undefined;
+    const timer = setTimeout(() => {
+      setState((current) => current ? SelfServeData.revealSimulation(current, collecting.runId, collecting.stageIndex + 1) : current);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  const createWorkspace = (form, mode) => {
+    setState(mode === "sample" ? SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE) : SelfServeData.createCustomState(form));
   };
 
   const resetWorkspace = () => {
@@ -110,6 +154,7 @@ function SelfServeApp() {
 
   const patchState = (updater) => {
     setState((current) => {
+      if (!current) return current;
       const next = typeof updater === "function" ? updater(current) : { ...current, ...updater };
       return next;
     });
@@ -197,10 +242,10 @@ function EntryScreen({ onCreate }) {
           </Field>
         </div>
         <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" onClick={() => onCreate(form)}>Create workspace <Icon name="arrow" size={16} /></Btn>
-          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE)}>Continue with sample workspace</Btn>
+          <Btn variant="primary" size="lg" onClick={() => onCreate(form, "custom")}>Create workspace <Icon name="arrow" size={16} /></Btn>
+          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Continue with sample workspace</Btn>
         </div>
-        <p className="ss-fineprint">No real signup, billing, or data connection is created.</p>
+        <p className="ss-fineprint">Custom workspaces use synthetic users. No real signup, billing, or data connection is created.</p>
       </main>
     </div>
   );
@@ -209,6 +254,7 @@ function EntryScreen({ onCreate }) {
 function ActivationScreen({ state, patchState, onLaunch, copied, copyText, resetWorkspace }) {
   const readiness = SelfServeData.readiness(state.setup);
   const product = SelfServeData.productName(state.workspace);
+  const custom = ssWorkspaceIsCustom(state);
 
   const setUsersSource = (source) => {
     patchState((current) => ({
@@ -243,7 +289,7 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
   };
 
   const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${product.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"></script>`;
-  const webhook = `POST https://api.observant.ai/v1/events\nAuthorization: Bearer obv_live_sample\n{\n  "event": "export_completed",\n  "user_id": "user_123",\n  "properties": { "workspace": "${product}" }\n}`;
+  const webhook = `POST https://api.observant.ai/v1/events\nAuthorization: Bearer <server-issued token>\n{\n  "event": "feature_opened",\n  "user_id": "synthetic_user_123",\n  "properties": { "workspace": "${product}" }\n}`;
 
   return (
     <div className="ss-activation">
@@ -259,7 +305,7 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
         <aside className="ss-checklist">
           <span className="eyebrow">Activation</span>
           <h1>Turn on learning mode.</h1>
-          <p>Connect the minimum pieces Observant needs to keep learning from your users.</p>
+          <p>{custom ? "Choose the surfaces and synthetic signals Observant should simulate before your real install exists." : "Connect the minimum pieces Observant needs to keep learning from your users."}</p>
           <Checklist readiness={readiness} launched={state.launched} />
         </aside>
 
@@ -287,24 +333,24 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
               <SelectCard
                 active={state.setup.usersSource === "invite"}
                 icon="link"
-                title="Invite your users"
-                text="Share an invite link with power users, early adopters, or a segment from your product."
-                detail={state.setup.inviteUrl}
+                title={custom ? "Use synthetic lookalikes" : "Invite your users"}
+                text={custom ? "Simulate people who match your target users without contacting anyone real." : "Share an invite link with power users, early adopters, or a segment from your product."}
+                detail={custom ? "No real users contacted" : state.setup.inviteUrl}
                 onClick={() => setUsersSource("invite")}
               />
               <SelectCard
                 active={state.setup.usersSource === "recruit"}
                 icon="users"
-                title="Recruit a vetted group"
-                text="Start before launch with screened people who match your best-customer profile."
-                detail="Managed by Observant"
+                title={custom ? "Generate a test panel" : "Recruit a vetted group"}
+                text={custom ? "Create a synthetic panel for your first learning loops." : "Start before launch with screened people who match your best-customer profile."}
+                detail={custom ? "Generated for this prototype" : "Managed by Observant"}
                 onClick={() => setUsersSource("recruit")}
               />
             </div>
           </section>
 
           <section className="ss-panel">
-            <PanelTitle k="Surfaces" title="Connect where conversations happen" status={readiness.surfaces ? readiness.connectedSurfaces + " connected" : "Required"} />
+            <PanelTitle k="Surfaces" title={custom ? "Choose simulated surfaces" : "Connect where conversations happen"} status={readiness.surfaces ? readiness.connectedSurfaces + " connected" : "Required"} />
             <div className="ss-card-grid three">
               <SurfaceCard active={state.setup.surfaces.product} icon="globe" title="In-product" text="Open a private line inside " product={product} onClick={() => toggleSurface("product")} />
               <SurfaceCard active={state.setup.surfaces.browser} icon="search" title="Browser companion" text="Catch web behavior and follow up in context." onClick={() => toggleSurface("browser")} />
@@ -314,7 +360,7 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
           </section>
 
           <section className="ss-panel">
-            <PanelTitle k="Events" title="Install behavior events" status={readiness.events ? readiness.installedEvents + " installed" : "Required"} />
+            <PanelTitle k="Events" title={custom ? "Choose simulated behavior signals" : "Install behavior events"} status={readiness.events ? readiness.installedEvents + " installed" : "Required"} />
             <div className="ss-event-grid">
               {Object.keys(state.setup.events).map((eventName) => (
                 <button type="button" key={eventName} className={`ss-event${state.setup.events[eventName] ? " on" : ""}`} onClick={() => toggleEvent(eventName)}>
@@ -330,7 +376,7 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
             <div>
               <span className="eyebrow no-rule">Learning mode</span>
               <h2>Ready to start continuous learning?</h2>
-              <p>{readiness.ready ? "Observant has enough to open private lines, remember context, and surface what changes." : "Complete user source, at least one surface, and at least one event to turn learning mode on."}</p>
+              <p>{readiness.ready ? "Observant has enough to open synthetic private lines, remember context, and surface what changes." : "Complete user source, at least one surface, and at least one event to turn learning mode on."}</p>
             </div>
             <Btn variant="primary" size="lg" disabled={!readiness.ready} onClick={onLaunch}>Turn on learning mode <Icon name="arrow" size={16} /></Btn>
           </section>
@@ -343,6 +389,7 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const section = SS_SECTIONS.some((item) => item.id === state.section) ? state.section : "home";
   const product = SelfServeData.productName(state.workspace);
+  const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
 
   const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget }) => {
     patchState((current) => ({
@@ -385,7 +432,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
           </div>
           <div className="ss-topbar-actions">
-            <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: "loop-export", focusedTarget: "loop-export" })}><i></i>Learning mode is on</button>
+            <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: firstLoopId, focusedTarget: firstLoopId || "create-loop" })}><i></i>Learning mode is on</button>
             <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })}>Review learning</Btn>
           </div>
         </header>
@@ -408,30 +455,42 @@ function HomeView({ state, patchState, navigate }) {
   const latestAnswer = state.answers[0];
   const activeConversationId = ssFirstActiveConversationId(state);
   const activePerson = ssPersonForConversation(state, state.conversations.find((item) => item.id === activeConversationId));
+  const memoryCount = state.loops.reduce((sum, loop) => sum + Number(loop.memory || 0), 0);
+  const custom = ssWorkspaceIsCustom(state);
 
   return (
     <div className="ss-page-stack">
       <section className="ss-hero-status">
         <div>
           <span className="eyebrow no-rule">Operating system</span>
-          <h2>Learning mode is on.</h2>
-          <p>Observant is watching behavior, keeping private lines open, and bringing signal back to {product} while you ship.</p>
+          <h2>{custom && !state.loops.length ? "Learning mode is ready." : "Learning mode is on."}</h2>
+          <p>{custom && !state.loops.length ? "Create a learning loop to simulate synthetic users, private lines, and product insight for " + product + "." : "Observant is watching behavior, keeping private lines open, and bringing signal back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
-          <Metric n="252" l="moments remembered" onClick={() => navigate({ section: "insights", focusedTarget: "insight-export" })} />
+          <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
           <Metric n={String(readiness.connectedSurfaces)} l="surfaces connected" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })} />
           <Metric n={String(state.conversations.length)} l="active private lines" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
         </div>
       </section>
 
+      {custom && !state.loops.length && (
+        <section className="ss-panel ss-start-panel">
+          <PanelTitle k="Next" title="Create your first learning loop" status="Ready" />
+          <p>Ask a question about your product, pick the synthetic users Observant should learn from, and watch replies and insights arrive in stages.</p>
+          <div className="ss-panel-actions">
+            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Create learning loop</Btn>
+          </div>
+        </section>
+      )}
+
       <div className="ss-dashboard-grid">
         <section className="ss-panel">
           <PanelTitle k="Now" title="Active private lines" status="Live" />
-          <ConversationList state={state} compact navigate={navigate} />
+          {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Create a learning loop to open synthetic 1:1 lines." />}
         </section>
         <section className="ss-panel">
           <PanelTitle k="Signals" title="Recent behavior triggers" status="Watching" />
-          <EventList state={state} events={state.events} navigate={navigate} />
+          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : <EmptyState title="No signals yet" text="Signals appear as the loop collects synthetic behavior." />}
         </section>
       </div>
 
@@ -439,18 +498,20 @@ function HomeView({ state, patchState, navigate }) {
         <AskObservant state={state} patchState={patchState} />
         <section className="ss-panel">
           <PanelTitle k="Memory" title="What Observant remembers" status="Growing" />
-          <ul className="ss-memory-list">
-            {state.people.slice(0, 3).map((person) => (
-              <li key={person.id}>
-                <button type="button" className="ss-memory-row" onClick={() => {
-                  const conversationId = ssConversationIdForPerson(state, person.id);
-                  navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
-                }}>
-                  <b>{person.name}</b><span>{person.memory}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {state.people.length ? (
+            <ul className="ss-memory-list">
+              {state.people.slice(0, 3).map((person) => (
+                <li key={person.id}>
+                  <button type="button" className="ss-memory-row" onClick={() => {
+                    const conversationId = ssConversationIdForPerson(state, person.id);
+                    navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
+                  }}>
+                    <b>{person.name}</b><span>{person.memory}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : <EmptyState title="No memory yet" text="Observant will remember context once the first loop starts collecting." />}
         </section>
       </div>
 
@@ -463,22 +524,24 @@ function LearningView({ state, patchState, navigate, copied, copyText }) {
   const product = SelfServeData.productName(state.workspace);
   const readiness = SelfServeData.readiness(state.setup);
   const selected = ssSelectedLoop(state);
+  const custom = ssWorkspaceIsCustom(state);
+  const loopRun = selected ? ssActiveLoopRun(state, selected.id) : null;
   const loopPeople = ssLoopPeople(state, selected);
   const loopConversations = ssLoopConversations(state, selected);
   const loopEvents = ssLoopEvents(state, selected);
-  const selectedSurfaceIds = selected.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const selectedEventIds = selected.eventIds || loopEvents.map((event) => event.id);
+  const selectedSurfaceIds = selected ? (selected.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface])) : [];
+  const selectedSignalIds = selected ? (selected.signalIds || loopEvents.map((event) => event.event)) : [];
   const [isEditing, setIsEditing] = useStateSS(false);
+  const [isCreating, setIsCreating] = useStateSS(false);
   const [draft, setDraft] = useStateSS(() => ssCreateLoopDraft(state, selected));
   const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const apiKey = "obv_live_sample_" + product.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 10);
   const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${productSlug}"></script>`;
   const webhook = `POST https://api.observant.ai/v1/events
-Authorization: Bearer ${apiKey}
+Authorization: Bearer <server-issued token>
 
 {
-  "event": "export_completed",
-  "user_id": "user_123",
+  "event": "${selectedSignalIds[0] || "feature_opened"}",
+  "user_id": "synthetic_user_123",
   "properties": {
     "workspace": "${product}"
   }
@@ -486,13 +549,14 @@ Authorization: Bearer ${apiKey}
 
   useEffectSS(() => {
     if (isEditing) setDraft(ssCreateLoopDraft(state, selected));
-  }, [selected.id]);
+  }, [selected ? selected.id : ""]);
 
   const selectLoop = (loop) => {
     patchState((current) => ({ ...current, selectedLoopId: loop.id, focusedTarget: loop.id }));
   };
 
   const openEdit = () => {
+    if (!selected) return;
     setDraft(ssCreateLoopDraft(state, selected));
     setIsEditing(true);
   };
@@ -521,12 +585,14 @@ Authorization: Bearer ${apiKey}
   };
 
   const saveEdit = () => {
+    if (!selected) return;
     patchState((current) => ({
       ...current,
       workspace: { ...current.workspace, learningGoal: draft.learningGoal },
       loops: ssUpdateById(current.loops, draft.loopId, () => ({
         question: draft.question,
         surfaceIds: Object.keys(draft.surfaces).filter((surface) => draft.surfaces[surface]),
+        signalIds: Object.keys(draft.events).filter((eventName) => draft.events[eventName]),
         eventIds: current.events.filter((event) => draft.events[event.event]).map((event) => event.id),
       })),
       setup: {
@@ -543,16 +609,86 @@ Authorization: Bearer ${apiKey}
     navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
   };
 
+  const startLoop = async (config) => {
+    const runId = SelfServeData.makeRunId();
+    const loop = SelfServeData.createCustomLoop(state.workspace, config, runId);
+    const loopRun = SelfServeData.createLoopRun(runId, loop, config);
+    setIsCreating(false);
+    patchState((current) => ({
+      ...current,
+      selectedLoopId: loop.id,
+      focusedTarget: loop.id,
+      loops: [loop, ...current.loops],
+      loopRuns: [loopRun, ...current.loopRuns],
+      activity: ["Learning loop created: " + loop.name + ".", ...current.activity],
+    }));
+
+    let simulation;
+    try {
+      simulation = await ssPostJson("/api/selfserve/simulate", {
+        runId,
+        workspace: state.workspace,
+        loopConfig: config,
+      });
+    } catch (err) {
+      simulation = SelfServeData.fallbackSimulation(state.workspace, config, runId);
+    }
+
+    const normalized = {
+      ...simulation,
+      runId,
+      fallback: !!simulation.fallback,
+      loop: { ...loop, ...(simulation.loop || {}), id: loop.id },
+      timeline: simulation.timeline || SS_SIMULATION_STAGES,
+    };
+
+    patchState((current) => {
+      const withSimulation = {
+        ...current,
+        simulationRuns: [normalized, ...current.simulationRuns.filter((run) => run.runId !== runId)],
+        loopRuns: current.loopRuns.map((run) => run.runId === runId ? {
+          ...run,
+          status: "collecting",
+          generatedAt: normalized.generatedAt || new Date().toISOString(),
+          timeline: normalized.timeline,
+          fallback: !!normalized.fallback,
+        } : run),
+      };
+      return SelfServeData.revealSimulation(withSimulation, runId, 0);
+    });
+  };
+
+  const audienceText = loopPeople.length
+    ? loopPeople.map((person) => person.segment).join(", ")
+    : ((selected && selected.groupIds) || []).map((id) => {
+      const option = SS_GROUP_OPTIONS.find((group) => group.id === id);
+      return option ? option.label : id;
+    }).join(", ");
+
   return (
     <>
       <div className="ss-learning-layout">
         <section className="ss-panel">
-          <PanelTitle k="Learning" title="Learning loops" status={state.loops.length + " loops"} />
+          <div className="ss-panel-title ss-panel-title-with-action">
+            <div>
+              <span>Learning</span>
+              <h2>Learning loops</h2>
+            </div>
+            <em>{state.loops.length + " loops"}</em>
+          </div>
+          {custom && (
+            <Btn variant={state.loops.length ? "ghost" : "primary"} size="sm" className="ss-wide-action" onClick={() => setIsCreating(true)}>
+              <Icon name="spark" size={15} /> New loop
+            </Btn>
+          )}
+          {custom && (isCreating || !state.loops.length) && (
+            <LoopCreatePanel state={state} onStart={startLoop} onCancel={state.loops.length ? () => setIsCreating(false) : null} />
+          )}
           <div className="ss-loop-list">
             {state.loops.map((loop) => (
               <button
                 type="button"
-                className={"ss-loop-option" + (selected.id === loop.id ? " on" : "") + ssFocusClass(state, loop.id)}
+                className={"ss-loop-option" + (selected && selected.id === loop.id ? " on" : "") + ssFocusClass(state, loop.id)}
                 key={loop.id}
                 onClick={() => selectLoop(loop)}
               >
@@ -568,84 +704,90 @@ Authorization: Bearer ${apiKey}
           </div>
         </section>
 
-        <section className={"ss-panel ss-loop-detail" + ssFocusClass(state, selected.id) + ssFocusClass(state, "learning-config")}>
-          <div className="ss-loop-detail-head">
-            <PanelTitle k="Loop detail" title={selected.name} status={selected.status} />
-            <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit loop</Btn>
-          </div>
-          <div className="ss-loop-detail-grid">
-            <Metric n={String(selected.people)} l="people watched" />
-            <Metric n={String(selected.active)} l="active now" />
-            <Metric n={String(selected.memory)} l="memories" />
-            <Metric n={String(selectedEventIds.length || readiness.installedEvents)} l="events installed" />
-          </div>
-
-          <div className="ss-loop-read-grid">
-            <ReadCard label="Loop question" text={selected.question} />
-            <ReadCard label="Primary learning goal" text={state.workspace.learningGoal} />
-          </div>
-
-          <div className="ss-loop-meta-grid">
-            <div><b>Cadence</b><span>{selected.cadence}</span></div>
-            <div><b>Audience</b><span>{loopPeople.map((person) => person.segment).join(", ")}</span></div>
-            <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "No surfaces connected"}</span></div>
-          </div>
-
-          <div className="ss-loop-columns">
-            <section>
-              <h3>Related people</h3>
-              <div className="ss-related-list">
-                {loopPeople.map((person) => (
-                  <PersonLine
-                    key={person.id}
-                    person={person}
-                    meta={person.segment + " · " + person.surface}
-                    body={person.memory}
-                    card
-                    focused={state.focusedTarget === "person-" + person.id}
-                    onClick={() => openPerson(person)}
-                  />
-                ))}
-              </div>
-            </section>
-            <section>
-              <h3>Relevant 1:1 lines</h3>
-              <ConversationList state={state} conversations={loopConversations} compact navigate={navigate} />
-            </section>
-          </div>
-
-          <div className="ss-loop-columns">
-            <section>
-              <h3>Signals watched by this loop</h3>
-              <EventList state={state} events={loopEvents} navigate={navigate} />
-            </section>
-            <section className="ss-loop-install">
-              <h3>Connected surfaces</h3>
-              <div className="ss-surface-read-grid">
-                <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"Private follow-ups inside " + product + "."} />
-                <SurfaceStatusCard active={selectedSurfaceIds.includes("browser")} icon="search" title="Browser companion" text="Behavior context and web follow-up." />
-                <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async learning lines." />
-              </div>
-            </section>
-          </div>
-
-          <div className="ss-loop-config" id="learning-config">
-            <div>
-              <h3>Events this loop can use</h3>
-              <div className="ss-event-read-grid">
-                {Object.keys(state.setup.events).map((eventName) => (
-                  <span key={eventName} className={`ss-event-pill${state.events.some((event) => event.event === eventName && selectedEventIds.includes(event.id)) ? " on" : ""}`}>
-                    <Icon name={state.events.some((event) => event.event === eventName && selectedEventIds.includes(event.id)) ? "check" : "bolt"} size={15} />
-                    <b>{eventName}</b>
-                  </span>
-                ))}
-              </div>
+        {selected ? (
+          <section className={"ss-panel ss-loop-detail" + ssFocusClass(state, selected.id) + ssFocusClass(state, "learning-config")}>
+            <div className="ss-loop-detail-head">
+              <PanelTitle k="Loop detail" title={selected.name} status={selected.status} />
+              <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit loop</Btn>
             </div>
-            <CodeBlock label="Browser or in-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
-            <CodeBlock label="API key" text={apiKey} copied={copied === "learning-api-key"} onCopy={() => copyText("learning-api-key", apiKey)} />
-            <CodeBlock label="Webhook sample" text={webhook} copied={copied === "learning-webhook"} onCopy={() => copyText("learning-webhook", webhook)} />
-          </div>
-        </section>
+            {loopRun && <CollectingProgress run={loopRun} />}
+            <div className="ss-loop-detail-grid">
+              <Metric n={String(selected.people)} l="people watched" />
+              <Metric n={String(selected.active)} l="active now" />
+              <Metric n={String(selected.memory)} l="memories" />
+              <Metric n={String(selectedSignalIds.length || readiness.installedEvents)} l="signals watched" />
+            </div>
+
+            <div className="ss-loop-read-grid">
+              <ReadCard label="Loop question" text={selected.question} />
+              <ReadCard label="Primary learning goal" text={state.workspace.learningGoal} />
+            </div>
+
+            <div className="ss-loop-meta-grid">
+              <div><b>Cadence</b><span>{selected.cadence}</span></div>
+              <div><b>Audience</b><span>{audienceText || "Waiting for matched synthetic users"}</span></div>
+              <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "No surfaces connected"}</span></div>
+            </div>
+
+            <div className="ss-loop-columns">
+              <section>
+                <h3>Related people</h3>
+                <div className="ss-related-list">
+                  {loopPeople.length ? loopPeople.map((person) => (
+                    <PersonLine
+                      key={person.id}
+                      person={person}
+                      meta={person.segment + " · " + person.surface}
+                      body={person.memory}
+                      card
+                      focused={state.focusedTarget === "person-" + person.id}
+                      onClick={() => openPerson(person)}
+                    />
+                  )) : <EmptyState title="Matching users" text="Synthetic users appear as collection progresses." />}
+                </div>
+              </section>
+              <section>
+                <h3>Relevant 1:1 lines</h3>
+                {loopConversations.length ? <ConversationList state={state} conversations={loopConversations} compact navigate={navigate} /> : <EmptyState title="No 1:1 lines yet" text="Private lines open after matching users." />}
+              </section>
+            </div>
+
+            <div className="ss-loop-columns">
+              <section>
+                <h3>Signals watched by this loop</h3>
+                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="Waiting for behavior" text="Synthetic signals arrive during collection." />}
+              </section>
+              <section className="ss-loop-install">
+                <h3>Connected surfaces</h3>
+                <div className="ss-surface-read-grid">
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"Private follow-ups inside " + product + "."} />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("browser")} icon="search" title="Browser companion" text="Behavior context and web follow-up." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async learning lines." />
+                </div>
+              </section>
+            </div>
+
+            <div className="ss-loop-config" id="learning-config">
+              <div>
+                <h3>Signals this loop can use</h3>
+                <div className="ss-event-read-grid">
+                  {(selectedSignalIds.length ? selectedSignalIds : Object.keys(state.setup.events)).map((eventName) => (
+                    <span key={eventName} className="ss-event-pill on">
+                      <Icon name="check" size={15} />
+                      <b>{eventName}</b>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <CodeBlock label="Browser or in-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
+              <CodeBlock label="Webhook sample" text={webhook} copied={copied === "learning-webhook"} onCopy={() => copyText("learning-webhook", webhook)} />
+            </div>
+          </section>
+        ) : (
+          <section className="ss-panel ss-loop-detail">
+            <EmptyState title="No learning loops yet" text="Create a loop to watch Observant collect synthetic 1:1 learning for your product." />
+          </section>
+        )}
       </div>
       {isEditing && (
         <LoopEditDrawer
@@ -659,6 +801,112 @@ Authorization: Bearer ${apiKey}
         />
       )}
     </>
+  );
+}
+
+function LoopCreatePanel({ state, onStart, onCancel }) {
+  const product = SelfServeData.productName(state.workspace);
+  const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
+  const activeSignals = Object.keys(state.setup.events).filter((eventName) => state.setup.events[eventName]);
+  const [draft, setDraft] = useStateSS({
+    name: product + " adoption loop",
+    question: state.workspace.learningGoal,
+    groupIds: ["power-users", "evaluators"],
+    surfaceIds: activeSurfaces.length ? activeSurfaces : ["product"],
+    signalIds: activeSignals.length ? activeSignals : ["feature_opened"],
+  });
+
+  const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
+  const toggleList = (field, id) => {
+    setDraft((current) => {
+      const values = current[field] || [];
+      const next = values.includes(id) ? values.filter((value) => value !== id) : [...values, id];
+      return { ...current, [field]: next.length ? next : values };
+    });
+  };
+
+  return (
+    <div className="ss-create-loop" id="create-loop">
+      <PanelTitle k="New loop" title="Create learning loop" status="Synthetic" />
+      <Field label="Loop name">
+        <input className="input" value={draft.name} onChange={(e) => update("name", e.target.value)} />
+      </Field>
+      <Field label="Learning question">
+        <textarea className="textarea" value={draft.question} onChange={(e) => update("question", e.target.value)} />
+      </Field>
+      <div>
+        <h3>Who should Observant learn from?</h3>
+        <div className="ss-chip-grid">
+          {SS_GROUP_OPTIONS.map((group) => (
+            <button type="button" key={group.id} className={draft.groupIds.includes(group.id) ? "ss-choice-chip on" : "ss-choice-chip"} onClick={() => toggleList("groupIds", group.id)}>
+              <b>{group.label}</b>
+              <span>{group.text}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3>Surfaces</h3>
+        <div className="ss-small-toggle-grid">
+          {SS_SURFACE_OPTIONS.map((surface) => (
+            <button type="button" key={surface.id} className={draft.surfaceIds.includes(surface.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("surfaceIds", surface.id)}>
+              <span><Icon name={surface.icon} size={15} /></span>
+              <b>{surface.label}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3>Signals</h3>
+        <div className="ss-small-toggle-grid">
+          {SS_SIGNAL_OPTIONS.map((signal) => (
+            <button type="button" key={signal.id} className={draft.signalIds.includes(signal.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("signalIds", signal.id)}>
+              <span><Icon name={draft.signalIds.includes(signal.id) ? "check" : "bolt"} size={15} /></span>
+              <b>{signal.label}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="ss-fineprint">This uses synthetic users only. No real users are contacted and no product data is installed.</p>
+      <div className="ss-create-loop-actions">
+        {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
+        <Btn variant="primary" onClick={() => onStart(draft)} disabled={!draft.name.trim() || !draft.question.trim()}>
+          <Icon name="spark" size={15} /> Start collecting
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+function CollectingProgress({ run }) {
+  const timeline = run.timeline || SS_SIMULATION_STAGES;
+  const current = Math.max(-1, run.stageIndex);
+  const percent = run.status === "generating" ? 8 : Math.round(((current + 1) / timeline.length) * 100);
+  const label = run.status === "generating"
+    ? "Preparing synthetic panel"
+    : run.status === "running"
+      ? "Still learning"
+      : (timeline[current] ? timeline[current].label : "Collecting");
+
+  return (
+    <section className="ss-progress-card">
+      <div className="ss-progress-head">
+        <div>
+          <span className="eyebrow no-rule">Collecting progress</span>
+          <h3>{label}</h3>
+        </div>
+        <em>{run.fallback ? "Local fallback" : "AI-assisted"}</em>
+      </div>
+      <div className="ss-progress-track"><span style={{ width: percent + "%" }} /></div>
+      <ol className="ss-progress-steps">
+        {timeline.map((step, index) => (
+          <li key={step.id || step.label} className={index <= current || run.status === "running" ? "done" : ""}>
+            <span>{index + 1}</span>
+            <div><b>{step.label}</b><p>{step.detail}</p></div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -823,26 +1071,28 @@ function InsightsView({ state, patchState, navigate }) {
     <div className="ss-page-stack">
       <AskObservant state={state} patchState={patchState} />
       {latestAnswer && <LatestAnswerCard answer={latestAnswer} />}
-      <div className="ss-list-grid">
-        {state.insights.map((insight) => (
-          <button
-            type="button"
-            className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)}
-            key={insight.id}
-            onClick={() => {
-              const conversation = state.conversations.find((item) => item.id === insight.conversationId);
-              const rowPerson = ssPersonForConversation(state, conversation);
-              navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) });
-            }}
-          >
-            <span>{insight.metric}</span>
-            <h3>{insight.title}</h3>
-            <p>{insight.detail}</p>
-            <em>{insight.evidence}</em>
-            <div>{insight.next}</div>
-          </button>
-        ))}
-      </div>
+      {state.insights.length ? (
+        <div className="ss-list-grid">
+          {state.insights.map((insight) => (
+            <button
+              type="button"
+              className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)}
+              key={insight.id}
+              onClick={() => {
+                const conversation = state.conversations.find((item) => item.id === insight.conversationId);
+                const rowPerson = ssPersonForConversation(state, conversation);
+                navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) });
+              }}
+            >
+              <span>{insight.metric}</span>
+              <h3>{insight.title}</h3>
+              <p>{insight.detail}</p>
+              <em>{insight.evidence}</em>
+              <div>{insight.next}</div>
+            </button>
+          ))}
+        </div>
+      ) : <EmptyState title="No insight deliverables yet" text="Create a learning loop and Observant will draft insights once patterns emerge." />}
     </div>
   );
 }
@@ -898,14 +1148,41 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
 
 function AskObservant({ state, patchState }) {
   const [question, setQuestion] = useStateSS(state.workspace.learningGoal);
+  const [asking, setAsking] = useStateSS(false);
 
-  const ask = () => {
-    const answer = SelfServeData.cannedAnswer(state, question);
+  const ask = async () => {
+    if (!question.trim() || asking) return;
+    setAsking(true);
+    let answer;
+    if (ssWorkspaceIsCustom(state)) {
+      const summary = {
+        workspace: state.workspace,
+        loops: state.loops.map((loop) => ({ id: loop.id, name: loop.name, question: loop.question, status: loop.status })),
+        people: state.people.map((person) => ({ id: person.id, name: person.name, segment: person.segment, memory: person.memory, last: person.last })).slice(0, 8),
+        events: state.events.slice(0, 8),
+        insights: state.insights.slice(0, 6),
+        conversations: state.conversations.slice(0, 6).map((conversation) => ({
+          id: conversation.id,
+          userId: conversation.userId,
+          title: conversation.title,
+          messages: conversation.messages.slice(-4),
+        })),
+      };
+      try {
+        answer = await ssPostJson("/api/selfserve/answer", { question, summary });
+      } catch (err) {
+        answer = SelfServeData.cannedAnswer(state, question);
+      }
+    } else {
+      answer = SelfServeData.cannedAnswer(state, question);
+    }
+    if (!answer || !answer.answer) answer = SelfServeData.cannedAnswer(state, question);
     patchState((current) => ({
       ...current,
-      answers: [answer, ...current.answers],
-      activity: ["Asked Observant: " + answer.question, ...current.activity],
+      answers: [{ id: answer.id || "answer-" + Date.now(), question, ...answer }, ...current.answers],
+      activity: ["Asked Observant: " + question, ...current.activity],
     }));
+    setAsking(false);
   };
 
   return (
@@ -913,7 +1190,7 @@ function AskObservant({ state, patchState }) {
       <PanelTitle k="Ask Observant" title="Ask across what it has learned" status="Grounded" />
       <textarea className="textarea" value={question} onChange={(e) => setQuestion(e.target.value)} />
       <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={ask} disabled={!question.trim()}><Icon name="spark" size={15} /> Ask Observant</Btn>
+        <Btn variant="primary" onClick={ask} disabled={!question.trim() || asking}><Icon name="spark" size={15} /> {asking ? "Thinking" : "Ask Observant"}</Btn>
       </div>
     </section>
   );
@@ -1012,6 +1289,15 @@ function Checklist({ readiness, launched }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+function EmptyState({ title, text }) {
+  return (
+    <div className="ss-empty-state">
+      <b>{title}</b>
+      <span>{text}</span>
+    </div>
   );
 }
 

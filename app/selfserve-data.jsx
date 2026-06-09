@@ -1,8 +1,9 @@
 /* ============================================================
-   OBSERVANT self-serve seed data and factories
+   OBSERVANT self-serve seed data, simulation data, and factories
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
+const SS_STATE_VERSION = 2;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
@@ -12,8 +13,37 @@ const SS_DEFAULT_WORKSPACE = {
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
 };
 
+const SS_GROUP_OPTIONS = [
+  { id: "power-users", label: "Power users", text: "Frequent users who already rely on the workflow." },
+  { id: "new-signups", label: "New signups", text: "People still forming their first mental model." },
+  { id: "evaluators", label: "Upgrade evaluators", text: "Teams comparing value, permissions, and trust." },
+  { id: "admins", label: "Workspace admins", text: "Owners who care about rollout and team adoption." },
+  { id: "at-risk", label: "At-risk users", text: "Accounts showing hesitation or stalled progress." },
+];
+
+const SS_SURFACE_OPTIONS = [
+  { id: "product", label: "In-product", icon: "globe" },
+  { id: "browser", label: "Browser companion", icon: "search" },
+  { id: "email", label: "Email", icon: "mail" },
+];
+
+const SS_SIGNAL_OPTIONS = [
+  { id: "user_signed_up", label: "user_signed_up" },
+  { id: "export_completed", label: "export_completed" },
+  { id: "feature_opened", label: "feature_opened" },
+  { id: "checkout_abandoned", label: "checkout_abandoned" },
+];
+
+const SS_SIMULATION_STAGES = [
+  { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to the loop audience." },
+  { id: "lines", label: "Opening private lines", detail: "Observant opens 1:1 learning lines with matched people." },
+  { id: "replies", label: "Collecting replies", detail: "Early answers and behavior signals start coming in." },
+  { id: "patterns", label: "Detecting patterns", detail: "Repeated context is grouped into stronger signals." },
+  { id: "insights", label: "Drafting insights", detail: "Evidence-backed recommendations are prepared for the team." },
+];
+
 function ssInitials(name) {
-  return name
+  return String(name || "")
     .split(/\s+/)
     .filter(Boolean)
     .map((part) => part[0])
@@ -23,21 +53,47 @@ function ssInitials(name) {
 }
 
 function ssProductName(workspace) {
-  const raw = (workspace.companyName || "").trim();
+  const raw = (workspace && workspace.companyName || "").trim();
   return raw || "Northwind";
+}
+
+function ssSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "workspace";
+}
+
+function ssTrim(value, fallback) {
+  const text = String(value || "").trim();
+  return text || fallback;
 }
 
 function ssCreateWorkspace(input) {
   const merged = { ...SS_DEFAULT_WORKSPACE, ...(input || {}) };
   const product = ssProductName(merged);
   return {
-    id: "workspace-" + Date.now(),
-    founderName: merged.founderName.trim() || SS_DEFAULT_WORKSPACE.founderName,
-    email: merged.email.trim() || SS_DEFAULT_WORKSPACE.email,
+    id: merged.id || "workspace-" + Date.now(),
+    founderName: ssTrim(merged.founderName, SS_DEFAULT_WORKSPACE.founderName),
+    email: ssTrim(merged.email, SS_DEFAULT_WORKSPACE.email),
     companyName: product,
-    productUrl: merged.productUrl.trim() || "https://" + product.toLowerCase().replace(/[^a-z0-9]+/g, "") + ".com",
-    learningGoal: merged.learningGoal.trim() || SS_DEFAULT_WORKSPACE.learningGoal,
-    createdAt: new Date().toISOString(),
+    productUrl: ssTrim(merged.productUrl, "https://" + ssSlug(product).replace(/-/g, "") + ".com"),
+    learningGoal: ssTrim(merged.learningGoal, SS_DEFAULT_WORKSPACE.learningGoal),
+    createdAt: merged.createdAt || new Date().toISOString(),
+  };
+}
+
+function ssCreateSetup(workspace) {
+  return {
+    usersSource: "",
+    inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
+    surfaces: { product: false, browser: false, email: false },
+    events: {
+      user_signed_up: false,
+      export_completed: false,
+      feature_opened: false,
+      checkout_abandoned: false,
+    },
   };
 }
 
@@ -189,7 +245,7 @@ function ssCreateInsights(workspace) {
   ];
 }
 
-function ssCreateLoops(workspace) {
+function ssCreateLoops() {
   return [
     {
       id: "loop-export",
@@ -239,28 +295,47 @@ function ssCreateLoops(workspace) {
   ];
 }
 
-function ssCreateInitialState(input) {
-  const workspace = ssCreateWorkspace(input);
-  const product = ssProductName(workspace);
+function ssBaseState(workspace, mode) {
   return {
-    version: 1,
+    version: SS_STATE_VERSION,
     workspace,
+    workspaceMode: mode,
     launched: false,
     section: "home",
     focusedTarget: "",
+    selectedLoopId: "",
+    selectedConversationId: "",
+    setup: ssCreateSetup(workspace),
+    people: [],
+    groups: [],
+    conversations: [],
+    events: [],
+    insights: [],
+    loops: [],
+    loopRuns: [],
+    simulationRuns: [],
+    nextQuestions: [
+      "Which users should Observant learn from first?",
+      "What changed after the latest product release?",
+      "What should we ask before the next roadmap decision?",
+    ],
+    scheduledCalls: [],
+    answers: [],
+    generatedAt: "",
+    activity: [
+      "Workspace created for " + ssProductName(workspace) + ".",
+      "Learning goal saved.",
+    ],
+  };
+}
+
+function ssCreateSampleState(input) {
+  const workspace = ssCreateWorkspace(input || SS_DEFAULT_WORKSPACE);
+  const product = ssProductName(workspace);
+  return {
+    ...ssBaseState(workspace, "sample"),
     selectedLoopId: "loop-export",
     selectedConversationId: "dana",
-    setup: {
-      usersSource: "",
-      inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-      surfaces: { product: false, browser: false, email: false },
-      events: {
-        user_signed_up: false,
-        export_completed: false,
-        feature_opened: false,
-        checkout_abandoned: false,
-      },
-    },
     people: ssCreatePeople(workspace),
     conversations: ssCreateConversations(workspace),
     events: ssCreateEvents(workspace),
@@ -271,12 +346,192 @@ function ssCreateInitialState(input) {
       "Which part of " + product + " still makes you leave the product?",
       "What should Observant watch after the next release?",
     ],
-    scheduledCalls: [],
-    answers: [],
-    activity: [
-      "Workspace created for " + product + ".",
-      "Learning goal saved.",
+  };
+}
+
+function ssCreateCustomState(input) {
+  const workspace = ssCreateWorkspace(input);
+  return {
+    ...ssBaseState(workspace, "custom"),
+    nextQuestions: [
+      "What should Observant ask first about " + workspace.companyName + "?",
+      "Which user group should this learning loop watch next?",
+      "What would make this pattern worth shipping against?",
     ],
+  };
+}
+
+function ssCreateInitialState(input, mode) {
+  return mode === "custom" ? ssCreateCustomState(input) : ssCreateSampleState(input || SS_DEFAULT_WORKSPACE);
+}
+
+function ssMakeRunId() {
+  return "run-" + Date.now().toString(36);
+}
+
+function ssGroupLabel(id) {
+  const option = SS_GROUP_OPTIONS.find((item) => item.id === id);
+  return option ? option.label : id;
+}
+
+function ssSurfaceLabelData(id) {
+  const option = SS_SURFACE_OPTIONS.find((item) => item.id === id);
+  return option ? option.label : id;
+}
+
+function ssCreateCustomLoop(workspace, config, runId) {
+  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["product"]);
+  const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : ["feature_opened"]);
+  return {
+    id: "loop-" + runId,
+    name: ssTrim(config.name, "New learning loop"),
+    status: "Collecting",
+    cadence: "Synthetic panel",
+    people: 0,
+    active: 0,
+    memory: 0,
+    question: ssTrim(config.question, workspace.learningGoal),
+    conversationId: "",
+    conversationIds: [],
+    peopleIds: [],
+    eventIds: [],
+    surfaceIds,
+    signalIds,
+    groupIds: config.groupIds || ["power-users"],
+    generatedAt: "",
+  };
+}
+
+function ssCreateLoopRun(runId, loop, config) {
+  return {
+    runId,
+    loopId: loop.id,
+    status: "generating",
+    stageIndex: -1,
+    fallback: false,
+    error: "",
+    startedAt: new Date().toISOString(),
+    generatedAt: "",
+    completedAt: "",
+    timeline: SS_SIMULATION_STAGES,
+    config,
+  };
+}
+
+function ssFallbackSimulation(workspace, config, runId) {
+  const product = ssProductName(workspace);
+  const actualRunId = runId || ssMakeRunId();
+  const loop = ssCreateCustomLoop(workspace, config || {}, actualRunId);
+  const groupIds = loop.groupIds.length ? loop.groupIds : ["power-users"];
+  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["product"];
+  const signalIds = loop.signalIds && loop.signalIds.length ? loop.signalIds : ["feature_opened"];
+  const colors = ["rust", "green", "blue", "gold", "teal", "plum"];
+  const names = ["Avery N.", "Samir P.", "Elena R.", "Jordan M.", "Mina S.", "Theo L."];
+  const quotes = [
+    "I understand the value, but I need to see how this fits the workflow we already trust.",
+    "The feature sounds right. The missing piece is knowing who on my team will use it every week.",
+    "I would try this if setup felt lighter and the first result was obvious.",
+    "The current path works, but it takes too many small decisions to get to the answer.",
+    "I need a confident recommendation, not another place to check manually.",
+    "The blocker is not interest. It is proving this can save time for more than one person.",
+  ];
+  const memories = [
+    "Compares product value against the team's current manual workflow.",
+    "Looks for shared visibility before asking the team to change habits.",
+    "Needs fast first-run confidence before committing setup time.",
+    "Repeats the same behavior after every release and wants fewer handoffs.",
+    "Wants a recommendation grounded in what similar users already did.",
+    "Needs proof that the workflow scales beyond a single champion.",
+  ];
+
+  const groups = groupIds.map((id, index) => ({
+    id: actualRunId + "-group-" + id,
+    sourceId: id,
+    name: ssGroupLabel(id),
+    size: String(18 + (index * 7)) + " synthetic matches",
+    signal: signalIds[index % signalIds.length],
+    detail: "Matched to " + loop.question,
+  }));
+
+  const users = names.slice(0, 5).map((name, index) => {
+    const groupId = groupIds[index % groupIds.length];
+    const surface = ssSurfaceLabelData(surfaceIds[index % surfaceIds.length]);
+    return {
+      id: actualRunId + "-person-" + index,
+      name,
+      color: colors[index % colors.length],
+      segment: ssGroupLabel(groupId),
+      surface,
+      status: index < 2 ? "Active now" : index < 4 ? "Async" : "Watching",
+      memory: memories[index],
+      last: quotes[index],
+      groupId,
+    };
+  });
+
+  const conversations = users.map((person, index) => ({
+    id: actualRunId + "-conv-" + index,
+    userId: person.id,
+    title: person.segment + " learning line",
+    state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
+    messages: [
+      { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },
+      { t: "user", text: person.last, meta: person.name.split(" ")[0] },
+      { t: "them", text: "What would make this feel worth changing your current workflow for?", meta: "Observant - remembered context" },
+      { t: "user", text: quotes[(index + 2) % quotes.length], meta: person.name.split(" ")[0] },
+    ],
+  }));
+
+  const events = users.slice(0, 4).map((person, index) => ({
+    id: actualRunId + "-evt-" + index,
+    event: signalIds[index % signalIds.length],
+    user: person.name,
+    detail: index % 2 === 0 ? "returned to the same decision point" : "opened related settings twice",
+    time: ["2m ago", "9m ago", "21m ago", "46m ago"][index],
+    type: "synthetic",
+    conversationId: conversations[index].id,
+  }));
+
+  const metric = String(58 + (groupIds.length * 4)) + "%";
+  const insights = [
+    {
+      id: actualRunId + "-insight-primary",
+      title: "Users need proof that " + product + " fits their existing workflow.",
+      metric,
+      detail: "Synthetic 1:1 lines show interest, but users keep asking for evidence that the product will reduce coordination work instead of adding another step.",
+      evidence: "Grounded in " + users.length + " synthetic users, " + conversations.length + " private lines, and " + events.length + " behavior signals.",
+      next: "Show a first useful output before asking users to commit setup time.",
+      conversationId: conversations[0].id,
+      loopId: loop.id,
+    },
+    {
+      id: actualRunId + "-insight-secondary",
+      title: "Team visibility is the strongest adoption question.",
+      metric: "3 signals",
+      detail: "Across synthetic groups, people ask how teammates will see, trust, or reuse the output.",
+      evidence: "Mentioned by " + users.slice(0, 3).map((person) => person.name).join(", ") + ".",
+      next: "Add a shareable team-facing artifact to the activation path.",
+      conversationId: conversations[1].id,
+      loopId: loop.id,
+    },
+  ];
+
+  return {
+    runId: actualRunId,
+    generatedAt: new Date().toISOString(),
+    fallback: true,
+    loop,
+    users,
+    groups,
+    conversations,
+    events,
+    insights,
+    nextQuestions: [
+      "What would make " + product + " feel worth changing your current workflow for?",
+      "Who else on your team would need to trust this before adoption?",
+      "Which proof would make this loop strong enough for the roadmap?",
+    ],
+    timeline: SS_SIMULATION_STAGES,
   };
 }
 
@@ -291,10 +546,11 @@ function ssMergeRecord(seed, current) {
 
 function ssMergeSeededRecords(currentRecords, seededRecords) {
   const current = Array.isArray(currentRecords) ? currentRecords : [];
-  const seededIds = new Set(seededRecords.map((record) => record.id));
+  const seeded = Array.isArray(seededRecords) ? seededRecords : [];
+  const seededIds = new Set(seeded.map((record) => record.id));
   const currentById = new Map(current.filter(Boolean).map((record) => [record.id, record]));
   return [
-    ...seededRecords.map((seed) => ssMergeRecord(seed, currentById.get(seed.id))),
+    ...seeded.map((seed) => ssMergeRecord(seed, currentById.get(seed.id))),
     ...current.filter((record) => record && !seededIds.has(record.id)),
   ];
 }
@@ -311,22 +567,24 @@ function ssNormalizeState(state) {
   if (!state || !state.workspace) return state;
 
   const workspace = ssMergeRecord(ssCreateWorkspace(state.workspace), state.workspace);
-  const seeded = ssCreateInitialState(workspace);
+  const mode = state.workspaceMode || "sample";
+  const seeded = mode === "custom" ? ssCreateCustomState(workspace) : ssCreateSampleState(workspace);
   const setup = state.setup || {};
   const conversations = ssMergeSeededRecords(state.conversations, seeded.conversations);
   const loops = ssMergeSeededRecords(state.loops, seeded.loops);
   const selectedConversationId = conversations.some((conversation) => conversation.id === state.selectedConversationId)
     ? state.selectedConversationId
-    : seeded.selectedConversationId;
+    : (conversations[0] ? conversations[0].id : "");
   const selectedLoopId = loops.some((loop) => loop.id === state.selectedLoopId)
     ? state.selectedLoopId
-    : seeded.selectedLoopId;
+    : (loops[0] ? loops[0].id : "");
 
   return {
     ...seeded,
     ...state,
-    version: 1,
+    version: SS_STATE_VERSION,
     workspace,
+    workspaceMode: mode,
     section: ssNormalizeSection(state.section || seeded.section),
     focusedTarget: state.focusedTarget || "",
     selectedLoopId,
@@ -339,20 +597,24 @@ function ssNormalizeState(state) {
       events: { ...seeded.setup.events, ...(setup.events || {}) },
     },
     people: ssMergeSeededRecords(state.people, seeded.people),
+    groups: ssMergeSeededRecords(state.groups, seeded.groups),
     conversations,
     events: ssMergeSeededRecords(state.events, seeded.events),
     insights: ssMergeSeededRecords(state.insights, seeded.insights),
     loops,
+    loopRuns: Array.isArray(state.loopRuns) ? state.loopRuns : [],
+    simulationRuns: Array.isArray(state.simulationRuns) ? state.simulationRuns : [],
     nextQuestions: Array.isArray(state.nextQuestions) ? state.nextQuestions : seeded.nextQuestions,
     scheduledCalls: Array.isArray(state.scheduledCalls) ? state.scheduledCalls : [],
     answers: Array.isArray(state.answers) ? state.answers : [],
+    generatedAt: state.generatedAt || seeded.generatedAt || "",
     activity: Array.isArray(state.activity) ? state.activity : seeded.activity,
   };
 }
 
 function ssReadiness(setup) {
-  const connectedSurfaces = Object.values(setup.surfaces).filter(Boolean).length;
-  const installedEvents = Object.values(setup.events).filter(Boolean).length;
+  const connectedSurfaces = Object.values(setup.surfaces || {}).filter(Boolean).length;
+  const installedEvents = Object.values(setup.events || {}).filter(Boolean).length;
   return {
     users: !!setup.usersSource,
     surfaces: connectedSurfaces > 0,
@@ -363,24 +625,111 @@ function ssReadiness(setup) {
   };
 }
 
+function ssRevealSimulation(state, runId, stageIndex) {
+  const simulation = (state.simulationRuns || []).find((run) => run.runId === runId);
+  if (!simulation) return state;
+
+  const safeStage = Math.max(0, Math.min(stageIndex, SS_SIMULATION_STAGES.length - 1));
+  const visibleGroups = safeStage >= 0 ? simulation.groups || [] : [];
+  const visiblePeople = safeStage >= 1 ? (simulation.users || []).slice(0, safeStage >= 2 ? undefined : 2) : [];
+  const visibleConversations = safeStage >= 1 ? (simulation.conversations || []).slice(0, safeStage >= 2 ? undefined : 2) : [];
+  const visibleEvents = safeStage >= 2 ? (simulation.events || []).slice(0, safeStage >= 3 ? undefined : 2) : [];
+  const visibleInsights = safeStage >= 4 ? simulation.insights || [] : [];
+  const visibleQuestionIds = visiblePeople.map((person) => person.id);
+  const visibleConversationIds = visibleConversations.map((conversation) => conversation.id);
+  const visibleEventIds = visibleEvents.map((event) => event.id);
+  const finalStage = safeStage >= SS_SIMULATION_STAGES.length - 1;
+  const firstConversation = visibleConversations[0];
+  const loopPatch = {
+    ...simulation.loop,
+    status: finalStage ? "Learning" : "Collecting",
+    cadence: finalStage ? "Still learning" : "Collecting now",
+    people: visiblePeople.length,
+    active: visibleConversations.filter((conversation) => conversation.state === "Active").length,
+    memory: finalStage ? 84 + visiblePeople.length * 16 : Math.max(8, safeStage * 18),
+    peopleIds: visibleQuestionIds,
+    conversationIds: visibleConversationIds,
+    eventIds: visibleEventIds,
+    conversationId: firstConversation ? firstConversation.id : "",
+    generatedAt: simulation.generatedAt,
+  };
+  const stage = SS_SIMULATION_STAGES[safeStage];
+  const existingLoop = (state.loops || []).some((loop) => loop.id === simulation.loop.id);
+  const loops = existingLoop
+    ? (state.loops || []).map((loop) => loop.id === simulation.loop.id ? { ...loop, ...loopPatch } : loop)
+    : [...(state.loops || []), loopPatch];
+
+  return {
+    ...state,
+    generatedAt: simulation.generatedAt || state.generatedAt,
+    groups: ssMergeSeededRecords(state.groups, visibleGroups),
+    people: ssMergeSeededRecords(state.people, visiblePeople),
+    conversations: ssMergeSeededRecords(state.conversations, visibleConversations),
+    events: ssMergeSeededRecords(state.events, visibleEvents),
+    insights: ssMergeSeededRecords(state.insights, visibleInsights),
+    loops,
+    selectedLoopId: simulation.loop.id,
+    selectedConversationId: firstConversation ? firstConversation.id : state.selectedConversationId,
+    nextQuestions: safeStage >= 3 && simulation.nextQuestions && simulation.nextQuestions.length ? simulation.nextQuestions : state.nextQuestions,
+    loopRuns: (state.loopRuns || []).map((run) => run.runId === runId ? {
+      ...run,
+      stageIndex: safeStage,
+      status: finalStage ? "running" : "collecting",
+      completedAt: finalStage ? (run.completedAt || new Date().toISOString()) : "",
+      generatedAt: simulation.generatedAt,
+      timeline: simulation.timeline || SS_SIMULATION_STAGES,
+      fallback: !!simulation.fallback,
+    } : run),
+    activity: [stage.label + " for " + simulation.loop.name + ".", ...(state.activity || [])].slice(0, 24),
+  };
+}
+
 function ssCannedAnswer(state, question) {
   const workspace = state.workspace;
   const product = ssProductName(workspace);
-  const asked = (question || workspace.learningGoal || "").trim();
+  const asked = ssTrim(question || workspace.learningGoal, workspace.learningGoal);
+  const insight = (state.insights || [])[0];
+
+  if (state.workspaceMode === "custom" && insight) {
+    return {
+      id: "answer-" + Date.now(),
+      question: asked,
+      answer: "Observant is seeing the strongest signal around: " + insight.title + " The synthetic 1:1 lines suggest users are interested, but they need proof that the workflow saves coordination time.",
+      evidence: insight.evidence,
+      recommendation: insight.next,
+      relatedPersonIds: (state.people || []).slice(0, 3).map((person) => person.id),
+      relatedInsightIds: [insight.id],
+    };
+  }
+
   return {
     id: "answer-" + Date.now(),
     question: asked,
     answer: "Observant is seeing the strongest signal around shareable reporting. Users are not asking for another export format; they want a live view they can send to teammates without rebuilding the report outside " + product + ".",
     evidence: "Grounded in Dana, Marcus, and Priya's private lines plus export_completed and feature_opened events.",
     recommendation: "Build a live dashboard link first. Keep CSV export as a fallback for raw data workflows.",
+    relatedPersonIds: ["dana", "marcus", "priya"],
+    relatedInsightIds: ["insight-export"],
   };
 }
 
 Object.assign(window, {
   SS_STORAGE_KEY,
+  SS_STATE_VERSION,
   SS_DEFAULT_WORKSPACE,
+  SS_GROUP_OPTIONS,
+  SS_SURFACE_OPTIONS,
+  SS_SIGNAL_OPTIONS,
+  SS_SIMULATION_STAGES,
   SelfServeData: {
     createInitialState: ssCreateInitialState,
+    createSampleState: ssCreateSampleState,
+    createCustomState: ssCreateCustomState,
+    createCustomLoop: ssCreateCustomLoop,
+    createLoopRun: ssCreateLoopRun,
+    fallbackSimulation: ssFallbackSimulation,
+    revealSimulation: ssRevealSimulation,
+    makeRunId: ssMakeRunId,
     normalizeState: ssNormalizeState,
     readiness: ssReadiness,
     cannedAnswer: ssCannedAnswer,
