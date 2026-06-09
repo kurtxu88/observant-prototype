@@ -13,6 +13,14 @@ const SS_DEFAULT_WORKSPACE = {
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
 };
 
+const SS_CUSTOM_WORKSPACE_FALLBACK = {
+  founderName: "Founder",
+  email: "founder@example.com",
+  companyName: "Your product",
+  productUrl: "https://yourproduct.example",
+  learningGoal: "Learn what users need next.",
+};
+
 const SS_GROUP_OPTIONS = [
   { id: "power-users", label: "Power users", text: "Frequent users who already rely on the workflow." },
   { id: "new-signups", label: "New signups", text: "People still forming their first mental model." },
@@ -52,9 +60,9 @@ function ssInitials(name) {
     .toUpperCase();
 }
 
-function ssProductName(workspace) {
+function ssProductName(workspace, fallback) {
   const raw = (workspace && workspace.companyName || "").trim();
-  return raw || "Northwind";
+  return raw || fallback || "Northwind";
 }
 
 function ssSlug(value) {
@@ -69,16 +77,17 @@ function ssTrim(value, fallback) {
   return text || fallback;
 }
 
-function ssCreateWorkspace(input) {
-  const merged = { ...SS_DEFAULT_WORKSPACE, ...(input || {}) };
-  const product = ssProductName(merged);
+function ssCreateWorkspace(input, fallback) {
+  const base = fallback || SS_DEFAULT_WORKSPACE;
+  const merged = { ...base, ...(input || {}) };
+  const product = ssProductName(merged, base.companyName);
   return {
     id: merged.id || "workspace-" + Date.now(),
-    founderName: ssTrim(merged.founderName, SS_DEFAULT_WORKSPACE.founderName),
-    email: ssTrim(merged.email, SS_DEFAULT_WORKSPACE.email),
+    founderName: ssTrim(merged.founderName, base.founderName),
+    email: ssTrim(merged.email, base.email),
     companyName: product,
     productUrl: ssTrim(merged.productUrl, "https://" + ssSlug(product).replace(/-/g, "") + ".com"),
-    learningGoal: ssTrim(merged.learningGoal, SS_DEFAULT_WORKSPACE.learningGoal),
+    learningGoal: ssTrim(merged.learningGoal, base.learningGoal),
     createdAt: merged.createdAt || new Date().toISOString(),
   };
 }
@@ -350,7 +359,7 @@ function ssCreateSampleState(input) {
 }
 
 function ssCreateCustomState(input) {
-  const workspace = ssCreateWorkspace(input);
+  const workspace = ssCreateWorkspace(input, SS_CUSTOM_WORKSPACE_FALLBACK);
   return {
     ...ssBaseState(workspace, "custom"),
     nextQuestions: [

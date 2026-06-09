@@ -11,6 +11,14 @@ const SS_SECTIONS = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
+const SS_EMPTY_WORKSPACE_FORM = {
+  founderName: "",
+  email: "",
+  companyName: "",
+  productUrl: "",
+  learningGoal: "",
+};
+
 function ssLoadState() {
   try {
     const raw = localStorage.getItem(SS_STORAGE_KEY);
@@ -200,8 +208,9 @@ function SelfServeApp() {
 }
 
 function EntryScreen({ onCreate }) {
-  const [form, setForm] = useStateSS({ ...SS_DEFAULT_WORKSPACE });
+  const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+  const canCreate = form.companyName.trim() && form.learningGoal.trim();
 
   return (
     <div className="ss-entry">
@@ -226,23 +235,23 @@ function EntryScreen({ onCreate }) {
         </div>
         <div className="ss-form-grid">
           <Field label="Your name">
-            <input className="input" value={form.founderName} onChange={(e) => update("founderName", e.target.value)} />
+            <input className="input" value={form.founderName} placeholder="Your name" onChange={(e) => update("founderName", e.target.value)} />
           </Field>
           <Field label="Work email">
-            <input className="input" value={form.email} onChange={(e) => update("email", e.target.value)} />
+            <input className="input" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} />
           </Field>
           <Field label="Company or product name">
-            <input className="input" value={form.companyName} onChange={(e) => update("companyName", e.target.value)} />
+            <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
           </Field>
           <Field label="Product URL">
-            <input className="input" value={form.productUrl} onChange={(e) => update("productUrl", e.target.value)} />
+            <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
           </Field>
           <Field label="Primary learning goal" wide>
-            <textarea className="textarea" value={form.learningGoal} onChange={(e) => update("learningGoal", e.target.value)} />
+            <textarea className="textarea" value={form.learningGoal} placeholder="Learn why users start, stall, or hesitate before adopting the product." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
         <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" onClick={() => onCreate(form, "custom")}>Create workspace <Icon name="arrow" size={16} /></Btn>
+          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Create workspace <Icon name="arrow" size={16} /></Btn>
           <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Continue with sample workspace</Btn>
         </div>
         <p className="ss-fineprint">Custom workspaces use synthetic users. No real signup, billing, or data connection is created.</p>
