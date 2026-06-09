@@ -1812,3 +1812,20 @@
   color: var(--text-secondary);
   line-height: 1.45;
 }
+
+/* small "advanced" tag next to de-emphasized behavior triggers */
+.ss-adv-tag {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+}
+.ss-create-loop .ss-step-lead { margin-bottom: 1rem; }

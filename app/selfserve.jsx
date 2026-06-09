@@ -5,7 +5,7 @@ const { useState: useStateSS, useEffect: useEffectSS } = React;
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "learning", label: "Learning", icon: "spark" },
+  { id: "learning", label: "Questions", icon: "chat" },
   { id: "people", label: "People", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
@@ -482,7 +482,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           </div>
           <div className="ss-topbar-actions">
             <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: firstLoopId, focusedTarget: firstLoopId || "create-loop" })}><i></i>Learning mode is on</button>
-            <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })}>Review learning</Btn>
+            <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>Ask a question</Btn>
           </div>
         </header>
 
@@ -511,9 +511,9 @@ function HomeView({ state, patchState, navigate }) {
     <div className="ss-page-stack">
       <section className="ss-hero-status">
         <div>
-          <span className="eyebrow no-rule">Operating system</span>
-          <h2>{custom && !state.loops.length ? "Learning mode is ready." : "Learning mode is on."}</h2>
-          <p>{custom && !state.loops.length ? "Create a learning loop to simulate synthetic users, private lines, and product insight for " + product + "." : "Observant is watching behavior, keeping private lines open, and bringing signal back to " + product + " while you ship."}</p>
+          <span className="eyebrow no-rule">Always on</span>
+          <h2>{custom && !state.loops.length ? "Your panel is live." : "Learning is running."}</h2>
+          <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the people who opted in for " + product + ". Ask them anything, anytime — it keeps learning on its own." : "Observant is keeping private lines open with your people and bringing what it learns back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
           <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
@@ -524,10 +524,10 @@ function HomeView({ state, patchState, navigate }) {
 
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
-          <PanelTitle k="Next" title="Create your first learning loop" status="Ready" />
-          <p>Ask a question about your product, pick the synthetic users Observant should learn from, and watch replies and insights arrive in stages.</p>
+          <PanelTitle k="Next" title="Ask your panel a question" status="Ready" />
+          <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Create learning loop</Btn>
+            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Ask a question</Btn>
           </div>
         </section>
       )}
@@ -535,11 +535,11 @@ function HomeView({ state, patchState, navigate }) {
       <div className="ss-dashboard-grid">
         <section className="ss-panel">
           <PanelTitle k="Now" title="Active private lines" status="Live" />
-          {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Create a learning loop to open synthetic 1:1 lines." />}
+          {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
         </section>
         <section className="ss-panel">
-          <PanelTitle k="Signals" title="Recent behavior triggers" status="Watching" />
-          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : <EmptyState title="No signals yet" text="Signals appear as the loop collects synthetic behavior." />}
+          <PanelTitle k="Signals" title="Recent behavior triggers" status="Advanced" />
+          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : <EmptyState title="No triggers on" text="Behavior triggers are an optional advanced add-on. Turn them on in Settings to follow up automatically." />}
         </section>
       </div>
 
@@ -560,7 +560,7 @@ function HomeView({ state, patchState, navigate }) {
                 </li>
               ))}
             </ul>
-          ) : <EmptyState title="No memory yet" text="Observant will remember context once the first loop starts collecting." />}
+          ) : <EmptyState title="No memory yet" text="Observant remembers each person's context as soon as the first conversations come in." />}
         </section>
       </div>
 
@@ -720,14 +720,14 @@ Authorization: Bearer <server-issued token>
         <section className="ss-panel">
           <div className="ss-panel-title ss-panel-title-with-action">
             <div>
-              <span>Learning</span>
-              <h2>Learning loops</h2>
+              <span>Always on</span>
+              <h2>Questions you've asked</h2>
             </div>
-            <em>{state.loops.length + " loops"}</em>
+            <em>{state.loops.length + " asked"}</em>
           </div>
           {custom && (
             <Btn variant={state.loops.length ? "ghost" : "primary"} size="sm" className="ss-wide-action" onClick={() => setIsCreating(true)}>
-              <Icon name="spark" size={15} /> New loop
+              <Icon name="spark" size={15} /> Ask a question
             </Btn>
           )}
           {custom && (isCreating || !state.loops.length) && (
@@ -756,26 +756,25 @@ Authorization: Bearer <server-issued token>
         {selected ? (
           <section className={"ss-panel ss-loop-detail" + ssFocusClass(state, selected.id) + ssFocusClass(state, "learning-config")}>
             <div className="ss-loop-detail-head">
-              <PanelTitle k="Loop detail" title={selected.name} status={selected.status} />
-              <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit loop</Btn>
+              <PanelTitle k="Question" title={selected.name} status={selected.status} />
+              <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit</Btn>
             </div>
             {loopRun && <CollectingProgress run={loopRun} />}
             <div className="ss-loop-detail-grid">
-              <Metric n={String(selected.people)} l="people watched" />
+              <Metric n={String(selected.people)} l="people on it" />
               <Metric n={String(selected.active)} l="active now" />
               <Metric n={String(selected.memory)} l="memories" />
-              <Metric n={String(selectedSignalIds.length || readiness.installedEvents)} l="signals watched" />
+              <Metric n={String(selected.active)} l="replies in" />
             </div>
 
             <div className="ss-loop-read-grid">
-              <ReadCard label="Loop question" text={selected.question} />
-              <ReadCard label="Primary learning goal" text={state.workspace.learningGoal} />
+              <ReadCard label="What you asked" text={selected.question} />
             </div>
 
             <div className="ss-loop-meta-grid">
               <div><b>Cadence</b><span>{selected.cadence}</span></div>
-              <div><b>Audience</b><span>{audienceText || "Waiting for matched synthetic users"}</span></div>
-              <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "No surfaces connected"}</span></div>
+              <div><b>Who's on it</b><span>{audienceText || "Your always-on panel"}</span></div>
+              <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "Your program surfaces"}</span></div>
             </div>
 
             <div className="ss-loop-columns">
@@ -803,38 +802,40 @@ Authorization: Bearer <server-issued token>
 
             <div className="ss-loop-columns">
               <section>
-                <h3>Signals watched by this loop</h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="Waiting for behavior" text="Synthetic signals arrive during collection." />}
+                <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
+                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on" text="Optional. Turn on behavior triggers to follow up automatically at scale." />}
               </section>
               <section className="ss-loop-install">
-                <h3>Connected surfaces</h3>
+                <h3>Surfaces in use</h3>
                 <div className="ss-surface-read-grid">
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"Private follow-ups inside " + product + "."} />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("browser")} icon="search" title="Browser companion" text="Behavior context and web follow-up." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async learning lines." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async 1:1 lines." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("slack")} icon="chat" title="Slack" text="1:1 bot in your customer Slack." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("discord")} icon="chat" title="Discord" text="1:1 bot in your community Discord." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"A private line inside " + product + "."} />
                 </div>
               </section>
             </div>
 
-            <div className="ss-loop-config" id="learning-config">
-              <div>
-                <h3>Signals this loop can use</h3>
-                <div className="ss-event-read-grid">
-                  {(selectedSignalIds.length ? selectedSignalIds : Object.keys(state.setup.events)).map((eventName) => (
-                    <span key={eventName} className="ss-event-pill on">
-                      <Icon name="check" size={15} />
-                      <b>{eventName}</b>
-                    </span>
-                  ))}
+            {selectedSignalIds.length ? (
+              <div className="ss-loop-config" id="learning-config">
+                <div>
+                  <h3>Behavior triggers on this question <span className="ss-adv-tag">advanced</span></h3>
+                  <div className="ss-event-read-grid">
+                    {selectedSignalIds.map((eventName) => (
+                      <span key={eventName} className="ss-event-pill on">
+                        <Icon name="check" size={15} />
+                        <b>{eventName}</b>
+                      </span>
+                    ))}
+                  </div>
                 </div>
+                <CodeBlock label="In-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
               </div>
-              <CodeBlock label="Browser or in-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
-              <CodeBlock label="Webhook sample" text={webhook} copied={copied === "learning-webhook"} onCopy={() => copyText("learning-webhook", webhook)} />
-            </div>
+            ) : null}
           </section>
         ) : (
           <section className="ss-panel ss-loop-detail">
-            <EmptyState title="No learning loops yet" text="Create a loop to watch Observant collect synthetic 1:1 learning for your product." />
+            <EmptyState title="No questions yet" text="Ask your always-on panel a question and watch Observant gather 1:1 answers for your product." />
           </section>
         )}
       </div>
@@ -857,70 +858,33 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
   const product = SelfServeData.productName(state.workspace);
   const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
   const activeSignals = Object.keys(state.setup.events).filter((eventName) => state.setup.events[eventName]);
-  const [draft, setDraft] = useStateSS({
-    name: product + " adoption loop",
-    question: state.workspace.learningGoal,
-    groupIds: ["power-users", "evaluators"],
-    surfaceIds: activeSurfaces.length ? activeSurfaces : ["product"],
-    signalIds: activeSignals.length ? activeSignals : ["feature_opened"],
-  });
+  const [question, setQuestion] = useStateSS(state.workspace.learningGoal || "");
 
-  const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
-  const toggleList = (field, id) => {
-    setDraft((current) => {
-      const values = current[field] || [];
-      const next = values.includes(id) ? values.filter((value) => value !== id) : [...values, id];
-      return { ...current, [field]: next.length ? next : values };
+  const submit = () => {
+    const q = question.trim();
+    if (!q) return;
+    onStart({
+      name: q.length > 44 ? q.slice(0, 42) + "…" : q,
+      question: q,
+      // Everyone on the always-on panel — no per-question sampling.
+      groupIds: ["power-users", "new-signups", "evaluators"],
+      surfaceIds: activeSurfaces.length ? activeSurfaces : ["email"],
+      signalIds: activeSignals,
     });
   };
 
   return (
     <div className="ss-create-loop" id="create-loop">
-      <PanelTitle k="New loop" title="Create learning loop" status="Synthetic" />
-      <Field label="Loop name">
-        <input className="input" value={draft.name} onChange={(e) => update("name", e.target.value)} />
+      <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
+      <p className="ss-step-lead">Everyone who opted in is already on a continuous one-on-one line. Ask anything — Observant fans it out and gathers the answers for you. No sampling, no setup.</p>
+      <Field label="Your question">
+        <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
       </Field>
-      <Field label="Learning question">
-        <textarea className="textarea" value={draft.question} onChange={(e) => update("question", e.target.value)} />
-      </Field>
-      <div>
-        <h3>Who should Observant learn from?</h3>
-        <div className="ss-chip-grid">
-          {SS_GROUP_OPTIONS.map((group) => (
-            <button type="button" key={group.id} className={draft.groupIds.includes(group.id) ? "ss-choice-chip on" : "ss-choice-chip"} onClick={() => toggleList("groupIds", group.id)}>
-              <b>{group.label}</b>
-              <span>{group.text}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3>Surfaces</h3>
-        <div className="ss-small-toggle-grid">
-          {SS_SURFACE_OPTIONS.map((surface) => (
-            <button type="button" key={surface.id} className={draft.surfaceIds.includes(surface.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("surfaceIds", surface.id)}>
-              <span><Icon name={surface.icon} size={15} /></span>
-              <b>{surface.label}</b>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3>Signals</h3>
-        <div className="ss-small-toggle-grid">
-          {SS_SIGNAL_OPTIONS.map((signal) => (
-            <button type="button" key={signal.id} className={draft.signalIds.includes(signal.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("signalIds", signal.id)}>
-              <span><Icon name={draft.signalIds.includes(signal.id) ? "check" : "bolt"} size={15} /></span>
-              <b>{signal.label}</b>
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="ss-fineprint">This uses synthetic users only. No real users are contacted and no product data is installed.</p>
+      <p className="ss-fineprint">Goes to your always-on panel across {activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your program surfaces"}. Synthetic users only — no one real is contacted.</p>
       <div className="ss-create-loop-actions">
         {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
-        <Btn variant="primary" onClick={() => onStart(draft)} disabled={!draft.name.trim() || !draft.question.trim()}>
-          <Icon name="spark" size={15} /> Start collecting
+        <Btn variant="primary" onClick={submit} disabled={!question.trim()}>
+          <Icon name="spark" size={15} /> Ask the panel
         </Btn>
       </div>
     </div>
@@ -944,7 +908,7 @@ function CollectingProgress({ run }) {
           <span className="eyebrow no-rule">Collecting progress</span>
           <h3>{label}</h3>
         </div>
-        <em>{run.fallback ? "Local fallback" : "AI-assisted"}</em>
+        <em>Synthetic demo</em>
       </div>
       <div className="ss-progress-track"><span style={{ width: percent + "%" }} /></div>
       <ol className="ss-progress-steps">
@@ -963,31 +927,29 @@ function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onToggleEve
   return (
     <>
       <button type="button" className="ss-edit-backdrop" aria-label="Cancel loop editing" onClick={onCancel} />
-      <aside className="ss-edit-drawer" aria-label="Edit learning loop">
+      <aside className="ss-edit-drawer" aria-label="Edit question">
         <div className="ss-edit-drawer-head">
           <div>
-            <span className="eyebrow no-rule">Edit loop</span>
-            <h2>Learning configuration</h2>
+            <span className="eyebrow no-rule">Edit</span>
+            <h2>Edit this question</h2>
           </div>
           <button type="button" onClick={onCancel} aria-label="Close edit drawer"><Icon name="x" size={17} /></button>
         </div>
         <div className="ss-edit-drawer-body">
-          <Field label="Loop question">
+          <Field label="Your question">
             <textarea className="textarea" value={draft.question} onChange={(e) => onUpdate("question", e.target.value)} />
           </Field>
-          <Field label="Primary learning goal">
-            <textarea className="textarea" value={draft.learningGoal} onChange={(e) => onUpdate("learningGoal", e.target.value)} />
-          </Field>
           <section>
-            <h3>Connected surfaces</h3>
+            <h3>Surfaces</h3>
             <div className="ss-card-grid two">
-              <SurfaceCard active={draft.surfaces.product} icon="globe" title="In-product" text="Private follow-ups inside " product={product} onClick={() => onToggleSurface("product")} />
-              <SurfaceCard active={draft.surfaces.browser} icon="search" title="Browser companion" text="Behavior context and web follow-up." onClick={() => onToggleSurface("browser")} />
-              <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async learning lines." onClick={() => onToggleSurface("email")} />
+              <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1 lines." onClick={() => onToggleSurface("email")} />
+              <SurfaceCard active={draft.surfaces.slack} icon="chat" title="Slack" text="1:1 bot in your customer Slack." onClick={() => onToggleSurface("slack")} />
+              <SurfaceCard active={draft.surfaces.discord} icon="chat" title="Discord" text="1:1 bot in your community Discord." onClick={() => onToggleSurface("discord")} />
+              <SurfaceCard active={draft.surfaces.product} icon="globe" title="In-product" text="A private line inside " product={product} onClick={() => onToggleSurface("product")} />
             </div>
           </section>
           <section>
-            <h3>Watched events</h3>
+            <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
             <div className="ss-event-grid">
               {Object.keys(draft.events).map((eventName) => (
                 <button type="button" key={eventName} className={`ss-event${draft.events[eventName] ? " on" : ""}`} onClick={() => onToggleEvent(eventName)}>
@@ -1141,7 +1103,7 @@ function InsightsView({ state, patchState, navigate }) {
             </button>
           ))}
         </div>
-      ) : <EmptyState title="No insight deliverables yet" text="Create a learning loop and Observant will draft insights once patterns emerge." />}
+      ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
     </div>
   );
 }
@@ -1180,7 +1142,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <input className="input" value={state.workspace.productUrl} onChange={(e) => updateWorkspace("productUrl", e.target.value)} />
       </Field>
       <div className="ss-default-list">
-        <div><b>Private lines</b><span>Default on for learning loops.</span></div>
+        <div><b>Private lines</b><span>One-on-one with every person on the panel.</span></div>
         <div><b>Team updates</b><span>Weekly digest and urgent insight alerts.</span></div>
         <div><b>Agent handoffs</b><span>Insight deliverables can include PRD and MCP-ready context.</span></div>
       </div>
