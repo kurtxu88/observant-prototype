@@ -285,6 +285,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const setup = state.setup;
   const [step, setStep] = useStateSS(0);
   const [showInvite, setShowInvite] = useStateSS(false);
+  const [setupDone, setSetupDone] = useStateSS({});
+  const toggleDone = (key) => setSetupDone((d) => ({ ...d, [key]: !d[key] }));
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -436,12 +438,22 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
 
               <div className="ss-program-block ss-connect-block">
-                <h3>How you'll connect them</h3>
-                <p>How Observant reaches the people who opt in — and what you share to make that work. It only ever needs enough to hold a 1:1 line, never raw user data you don't want to share.</p>
-                <div className="ss-card-grid two">
-                  {SS_CONNECT_OPTIONS.map((opt) => (
-                    <SelectCard key={opt.id} active={setup.connectMode === opt.id} icon={opt.icon} title={opt.title} text={opt.text} detail={opt.tag} onClick={() => setConnect(opt.id)} />
-                  ))}
+                <h3>Bring them in</h3>
+                <p>Now you know who you're learning from — here's the one quick setup for each surface you picked. Observant only ever needs enough to reach them.</p>
+                <div className="ss-setup-list">
+                  {surfaceCount === 0 && <p className="ss-fineprint">Pick at least one surface in "Where the conversations happen" to see setup steps here.</p>}
+                  {setup.surfaces.email && (
+                    <SetupRow icon="mail" title="Share your users' emails" text="Sync or upload the emails you want to invite. Encrypted in transit and at rest, used only to send your invitation — never shared or sold." cta="Share emails" done={setupDone.email} onAction={() => toggleDone("email")} />
+                  )}
+                  {setup.surfaces.slack && (
+                    <SetupRow icon="chat" title="Install the Observant Slack app" text="Add Observant to your shared customer Slack so it can open 1:1s with the people who opt in." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
+                  )}
+                  {setup.surfaces.discord && (
+                    <SetupRow icon="chat" title="Install the Observant Discord bot" text="Add Observant to your community Discord so it can open 1:1s with the people who opt in." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
+                  )}
+                  {setup.surfaces.product && (
+                    <SetupRow icon="globe" title="Whitelist people into the program" text="Pass a hashed user ID so Observant reaches the right users in-product — without ever holding your real user data." docLink cta="Set up whitelisting" done={setupDone.product} onAction={() => toggleDone("product")} />
+                  )}
                 </div>
               </div>
             </section>
@@ -455,7 +467,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <ReviewRowSS k="They get" v={compensation.label} sub={rewardMode.title + " · opt out anytime"} />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
                 <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
-                <ReviewRowSS k="Connecting via" v={connect.title} />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
               <div className="ss-launch-panel">
@@ -478,6 +489,21 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function SetupRow({ icon, title, text, cta, done, onAction, docLink }) {
+  return (
+    <div className={"ss-setup-row" + (done ? " done" : "")}>
+      <span className="ss-setup-ic"><Icon name={icon} size={18} /></span>
+      <div className="ss-setup-copy">
+        <b>{title}</b>
+        <p>{text}{docLink ? <> <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>
+      </div>
+      <Btn variant={done ? "ghost" : "primary"} size="sm" onClick={onAction}>
+        {done ? <><Icon name="check" size={14} sw={2.6} /> Done</> : cta}
+      </Btn>
     </div>
   );
 }
@@ -1426,7 +1452,9 @@ function SurfaceCard({ active, icon, title, text, product, onClick }) {
       <span><Icon name={icon} size={18} /></span>
       <b>{title}</b>
       <p>{text}{product ? product + "." : ""}</p>
-      <em>{active ? "Connected" : "Connect"}</em>
+      <em className="ss-surface-toggle">
+        {active ? <><Icon name="check" size={13} sw={2.8} /> Selected</> : "Tap to add"}
+      </em>
     </button>
   );
 }

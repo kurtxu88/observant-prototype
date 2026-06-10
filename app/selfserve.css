@@ -1940,3 +1940,36 @@
 }
 .ss-doc-link { color: var(--accent); text-decoration: none; font-weight: 500; white-space: nowrap; }
 .ss-doc-link:hover { text-decoration: underline; }
+
+/* Obvious selection state on toggleable cards */
+.ss-surface-card.on,
+.ss-select-card.on { background: var(--accent-tint, oklch(0.955 0.018 52 / .5)); }
+.ss-surface-toggle { display: inline-flex; align-items: center; gap: 0.25rem; }
+.ss-surface-card.on .ss-surface-toggle { color: var(--accent); font-weight: 600; }
+
+/* Per-surface setup actions (shown after "who you'll learn from") */
+.ss-setup-list { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.9rem; }
+.ss-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.ss-setup-row.done { background: var(--surface); border-color: var(--success); }
+.ss-setup-ic {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-tint, oklch(0.955 0.018 52 / .6));
+  color: var(--accent);
+}
+.ss-setup-copy { flex: 1; min-width: 0; }
+.ss-setup-copy b { display: block; font-size: 0.95rem; margin-bottom: 0.15rem; }
+.ss-setup-copy p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; margin: 0; }
+.ss-setup-row .btn { flex-shrink: 0; }
