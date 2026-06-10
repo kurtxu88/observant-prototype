@@ -273,7 +273,7 @@ function EntryScreen({ onCreate }) {
 
 const SS_ONBOARD_STEPS = [
   { id: "channels", t: "Choose your surface", d: "Email & Telegram, on by default" },
-  { id: "program", t: "The program", d: "Consent, rewards, your invitation" },
+  { id: "program", t: "The program", d: "Compensation, your invitation" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
@@ -322,7 +322,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     "",
     "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
     "",
-    "Join here: https://" + magicLink,
+    "Join here: [your magic link — generated in the last step]",
     "",
     "You can opt out anytime, in one tap.",
     "",
@@ -386,14 +386,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
-                <h3>Consent — and your invitation</h3>
-                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like. The join link inside is your magic link.</p>
-                <div className="ss-invite-copyblock">
-                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
-                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
-                </div>
-              </div>
-              <div className="ss-program-block">
                 <h3>Compensation</h3>
                 <p>People earn by <b>participated minutes</b> — every text reply, voice interview, and call counts. <b>Observant measures and audits every minute for you.</b> Three status tiers, each with a reward. The defaults below are the standard baseline — edit any reward to fit your team.</p>
 
@@ -421,6 +413,15 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   </div>
                 </div>
               </div>
+              <div className="ss-program-block">
+                <h3>Your invitation</h3>
+                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
+                <div className="ss-invite-copyblock">
+                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+                </div>
+                <p className="ss-fineprint">The "join here" line is a placeholder — it's replaced by the magic link you generate in the last step. Tailoring the invitation doesn't change your program setup.</p>
+              </div>
             </section>
           )}
 
@@ -430,32 +431,36 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Surface" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
-                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
-                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
+                <ReviewRowSS k="Feedback surface" v={surfaceSummary || "Turn on at least one surface"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
+                <ReviewRowSS k="Compensation" v="By participated minutes" sub="Every text reply, voice chat, and call counts — Observant tracks and audits the minutes automatically." />
+                {SS_REWARD_TIERS.map((t) => (
+                  <ReviewRowSS key={t.id} k={t.name} v={setup.tierRewards[t.id]} sub={t.min + " participated minutes · ≈ $" + t.cash + " cash value"} />
+                ))}
+                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
               </div>
 
               <div className="ss-program-block">
-                <h3>Your invitation</h3>
-                <p>What your users receive — sent by you, under your brand. Want to change it? It lives in Step 2.</p>
+                <h3>Your invitation to users</h3>
+                <p>The text you wrote in Step 2 — sent by you, under your brand. Want to change it? It lives in Step 2.</p>
                 <div className="ss-invite-copyblock">
                   <pre>{inviteDraft}</pre>
                   <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
                 </div>
+                <p className="ss-fineprint">The button behind your magic link — preview what your users tap into: <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a></p>
               </div>
 
               <div className="ss-program-block">
                 <h3>Your magic link</h3>
                 {!linkGenerated ? (
                   <>
-                    <p>One link does the recruiting. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
+                    <p>This is what replaces the placeholder in your invitation. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
                     <div className="ss-golive-actions">
                       <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p>Live and ready — put it in your invitation and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
+                    <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
                     <div className="ss-magiclink">
                       <code>{magicLink}</code>
                       <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
@@ -468,9 +473,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 )}
               </div>
 
-              <div className="ss-program-block">
+              <div className="ss-program-block ss-suggest">
+                <span className="ss-suggest-badge">Our suggestions</span>
                 <h3>Who to send it to</h3>
-                <p>It's up to you — your whole list or hand-picked. A few ways to think about your first batch:</p>
+                <p>Nothing to do here — just ideas for when you send. It's up to you: your whole list, or hand-picked. A few ways to think about your first batch:</p>
                 <div className="ss-advice-block">
                   {SS_AUDIENCE_OPTIONS.map((opt) => (
                     <div className="ss-advice-item" key={opt.id}>
