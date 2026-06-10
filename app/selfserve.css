@@ -2151,3 +2151,27 @@
   line-height: 1.5;
 }
 .ss-advice-foot b { color: var(--text-primary); }
+
+/* Simulated-preview pill (custom workspaces — data is synthetic until real users join) */
+.ss-sim-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface);
+  cursor: help;
+}
+
+/* Upsell variant that fills a panel body (e.g. Home triggers panel) */
+.ss-upsell-fill {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+  height: 100%;
+}

@@ -300,10 +300,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     ...current,
     setup: { ...current.setup, surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] } },
   }));
-  const toggleEvent = (eventName) => patchState((current) => ({
-    ...current,
-    setup: { ...current.setup, events: { ...current.setup.events, [eventName]: !current.setup.events[eventName] } },
-  }));
 
   const surfaceCount = Object.values(setup.surfaces).filter(Boolean).length;
   const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
@@ -360,10 +356,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <div className="ss-invite-preview">
                     <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
                     <p className="ss-invite-h">You're invited to help shape {product}</p>
-                    <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into a Design Partner program.</p>
+                    <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into our feedback partner program.</p>
                     <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You show us how {product} really works for you; we use it to build.</p>
                     <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
-                    <p className="ss-invite-cta">Join the panel →</p>
+                    <p className="ss-invite-cta">Join the program →</p>
                     <p className="ss-invite-sign">— The {product} team</p>
                     <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invitation stays in your brand and voice.</span>
                   </div>
@@ -409,23 +405,16 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
                 <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
                 <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product · most recommended" text="Catch people at the moment of use, inside your product — the richest signal. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
-                <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
+                <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
               </div>
 
-              <details className="ss-advanced">
-                <summary>
+              <div className="ss-upsell">
+                <div>
                   <b>Advanced — behavior triggers</b>
-                  <span>Optional. Follow up automatically when a user does something specific. Most useful once you have thousands of users.</span>
-                </summary>
-                <div className="ss-event-grid">
-                  {Object.keys(setup.events).map((eventName) => (
-                    <button type="button" key={eventName} className={`ss-event${setup.events[eventName] ? " on" : ""}`} onClick={() => toggleEvent(eventName)}>
-                      <span><Icon name={setup.events[eventName] ? "check" : "bolt"} size={15} /></span>
-                      <b>{eventName}</b>
-                    </button>
-                  ))}
+                  <span>Follow up automatically the moment a user does something specific — most useful once you have thousands of users. It takes a deeper setup on our side; if you want this, get in touch.</span>
                 </div>
-              </details>
+                <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Behavior triggers">Contact us</a>
+              </div>
             </section>
           )}
 
@@ -523,7 +512,7 @@ function SetupRow({ icon, title, text, cta, done, onAction, docLink }) {
       <span className="ss-setup-ic"><Icon name={icon} size={18} /></span>
       <div className="ss-setup-copy">
         <b>{title}</b>
-        <p>{text}{docLink ? <> <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>
+        <p>{text}{docLink ? <> <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>
       </div>
       <Btn variant={done ? "ghost" : "primary"} size="sm" onClick={onAction}>
         {done ? <><Icon name="check" size={14} sw={2.6} /> Done</> : cta}
@@ -587,6 +576,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
           </div>
           <div className="ss-topbar-actions">
+            {ssWorkspaceIsCustom(state) && <span className="ss-sim-pill" title="The people and replies below are simulated — your real panel fills in after you send invites.">Simulated preview</span>}
             <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: firstLoopId, focusedTarget: firstLoopId || "create-loop" })}><i></i>Learning mode is on</button>
             <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>Ask a question</Btn>
           </div>
@@ -644,8 +634,16 @@ function HomeView({ state, patchState, navigate }) {
           {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
         </section>
         <section className="ss-panel">
-          <PanelTitle k="Signals" title="Recent behavior triggers" status="Advanced" />
-          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : <EmptyState title="No triggers on" text="Behavior triggers are an optional advanced add-on. Turn them on in Settings to follow up automatically." />}
+          <PanelTitle k="Signals" title="Behavior triggers" status="Advanced" />
+          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : (
+            <div className="ss-upsell ss-upsell-fill">
+              <div>
+                <b>Follow up the moment something happens</b>
+                <span>Behavior triggers let Observant reach out right when a user does something specific — an advanced add-on we set up with you. If you want this, get in touch.</span>
+              </div>
+              <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Behavior triggers">Contact us</a>
+            </div>
+          )}
         </section>
       </div>
 
@@ -732,13 +730,6 @@ Authorization: Bearer <server-issued token>
     }));
   };
 
-  const toggleDraftEvent = (eventName) => {
-    setDraft((current) => ({
-      ...current,
-      events: { ...current.events, [eventName]: !current.events[eventName] },
-    }));
-  };
-
   const saveEdit = () => {
     if (!selected) return;
     patchState((current) => ({
@@ -775,7 +766,7 @@ Authorization: Bearer <server-issued token>
       focusedTarget: loop.id,
       loops: [loop, ...current.loops],
       loopRuns: [loopRun, ...current.loopRuns],
-      activity: ["Learning loop created: " + loop.name + ".", ...current.activity],
+      activity: ["Question created: " + loop.name + ".", ...current.activity],
     }));
 
     let simulation;
@@ -814,7 +805,7 @@ Authorization: Bearer <server-issued token>
   };
 
   const audienceText = loopPeople.length
-    ? loopPeople.map((person) => person.segment).join(", ")
+    ? [...new Set(loopPeople.map((person) => person.segment))].join(", ")
     : ((selected && selected.groupIds) || []).map((id) => {
       const option = SS_GROUP_OPTIONS.find((group) => group.id === id);
       return option ? option.label : id;
@@ -870,7 +861,7 @@ Authorization: Bearer <server-issued token>
               <Metric n={String(selected.people)} l="people on it" />
               <Metric n={String(selected.active)} l="active now" />
               <Metric n={String(selected.memory)} l="memories" />
-              <Metric n={String(selected.active)} l="replies in" />
+              <Metric n={String(loopConversations.reduce((sum, conversation) => sum + (conversation.messages || []).filter((message) => message.t === "user").length, 0))} l="replies in" />
             </div>
 
             <div className="ss-loop-read-grid">
@@ -909,7 +900,7 @@ Authorization: Bearer <server-issued token>
             <div className="ss-loop-columns">
               <section>
                 <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on" text="Optional. Turn on behavior triggers to follow up automatically at scale." />}
+                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="An advanced add-on we set up with you — follow up automatically the moment a user does something specific. Get in touch if you want this." />}
               </section>
               <section className="ss-loop-install">
                 <h3>Surfaces in use</h3>
@@ -951,7 +942,6 @@ Authorization: Bearer <server-issued token>
           product={product}
           onUpdate={updateDraft}
           onToggleSurface={toggleDraftSurface}
-          onToggleEvent={toggleDraftEvent}
           onCancel={closeEdit}
           onSave={saveEdit}
         />
@@ -963,7 +953,6 @@ Authorization: Bearer <server-issued token>
 function LoopCreatePanel({ state, onStart, onCancel }) {
   const product = SelfServeData.productName(state.workspace);
   const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const activeSignals = Object.keys(state.setup.events).filter((eventName) => state.setup.events[eventName]);
   const [question, setQuestion] = useStateSS(state.workspace.learningGoal || "");
 
   const submit = () => {
@@ -975,7 +964,7 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
       // Everyone on the always-on panel — no per-question sampling.
       groupIds: ["power-users", "new-signups", "evaluators"],
       surfaceIds: activeSurfaces.length ? activeSurfaces : ["email"],
-      signalIds: activeSignals,
+      signalIds: [],
     });
   };
 
@@ -1029,7 +1018,7 @@ function CollectingProgress({ run }) {
   );
 }
 
-function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onToggleEvent, onCancel, onSave }) {
+function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onCancel, onSave }) {
   return (
     <>
       <button type="button" className="ss-edit-backdrop" aria-label="Cancel loop editing" onClick={onCancel} />
@@ -1052,17 +1041,6 @@ function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onToggleEve
               <SurfaceCard active={draft.surfaces.slack} icon="chat" title="Slack" text="1:1 bot in your customer Slack." onClick={() => onToggleSurface("slack")} />
               <SurfaceCard active={draft.surfaces.discord} icon="chat" title="Discord" text="1:1 bot in your community Discord." onClick={() => onToggleSurface("discord")} />
               <SurfaceCard active={draft.surfaces.product} icon="globe" title="In-product" text="A private line inside " product={product} onClick={() => onToggleSurface("product")} />
-            </div>
-          </section>
-          <section>
-            <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
-            <div className="ss-event-grid">
-              {Object.keys(draft.events).map((eventName) => (
-                <button type="button" key={eventName} className={`ss-event${draft.events[eventName] ? " on" : ""}`} onClick={() => onToggleEvent(eventName)}>
-                  <span><Icon name={draft.events[eventName] ? "check" : "bolt"} size={15} /></span>
-                  <b>{eventName}</b>
-                </button>
-              ))}
             </div>
           </section>
         </div>

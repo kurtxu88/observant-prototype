@@ -73,9 +73,9 @@ const SS_SIGNAL_OPTIONS = [
 ];
 
 const SS_SIMULATION_STAGES = [
-  { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to the loop audience." },
-  { id: "lines", label: "Opening private lines", detail: "Observant opens 1:1 learning lines with matched people." },
-  { id: "replies", label: "Collecting replies", detail: "Early answers and behavior signals start coming in." },
+  { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to your question." },
+  { id: "lines", label: "Opening private lines", detail: "Observant opens a 1:1 line with each matched person." },
+  { id: "replies", label: "Collecting replies", detail: "Early answers start coming in." },
   { id: "patterns", label: "Detecting patterns", detail: "Repeated context is grouped into stronger signals." },
   { id: "insights", label: "Drafting insights", detail: "Evidence-backed recommendations are prepared for the team." },
 ];
@@ -431,11 +431,12 @@ function ssSurfaceLabelData(id) {
 }
 
 function ssCreateCustomLoop(workspace, config, runId) {
-  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["product"]);
-  const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : ["feature_opened"]);
+  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["email"]);
+  // Behavior triggers are a contact-us add-on — never auto-attached to a question.
+  const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : []);
   return {
     id: "loop-" + runId,
-    name: ssTrim(config.name, "New learning loop"),
+    name: ssTrim(config.name, "New question"),
     status: "Collecting",
     cadence: "Synthetic panel",
     people: 0,
@@ -474,8 +475,8 @@ function ssFallbackSimulation(workspace, config, runId) {
   const actualRunId = runId || ssMakeRunId();
   const loop = ssCreateCustomLoop(workspace, config || {}, actualRunId);
   const groupIds = loop.groupIds.length ? loop.groupIds : ["power-users"];
-  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["product"];
-  const signalIds = loop.signalIds && loop.signalIds.length ? loop.signalIds : ["feature_opened"];
+  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["email"];
+  const signalIds = loop.signalIds || [];
   const colors = ["rust", "green", "blue", "gold", "teal", "plum"];
   const names = ["Avery N.", "Samir P.", "Elena R.", "Jordan M.", "Mina S.", "Theo L."];
   const quotes = [
@@ -500,7 +501,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     sourceId: id,
     name: ssGroupLabel(id),
     size: String(18 + (index * 7)) + " synthetic matches",
-    signal: signalIds[index % signalIds.length],
+    signal: signalIds.length ? signalIds[index % signalIds.length] : "",
     detail: "Matched to " + loop.question,
   }));
 
@@ -523,7 +524,7 @@ function ssFallbackSimulation(workspace, config, runId) {
   const conversations = users.map((person, index) => ({
     id: actualRunId + "-conv-" + index,
     userId: person.id,
-    title: person.segment + " learning line",
+    title: person.segment + " 1:1",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
       { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },
@@ -533,7 +534,8 @@ function ssFallbackSimulation(workspace, config, runId) {
     ],
   }));
 
-  const events = users.slice(0, 4).map((person, index) => ({
+  // Behavior triggers are a contact-us add-on, so the simulation generates no trigger events.
+  const events = signalIds.length ? users.slice(0, 4).map((person, index) => ({
     id: actualRunId + "-evt-" + index,
     event: signalIds[index % signalIds.length],
     user: person.name,
@@ -541,16 +543,16 @@ function ssFallbackSimulation(workspace, config, runId) {
     time: ["2m ago", "9m ago", "21m ago", "46m ago"][index],
     type: "synthetic",
     conversationId: conversations[index].id,
-  }));
+  })) : [];
 
-  const metric = String(58 + (groupIds.length * 4)) + "%";
+  const metric = Math.max(2, users.length - 1) + " of " + users.length;
   const insights = [
     {
       id: actualRunId + "-insight-primary",
       title: "Users need proof that " + product + " fits their existing workflow.",
       metric,
       detail: "Synthetic 1:1 lines show interest, but users keep asking for evidence that the product will reduce coordination work instead of adding another step.",
-      evidence: "Grounded in " + users.length + " synthetic users, " + conversations.length + " private lines, and " + events.length + " behavior signals.",
+      evidence: "Grounded in " + users.length + " synthetic users and " + conversations.length + " private lines.",
       next: "Show a first useful output before asking users to commit setup time.",
       conversationId: conversations[0].id,
       loopId: loop.id,
@@ -558,7 +560,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     {
       id: actualRunId + "-insight-secondary",
       title: "Team visibility is the strongest adoption question.",
-      metric: "3 signals",
+      metric: "3 of " + users.length,
       detail: "Across synthetic groups, people ask how teammates will see, trust, or reuse the output.",
       evidence: "Mentioned by " + users.slice(0, 3).map((person) => person.name).join(", ") + ".",
       next: "Add a shareable team-facing artifact to the activation path.",
@@ -691,13 +693,15 @@ function ssRevealSimulation(state, runId, stageIndex) {
   const visibleEventIds = visibleEvents.map((event) => event.id);
   const finalStage = safeStage >= SS_SIMULATION_STAGES.length - 1;
   const firstConversation = visibleConversations[0];
+  // Memory = actual replies in visible 1:1s, so every number on screen is countable.
+  const visibleReplies = visibleConversations.reduce((sum, conversation) => sum + (conversation.messages || []).filter((message) => message.t === "user").length, 0);
   const loopPatch = {
     ...simulation.loop,
     status: finalStage ? "Learning" : "Collecting",
     cadence: finalStage ? "Still learning" : "Collecting now",
     people: visiblePeople.length,
     active: visibleConversations.filter((conversation) => conversation.state === "Active").length,
-    memory: finalStage ? 84 + visiblePeople.length * 16 : Math.max(8, safeStage * 18),
+    memory: visibleReplies,
     peopleIds: visibleQuestionIds,
     conversationIds: visibleConversationIds,
     eventIds: visibleEventIds,
