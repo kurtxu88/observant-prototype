@@ -271,7 +271,8 @@ function EntryScreen({ onCreate }) {
 const SS_ONBOARD_STEPS = [
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
   { id: "surfaces", t: "Where it happens", d: "Email, Slack, Discord, in-product" },
-  { id: "review", t: "Invite & go live", d: "Who to invite, your magic link" },
+  { id: "invite", t: "Invite your batch", d: "Who to invite, connect surfaces" },
+  { id: "golive", t: "Go live", d: "Your magic link" },
 ];
 
 const SS_CONNECT_OPTIONS = [
@@ -403,12 +404,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
             <section className="ss-panel">
               <PanelTitle k="Step 2" title="Where the conversations happen" status={surfaceCount + " on"} />
               <p className="ss-step-lead">Each person gets a private one-on-one line — never a noisy shared channel. <b>Email is the fastest way to start</b>; Slack or Discord work if you already talk to users there. <b>In-product is the most recommended</b> — it catches people right at the moment of use — but it takes a one-time setup on your side.</p>
-              <div className="ss-card-grid three">
+              <div className="ss-surface-grid">
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The simplest place to start." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
                 <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
-              </div>
-              <div className="ss-inproduct-row">
                 <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product · most recommended" text="Catch people at the moment of use, inside your product — the richest signal. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
                 <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
               </div>
@@ -432,29 +431,20 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
           {step === 2 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Invite your first batch & go live" status="Almost there" />
-              <p className="ss-step-lead">Here's what you set up. Now choose who to invite, get your magic link, and turn it on.</p>
-              <div className="ss-review">
-                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
-                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
-                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
-              </div>
+              <PanelTitle k="Step 3" title="Invite your batch" status="Almost there" />
+              <p className="ss-step-lead">Choose who to invite and bring in your first batch. You can add and label more anytime.</p>
 
               <div className="ss-program-block">
                 <h3>Who to invite</h3>
                 <p>It's up to you who you bring in — a few ways to think about your first batch:</p>
-                <div className="ss-advice-list">
+                <div className="ss-advice-block">
                   {SS_AUDIENCE_OPTIONS.map((opt) => (
-                    <div className="ss-advice" key={opt.id}>
+                    <div className="ss-advice-item" key={opt.id}>
                       <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
                       <div><b>{opt.label}</b><p>{opt.text}</p></div>
                     </div>
                   ))}
-                </div>
-                <div className="ss-callout">
-                  <b>What to expect.</b>
-                  <span>Usually 5–10% of those you invite opt in, and they tend to be your most engaged.</span>
+                  <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
                 </div>
               </div>
 
@@ -481,6 +471,20 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   )}
                 </div>
               </div>
+            </section>
+          )}
+
+          {step === 3 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 4" title="Go live" status="Last step" />
+              <p className="ss-step-lead">Here's everything you set up. Get your magic link and turn it on.</p>
+              <div className="ss-review">
+                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
+                <ReviewRowSS k="First batch" v={setup.batchLabel || "Your first batch"} />
+                <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
+                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
+                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
+              </div>
 
               <div className="ss-golive">
                 <span className="eyebrow no-rule">Your magic link</span>
@@ -491,10 +495,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
                 </div>
                 <div className="ss-golive-actions">
-                  <Btn variant="ghost" onClick={() => setPreviewNote((v) => !v)}><Icon name="search" size={15} /> Preview the experience</Btn>
                   <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
                 </div>
-                {previewNote && <span className="ss-fineprint">Opens the participant view in a new tab — exactly what your users see when they tap the link.</span>}
               </div>
 
               <div className="ss-upsell">
