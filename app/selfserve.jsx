@@ -387,8 +387,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     ))}
                   </div>
                 </div>
-
-                <p className="ss-fineprint">Publish this conversion so participants know what their time is worth. Every minute is tracked and audited by Observant.</p>
               </div>
             </section>
           )}
