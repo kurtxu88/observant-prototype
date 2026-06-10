@@ -395,13 +395,15 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
             <section className="ss-panel">
               <PanelTitle k="Step 2" title="Where the conversations happen" status={surfaceCount + " on"} />
               <p className="ss-step-lead">Each person gets a private one-on-one line — never a noisy shared channel. <b>Email is the fastest way to start</b>; Slack or Discord work if you already talk to users there. <b>In-product is the most recommended</b> — it catches people right at the moment of use — but it takes a one-time setup on your side.</p>
-              <div className="ss-card-grid two">
+              <div className="ss-card-grid three">
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The simplest place to start." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
                 <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
-                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product · most recommended" text="Catch people at the moment of use, inside your product — the richest signal. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
               </div>
-              <p className="ss-fineprint">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
+              <div className="ss-inproduct-row">
+                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product · most recommended" text="Catch people at the moment of use, inside your product — the richest signal. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
+                <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
+              </div>
 
               <details className="ss-advanced">
                 <summary>
