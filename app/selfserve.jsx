@@ -272,8 +272,8 @@ function EntryScreen({ onCreate }) {
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "channels", t: "Choose your surface", d: "Email & Telegram, on by default" },
   { id: "program", t: "The program", d: "Compensation, your invitation" },
+  { id: "surface", t: "Choose your surface", d: "Off-product or in-product" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
@@ -296,22 +296,17 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const setTierReward = (id, value) => patchSetup({ tierRewards: { ...setup.tierRewards, [id]: value } });
   const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
-  const toggleSurface = (surface) => patchState((current) => ({
-    ...current,
-    setup: { ...current.setup, surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] } },
-  }));
+  const route = setup.route || "offproduct";
+  const setRoute = (id) => patchSetup({ route: id });
 
-  const surfaceCount = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]).length;
-  const surfaceSummary = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]).map(ssSurfaceLabel).join(" · ");
-  const canLaunch = surfaceCount > 0;
+  const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   const magicLink = "observant.link/" + product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const copyLink = () => {
     if (navigator.clipboard) navigator.clipboard.writeText("https://" + magicLink).catch(() => {});
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const enabledChannels = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]);
-  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + enabledChannels.join(",");
+  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + SS_FAST_CHANNELS.join(",");
   const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
@@ -366,23 +361,28 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         </aside>
 
         <main className="ss-activation-main">
-          {step === 0 && (
+          {step === 1 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 1" title="Choose your feedback surface" status={surfaceCount + " on"} />
-              <p className="ss-step-lead"><b>The most important decision: where the learning happens.</b></p>
-              <p className="ss-step-lead">You'll share one magic link. Each person who opts in picks their channel — and that choice is also how Observant knows who they are: their email, or their Telegram handle. <b>You never hand over your user data.</b></p>
-              <p className="ss-step-lead">Both are on by default. Turn one off only if it doesn't fit your brand.</p>
-              <div className="ss-channel-grid">
-                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
-                <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
+              <PanelTitle k="Step 2" title="Choose your feedback surface" status={route === "inproduct" ? "In-product" : "Off-product"} />
+              <p className="ss-step-lead"><b>One decision: where do the conversations live?</b></p>
+              <div className="ss-route-grid">
+                <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Start today</em></span>
+                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
+                  <small>Email: quiet async 1:1s, whenever they have five minutes. Telegram: a one-tap private chat with the Observant bot.</small>
+                </button>
+                <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
+                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Simple setup, walked through with our team.</p>
+                </button>
               </div>
-              <ProUpsell />
+              {route === "inproduct" && <ProUpsell />}
             </section>
           )}
 
-          {step === 1 && (
+          {step === 0 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3>Compensation</h3>
@@ -430,7 +430,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Feedback surface" v={surfaceSummary || "Turn on at least one surface"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
+                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS k="Compensation" v="By participated minutes" sub="Every text reply, voice chat, and call counts — Observant tracks and audits the minutes automatically." />
                 {SS_REWARD_TIERS.map((t) => (
                   <ReviewRowSS key={t.id} k={t.name} v={setup.tierRewards[t.id]} sub={t.min + " participated minutes · ≈ $" + t.cash + " cash value"} />
@@ -454,7 +454,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <>
                     <p>This is what replaces the placeholder in your invitation. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
                     <div className="ss-golive-actions">
-                      <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
+                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
                     </div>
                   </>
                 ) : (
@@ -491,9 +491,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
           <div className="ss-onboard-nav">
             {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
-            <span className="count">{step === 0 && surfaceCount === 0 ? "Turn on at least one surface to continue" : (step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
+            <span className="count">{(step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
             {step < SS_ONBOARD_STEPS.length - 1
-              ? <Btn variant="primary" onClick={next} disabled={step === 0 && surfaceCount === 0}>Continue <Icon name="arrow" size={16} /></Btn>
+              ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
               : <span />}
           </div>
         </main>

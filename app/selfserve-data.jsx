@@ -141,8 +141,9 @@ function ssCreateSetup(workspace) {
     consentAck: true,
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-    // Fast start: both user-pickable channels on by default — the client unchecks, not builds.
-    // In-product is a Pro surface (guided setup), never toggled here.
+    // The client's one surface decision: off-product (start today) vs in-product (Pro).
+    // Email vs Telegram is the USER's choice at opt-in — both always available.
+    route: "offproduct",
     surfaces: { email: true, telegram: true, product: false },
     // Behavior triggers are an advanced, optional add-on — off by default.
     events: {

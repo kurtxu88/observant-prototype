@@ -2259,6 +2259,49 @@
 }
 .ss-invite-edit:focus { outline: none; color: var(--text-primary); }
 
+/* Surface route choice (Step 2) — one explicit radio decision */
+.ss-route-grid { display: grid; gap: 0.9rem; margin-top: 0.7rem; }
+.ss-route {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color .18s, box-shadow .18s;
+}
+.ss-route.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ss-route-head { display: flex; align-items: center; gap: 0.6rem; }
+.ss-route-head b { font-size: 1.02rem; }
+.ss-route-radio {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  position: relative;
+}
+.ss-route.on .ss-route-radio { border-color: var(--accent); }
+.ss-route.on .ss-route-radio::after { content: ""; position: absolute; inset: 2.5px; border-radius: 50%; background: var(--accent); }
+.ss-route-tag {
+  margin-left: auto;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+}
+.ss-route-tag.start { background: var(--success-tint); color: var(--success); }
+.ss-route-tag.pro { background: var(--accent); color: oklch(0.99 0.01 70); }
+.ss-route p { margin: 0.6rem 0 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.55; }
+.ss-route small { display: block; margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+.ss-route-grid + .ss-pro-upsell { margin-top: 1.2rem; }
+
 /* Suggestions block — informational, deliberately not a CTA */
 .ss-suggest {
   background: oklch(0.966 0.012 250 / .55);
