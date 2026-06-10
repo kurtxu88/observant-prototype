@@ -2428,6 +2428,10 @@
   align-items: center;
   gap: 1.2rem;
   justify-content: space-between;
+  /* tinted like the Pro block so it reads as an upsell at a glance */
+  border-color: oklch(0.86 0.045 48);
+  background: linear-gradient(180deg, var(--accent-tint), oklch(0.965 0.022 52));
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / .5);
 }
 .ss-slack-banner > div { flex: 1; }
 .ss-slack-banner .ss-step-lead { margin-bottom: 0; }
