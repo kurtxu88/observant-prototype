@@ -507,8 +507,8 @@ function ProUpsell() {
     <section className="ss-pro-upsell">
       <div className="ss-pro-head">
         <span className="ss-pro-badge">Pro</span>
-        <b>Share more data, unlock more</b>
-        <p>Everything above runs without Observant touching your user data. Share more with us, and it gets more powerful:</p>
+        <b>Want people to provide feedback inside your app?</b>
+        <p>This is a Pro feature — we'll walk you through some simple setup. It unlocks the following:</p>
       </div>
       <ul className="ss-pro-list">
         <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by email or Telegram too.</span></li>
