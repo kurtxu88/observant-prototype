@@ -274,7 +274,7 @@ function EntryScreen({ onCreate }) {
 const SS_ONBOARD_STEPS = [
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
   { id: "channels", t: "Choose your channels", d: "Email & Telegram, on by default" },
-  { id: "golive", t: "Go live", d: "Your magic link + invitation" },
+  { id: "invite", t: "Invitation & preview", d: "Edit it, preview it, send it" },
 ];
 
 const SS_CONNECT_OPTIONS = [
@@ -310,6 +310,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
+  const enabledChannels = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]);
+  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + enabledChannels.join(",");
   const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
@@ -326,8 +328,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     "",
     "— The " + product + " team",
   ].join("\n");
+  const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
+  // Channel changes rewrite the invitation, so the link/copy always match what's enabled.
+  useEffectSS(() => { setInviteDraft(inviteText); }, [channelPhrase, product]);
   const copyInvite = () => {
-    if (navigator.clipboard) navigator.clipboard.writeText(inviteText).catch(() => {});
+    if (navigator.clipboard) navigator.clipboard.writeText(inviteDraft).catch(() => {});
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 1500);
   };
@@ -378,7 +383,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into our feedback partner program.</p>
                     <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email or Telegram. You show us how {product} really works for you; we use it to build.</p>
                     <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
-                    <a className="ss-invite-cta" href={"Join.html?product=" + encodeURIComponent(product)} target="_blank" rel="noreferrer">Join the program →</a>
+                    <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a>
                     <p className="ss-invite-sign">— The {product} team</p>
                     <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invitation stays in your brand and voice.</span>
                   </div>
@@ -423,30 +428,43 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
               </div>
-              <div className="ss-upsell">
-                <div>
-                  <b>Want Observant inside your product?</b>
-                  <span>In-product is the richest surface — conversations at the exact moment of use — and it's part of the data-sharing tier, set up together with our team. Your users can still connect by email or Telegram alongside it. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></span>
-                </div>
-                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
-              </div>
+              <p className="ss-fineprint">The channels you enable set how rich the learning gets — and the richest options need a closer partnership:</p>
+              <ProUpsell />
             </section>
           )}
 
           {step === 2 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Go live" status="Last step" />
-              <p className="ss-step-lead">One link does everything from here. Each person who opens it opts in, picks their channel, and lands on a continuous 1:1 line — <b>their identifier arrives with the opt-in</b>, so there's nothing to connect or upload.</p>
+              <PanelTitle k="Step 3" title="Invitation & preview" status="Last step" />
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick whichever suits them at opt-in" : ""} />
+                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
                 <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
 
               <div className="ss-program-block">
+                <h3>Edit your invitation</h3>
+                <p>Ready to send as-is, or make it yours — it carries your magic link. Works as an email, a community post, or a DM.</p>
+                <div className="ss-invite-copyblock">
+                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+                </div>
+              </div>
+
+              <div className="ss-program-block">
+                <h3>Preview your magic link</h3>
+                <p>This is the link inside the invitation. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
+                <div className="ss-magiclink">
+                  <code>{magicLink}</code>
+                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                </div>
+                <p className="ss-fineprint"><a className="ss-doc-link" href={joinUrl} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
+              </div>
+
+              <div className="ss-program-block">
                 <h3>Who to send it to</h3>
-                <p>It's up to you — share it with your whole list or hand-pick. A few ways to think about your first batch:</p>
+                <p>It's up to you — your whole list or hand-picked. A few ways to think about your first batch:</p>
                 <div className="ss-advice-block">
                   {SS_AUDIENCE_OPTIONS.map((opt) => (
                     <div className="ss-advice-item" key={opt.id}>
@@ -458,30 +476,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 </div>
               </div>
 
-              <div className="ss-program-block">
-                <h3>Send it under your brand</h3>
-                <p>A ready-to-paste invitation — adapt the voice, keep the link. Works as an email, a community post, or a DM.</p>
-                <div className="ss-invite-copyblock">
-                  <pre>{inviteText}</pre>
-                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
-                </div>
+              <div className="ss-golive-actions">
+                <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
               </div>
-
-              <div className="ss-golive">
-                <span className="eyebrow no-rule">Your magic link</span>
-                <h2>You're ready to go live.</h2>
-                <p>Open the link yourself first — see exactly what your users will see, channel choice and all — then turn it on and send.</p>
-                <div className="ss-magiclink">
-                  <code>{magicLink}</code>
-                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
-                </div>
-                <p className="ss-fineprint"><a className="ss-doc-link" href={"Join.html?product=" + encodeURIComponent(product)} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
-                <div className="ss-golive-actions">
-                  <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
-                </div>
-              </div>
-
-              <ProUpsell />
             </section>
           )}
 
