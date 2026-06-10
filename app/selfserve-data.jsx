@@ -45,11 +45,11 @@ const SS_SURFACE_OPTIONS = [
 // Slack needs a workspace install and in-product needs the SDK — both live on the Pro side.
 const SS_FAST_CHANNELS = ["email", "telegram"];
 
-// People-first: how the always-on panel is built.
+// People-first: how the always-on panel is built. Ranked — reach everyone leads.
 const SS_AUDIENCE_OPTIONS = [
-  { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Recommended" },
-  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in. Best when you're early.", tag: "Early-stage" },
+  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in.", tag: "Recommended" },
   { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to opt in.", tag: "Most engaged" },
+  { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Full picture" },
 ];
 
 // What you offer people for opting in as a feedback partner (the currency).

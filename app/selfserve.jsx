@@ -486,7 +486,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <div className="ss-program-block ss-suggest">
                 <span className="ss-suggest-badge">Our suggestions</span>
                 <h3>Who to send it to</h3>
-                <p>Nothing to do here — just ideas for when you send. It's up to you: your whole list, or hand-picked. A few ways to think about your first batch:</p>
+                <p>When you're thinking about who to send the magic link to — who you're inviting into your feedback program — here are a few ways to think about your first batch, if you want them. Keep in mind: usually <b>5–10% of those you invite opt in</b>, and they tend to be your most engaged.</p>
                 <div className="ss-advice-block">
                   {SS_AUDIENCE_OPTIONS.map((opt) => (
                     <div className="ss-advice-item" key={opt.id}>
@@ -494,7 +494,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                       <div><b>{opt.label}</b><p>{opt.text}</p></div>
                     </div>
                   ))}
-                  <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
                 </div>
               </div>
             </section>
