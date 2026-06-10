@@ -11,6 +11,9 @@ const SS_SECTIONS = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
+// PLACEHOLDER — swap for the real booking link before sharing externally.
+const SS_BOOK_CALL_URL = "https://calendly.com/observant-ai/intro";
+
 const SS_EMPTY_WORKSPACE_FORM = {
   founderName: "",
   email: "",
@@ -255,7 +258,7 @@ function EntryScreen({ onCreate }) {
             <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
           </Field>
           <Field label="What are some top-of-mind questions you'd like to learn from users? (optional)" wide>
-            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other surfaces. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
+            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other channels. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
         <div className="ss-entry-actions">
@@ -270,8 +273,8 @@ function EntryScreen({ onCreate }) {
 
 const SS_ONBOARD_STEPS = [
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
-  { id: "surfaces", t: "Where it happens", d: "Email, Slack, Discord, in-product" },
-  { id: "invite", t: "Invite your batch", d: "Who to invite, connect surfaces" },
+  { id: "surfaces", t: "Open your channels", d: "Where people can opt in" },
+  { id: "invite", t: "Invite your batch", d: "Who to invite, connect channels" },
   { id: "golive", t: "Go live", d: "Your magic link" },
 ];
 
@@ -403,22 +406,22 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
           {step === 1 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 2" title="Where the conversations happen" status={surfaceCount + " on"} />
-              <p className="ss-step-lead">Each person gets a private one-on-one line — never a noisy shared channel. <b>Email is the fastest way to start</b>; Slack or Discord work if you already talk to users there. <b>In-product is the most recommended</b> — it catches people right at the moment of use — but it takes a one-time setup on your side.</p>
+              <PanelTitle k="Step 2" title="Open channels for people to opt in" status={surfaceCount + " open"} />
+              <p className="ss-step-lead"><b>Your users choose where the conversation happens — you just open the doors.</b> Each channel you enable here is one more place people can opt in and talk, always on a private one-on-one line — never a noisy shared channel. Email is the lightest to open; Slack and Discord fit if you already talk to users there; in-product is the richest, with a one-time setup. Open as many as fit — add more anytime.</p>
               <div className="ss-surface-grid">
-                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The simplest place to start." onClick={() => toggleSurface("email")} />
+                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The lightest channel to open." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
                 <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
-                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product · most recommended" text="Catch people at the moment of use, inside your product — the richest signal. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
+                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product" text="Right at the moment of use, inside your product — the richest channel. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
                 <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
               </div>
 
               <div className="ss-upsell">
                 <div>
                   <b>Advanced — behavior triggers</b>
-                  <span>Follow up automatically the moment a user does something specific — most useful once you have thousands of users. It takes a deeper setup on our side; if you want this, get in touch.</span>
+                  <span>Want more control over who you hear from, and when? Triggers start a conversation the moment a user does something specific — say, abandons a checkout or opens a feature for the third time. We tailor them with you.</span>
                 </div>
-                <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Behavior triggers">Contact us</a>
+                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
               </div>
             </section>
           )}
@@ -426,27 +429,22 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           {step === 2 && (
             <section className="ss-panel">
               <PanelTitle k="Step 3" title="Invite your batch" status="Almost there" />
-              <p className="ss-step-lead">Choose who to invite and bring in your first batch. You can add and label more anytime.</p>
-
-              <div className="ss-program-block">
-                <h3>Who to invite</h3>
-                <p>It's up to you who you bring in — a few ways to think about your first batch:</p>
-                <div className="ss-advice-block">
-                  {SS_AUDIENCE_OPTIONS.map((opt) => (
-                    <div className="ss-advice-item" key={opt.id}>
-                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
-                      <div><b>{opt.label}</b><p>{opt.text}</p></div>
-                    </div>
-                  ))}
-                  <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
-                </div>
+              <p className="ss-step-lead">It's up to you who you bring in — and you can add and label more anytime. A few ways to think about your first batch:</p>
+              <div className="ss-advice-block">
+                {SS_AUDIENCE_OPTIONS.map((opt) => (
+                  <div className="ss-advice-item" key={opt.id}>
+                    <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                    <div><b>{opt.label}</b><p>{opt.text}</p></div>
+                  </div>
+                ))}
+                <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
               </div>
 
               <div className="ss-program-block">
                 <h3>Bring people in</h3>
-                <p>Connect each surface you picked, then invite. You can organize and label your users later.</p>
+                <p>Connect each channel you opened, then invite. You can organize and label your users later.</p>
                 <div className="ss-setup-list">
-                  {surfaceCount === 0 && <p className="ss-fineprint">Go back and pick at least one surface.</p>}
+                  {surfaceCount === 0 && <p className="ss-fineprint">Go back and open at least one channel.</p>}
                   {setup.surfaces.email && (
                     <SetupRow icon="mail" title="Upload your email list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => setSetupModal("email")} />
                   )}
@@ -474,7 +472,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead">Here's everything you set up. Get your magic link and turn it on.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
+                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick whichever suits them" : ""} />
                 <ReviewRowSS k="Connected" v={setupSummary || "Nothing connected yet"} sub={setupSummary ? "" : "Go back a step to bring people in — or do it after you're live."} />
                 <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
@@ -497,18 +495,18 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <div className="ss-upsell">
                 <div>
                   <b>Want Observant to recruit feedback partners for you?</b>
-                  <span>We can quietly bring in matching people in the background, continuously — it takes deeper data sharing. If you'd like this, get in touch.</span>
+                  <span>We can quietly bring in matching people in the background, continuously — and you stay in control of exactly who that is.</span>
                 </div>
-                <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Background recruiting">Contact us</a>
+                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
               </div>
             </section>
           )}
 
           <div className="ss-onboard-nav">
             {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
-            <span className="count">{step + 1} / {SS_ONBOARD_STEPS.length}</span>
+            <span className="count">{step === 1 && surfaceCount === 0 ? "Open at least one channel to continue" : (step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
             {step < SS_ONBOARD_STEPS.length - 1
-              ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
+              ? <Btn variant="primary" onClick={next} disabled={step === 1 && surfaceCount === 0}>Continue <Icon name="arrow" size={16} /></Btn>
               : <span />}
           </div>
         </main>
@@ -703,7 +701,7 @@ function HomeView({ state, patchState, navigate }) {
         </div>
         <div className="ss-hero-metrics">
           <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
-          <Metric n={String(readiness.connectedSurfaces)} l="surfaces connected" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })} />
+          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })} />
           <Metric n={String(state.conversations.length)} l="active private lines" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
         </div>
       </section>
@@ -728,10 +726,10 @@ function HomeView({ state, patchState, navigate }) {
           {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : (
             <div className="ss-upsell ss-upsell-fill">
               <div>
-                <b>Follow up the moment something happens</b>
-                <span>Behavior triggers let Observant reach out right when a user does something specific — an advanced add-on we set up with you. If you want this, get in touch.</span>
+                <b>Want more control over who you hear from?</b>
+                <span>Behavior triggers start a conversation right when a user does something specific — so the feedback comes from exactly the people and moments you care about. We tailor them with you.</span>
               </div>
-              <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Behavior triggers">Contact us</a>
+              <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
             </div>
           )}
         </section>
@@ -961,7 +959,7 @@ Authorization: Bearer <server-issued token>
             <div className="ss-loop-meta-grid">
               <div><b>Cadence</b><span>{selected.cadence}</span></div>
               <div><b>Who's on it</b><span>{audienceText || "Your always-on panel"}</span></div>
-              <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "Your program surfaces"}</span></div>
+              <div><b>Channels</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "Your open channels"}</span></div>
             </div>
 
             <div className="ss-loop-columns">
@@ -990,10 +988,10 @@ Authorization: Bearer <server-issued token>
             <div className="ss-loop-columns">
               <section>
                 <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="An advanced add-on we set up with you — follow up automatically the moment a user does something specific. Get in touch if you want this." />}
+                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="For more control over who you hear from and when — triggers start a conversation the moment a user does something specific. Book a call with us and we'll tailor them to this question." />}
               </section>
               <section className="ss-loop-install">
-                <h3>Surfaces in use</h3>
+                <h3>Channels in use</h3>
                 <div className="ss-surface-read-grid">
                   <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async 1:1 lines." />
                   <SurfaceStatusCard active={selectedSurfaceIds.includes("slack")} icon="chat" title="Slack" text="1:1 bot in your customer Slack." />
@@ -1065,7 +1063,7 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
       </Field>
-      <p className="ss-fineprint">Goes to your always-on panel across {activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your program surfaces"}.</p>
+      <p className="ss-fineprint">Goes to your always-on panel — each person on the channel they chose ({activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your open channels"}).</p>
       <div className="ss-create-loop-actions">
         {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
         <Btn variant="primary" onClick={submit} disabled={!question.trim()}>
@@ -1125,7 +1123,7 @@ function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onCancel, o
             <textarea className="textarea" value={draft.question} onChange={(e) => onUpdate("question", e.target.value)} />
           </Field>
           <section>
-            <h3>Surfaces</h3>
+            <h3>Channels</h3>
             <div className="ss-card-grid two">
               <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1 lines." onClick={() => onToggleSurface("email")} />
               <SurfaceCard active={draft.surfaces.slack} icon="chat" title="Slack" text="1:1 bot in your customer Slack." onClick={() => onToggleSurface("slack")} />
@@ -1533,7 +1531,7 @@ function SurfaceStatusCard({ active, icon, title, text }) {
       <span><Icon name={icon} size={18} /></span>
       <b>{title}</b>
       <p>{text}</p>
-      <em>{active ? "Connected" : "Not connected"}</em>
+      <em>{active ? "Enabled" : "Not enabled"}</em>
     </article>
   );
 }
@@ -1545,7 +1543,7 @@ function SurfaceCard({ active, icon, title, text, product, onClick }) {
       <b>{title}</b>
       <p>{text}{product ? product + "." : ""}</p>
       <em className="ss-surface-toggle">
-        {active ? <><Icon name="check" size={13} sw={2.8} /> Selected</> : "Tap to add"}
+        {active ? <><Icon name="check" size={13} sw={2.8} /> Enabled</> : "Tap to enable"}
       </em>
     </button>
   );

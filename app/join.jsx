@@ -79,7 +79,7 @@ function JoinInvite({ product, tiers, onJoin }) {
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. It reaches you where you already are — email, Slack, Discord, or right inside {product} — and it remembers your context, so you never repeat yourself.</p>
+            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email, Slack, Discord, or right inside {product} — and it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
             <b>Earn as you go</b>
