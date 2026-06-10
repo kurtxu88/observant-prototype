@@ -376,7 +376,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
               </div>
-              <p className="ss-fineprint">The surfaces you enable set how rich the learning gets — and the richest options need a closer partnership:</p>
               <ProUpsell />
             </section>
           )}
