@@ -221,62 +221,13 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
 function JoinWelcome({ product, channel, contactEmail }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
-  const opener = channel === "inproduct"
-    ? "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally, right inside " + product + " while you're using it, and you reply whenever suits you."
-    : "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + (channel === "telegram" ? "Telegram" : "email") + ", and you reply whenever suits you.";
-  // The team's research goals never reach users verbatim — the interviewer asks
-  // about their day-to-day and works the learning in behind the scenes.
-  const firstQuestion = "To start us off, something easy: did you get a chance to open " + product + " today? I'd love to hear what you came in to do — and whether anything felt harder than it should.";
-  const [messages, setMessages] = useStateJN([
-    { t: "them", text: opener, meta: "Observant, for the " + product + " team" },
-    { t: "them", text: firstQuestion, meta: "Observant" },
-  ]);
-  const [draft, setDraft] = useStateJN("");
-  const minutes = messages.filter((message) => message.t === "user").length;
-
-  const send = () => {
-    const text = draft.trim();
-    if (!text) return;
-    setDraft("");
-    setMessages((current) => [
-      ...current,
-      { t: "user", text, meta: "You" },
-      { t: "them", text: "That's exactly the kind of context the team is looking for — noted, and it counts toward your minutes. I'll follow up in a few days; feel free to drop me anything that bugs or delights you in the meantime.", meta: "Observant" },
-    ]);
-  };
 
   return (
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're in</span>
-        <h1>Welcome to the {product} feedback partner program.</h1>
+        <h1>Welcome to the program.</h1>
         <p>{channel === "inproduct" ? "The first check-in will find you inside " + product + " — most take just a few minutes." : "Watch for the first check-in soon — most take just a few minutes."} Your minutes and rewards are tracked automatically from the very first reply.</p>
-      </section>
-
-      <section className="jn-block">
-        <h2>Here's how a conversation feels</h2>
-        <p className="jn-block-lead">Try it — type anything below.</p>
-        <div className="jn-chat">
-          <div className="jn-chat-meter"><Icon name="clock" size={14} /> {minutes} participated {minutes === 1 ? "minute" : "minutes"} · Bronze at 30 min</div>
-          <div className="jn-chat-body">
-            {messages.map((message, index) => (
-              <div className={"ss-chat-msg " + message.t} key={index}>
-                <div>{message.text}</div>
-                <span>{message.meta}</span>
-              </div>
-            ))}
-          </div>
-          <div className="jn-chat-input">
-            <input
-              className="input"
-              value={draft}
-              placeholder="Type a reply…"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-            />
-            <Btn variant="primary" size="sm" onClick={send} disabled={!draft.trim()}>Send</Btn>
-          </div>
-        </div>
       </section>
 
       <section className="jn-block jn-account">
