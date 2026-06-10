@@ -1729,11 +1729,33 @@
 .ss-callout span { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; }
 
 .ss-program-block { margin-bottom: 1.6rem; }
+/* Clear delineation between sub-sections inside a step */
+.ss-program-block + .ss-program-block {
+  border-top: 1px solid var(--border);
+  padding-top: 1.7rem;
+  margin-top: 1.9rem;
+}
 .ss-program-block h3 {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 1.18rem;
   margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.ss-substep {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 .ss-program-block > p {
   color: var(--text-secondary);
@@ -2330,17 +2352,57 @@
 .ss-magiclink-open:hover code { color: var(--accent); }
 
 .ss-block-q { margin: 1.2rem 0 0.2rem; font-weight: 600; font-size: 0.95rem; }
-.ss-rate-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 1.2rem;
-  flex-wrap: wrap;
-  margin: 1rem 0 1.2rem;
-}
 .ss-rate-input { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; }
 .ss-rate-input .input { width: 5.5rem; }
-.ss-rate-calc b { display: block; font-size: 1.05rem; }
-.ss-rate-calc span { font-size: 0.82rem; color: var(--text-muted); }
+
+/* Compensation: three peer cards — cash (active) / credits (coming) / perks (add-on) */
+.ss-comp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+@media (max-width: 900px) { .ss-comp-grid { grid-template-columns: 1fr; } }
+.ss-comp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.ss-comp-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ss-comp-card > b { font-family: var(--font-display); font-weight: 500; font-size: 1.2rem; }
+.ss-comp-card p { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+.ss-comp-card small { font-size: 0.78rem; color: var(--text-muted); }
+.ss-comp-tag {
+  align-self: flex-start;
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+}
+.ss-comp-tag.active { background: var(--success-tint); color: var(--success); }
+.ss-comp-tag.coming { background: var(--surface); color: var(--text-muted); border: 1px dashed var(--border-strong); }
+.ss-comp-tag.rec { background: var(--accent-tint); color: var(--accent); }
+.ss-comp-rate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.ss-comp-rate > b { font-size: 0.95rem; white-space: nowrap; }
 .jn-rate-card {
   margin-top: 1rem;
   border: 1px solid var(--border);

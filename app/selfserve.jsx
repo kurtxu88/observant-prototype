@@ -390,27 +390,36 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
-                <h3>Compensation</h3>
+                <h3><span className="ss-substep">1</span> Compensation</h3>
                 <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> You pay Observant, we pay your participants, and they redeem as they go — like spending down a gift card balance.</p>
 
-                <div className="ss-rate-row">
-                  <Field label="Reward rate">
-                    <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 1) })} /> per participated minute</span>
-                  </Field>
-                  <div className="ss-rate-calc"><b>30 minutes ≈ ${Math.round(30 * (setup.rate || 1))}</b><span>Industry guideline: $1 per minute. Set whatever fits your program.</span></div>
-                </div>
+                <div className="ss-comp-grid">
+                  <article className="ss-comp-card on">
+                    <em className="ss-comp-tag active">Active · managed by Observant</em>
+                    <b>Cash</b>
+                    <p>Set your rate — we handle payouts and redemption.</p>
+                    <div className="ss-comp-rate">
+                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 1) })} /> / min</span>
+                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 1))}</b>
+                    </div>
+                    <small>Industry guideline: $1 per minute.</small>
+                  </article>
 
-                <div className="ss-upsell">
-                  <div>
-                    <b>Your product credits — coming</b>
-                    <span>We're building a universal redemption flow so you can reward partners in your own product credits. For now, everyone defaults to cash compensation.</span>
-                  </div>
-                </div>
+                  <article className="ss-comp-card">
+                    <em className="ss-comp-tag coming">Coming</em>
+                    <b>Your product credits</b>
+                    <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
+                  </article>
 
-                <p className="ss-fineprint"><b>Perks worth mentioning in your invitation:</b> most companies we work with also give long-term active partners extras — invites to in-person events, conferences, time with the founding team. Completely up to you — we recommend it as a motivational mechanism for becoming a long-term feedback partner.</p>
+                  <article className="ss-comp-card">
+                    <em className="ss-comp-tag rec">Recommended add-on</em>
+                    <b>Additional perks</b>
+                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
+                  </article>
+                </div>
               </div>
               <div className="ss-program-block">
-                <h3>Your invitation</h3>
+                <h3><span className="ss-substep">2</span> Your invitation</h3>
                 <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
                 <div className="ss-invite-copyblock">
                   <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
