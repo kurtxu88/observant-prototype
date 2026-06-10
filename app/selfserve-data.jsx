@@ -78,10 +78,10 @@ const SS_SIGNAL_OPTIONS = [
 ];
 
 const SS_SIMULATION_STAGES = [
-  { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to your question." },
-  { id: "lines", label: "Opening private lines", detail: "Observant opens a 1:1 line with each matched person." },
-  { id: "replies", label: "Collecting replies", detail: "Early answers start coming in." },
-  { id: "patterns", label: "Detecting patterns", detail: "Repeated context is grouped into stronger signals." },
+  { id: "match", label: "Refining your question", detail: "Turning it into questions users can answer naturally." },
+  { id: "lines", label: "Finding the right participants", detail: "Matching people on your panel." },
+  { id: "replies", label: "Sending it out", detail: "First replies are coming in." },
+  { id: "patterns", label: "Listening", detail: "Repeated context is grouped into stronger signals." },
   { id: "insights", label: "Drafting insights", detail: "Evidence-backed recommendations are prepared for the team." },
 ];
 
@@ -219,6 +219,7 @@ function ssCreateConversations(workspace) {
       userId: "dana",
       title: "Weekly export workflow",
       state: "Active",
+      mode: "voice",
       messages: [
         { t: "them", text: "Hi Dana - I noticed you finished another weekly export in " + product + ". What happens after it leaves the app?", meta: "Observant - behavior-triggered" },
         { t: "user", text: "I paste it into a sheet and rebuild half of it by hand.", meta: "Dana" },
@@ -532,6 +533,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     id: actualRunId + "-conv-" + index,
     userId: person.id,
     title: person.segment + " 1:1",
+    mode: index === 1 ? "voice" : "chat",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
       { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },

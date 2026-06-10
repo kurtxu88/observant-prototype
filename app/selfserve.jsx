@@ -6,7 +6,7 @@ const { useState: useStateSS, useEffect: useEffectSS } = React;
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
   { id: "learning", label: "Questions", icon: "chat" },
-  { id: "people", label: "People", icon: "users" },
+  { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
@@ -108,31 +108,6 @@ async function ssPostJson(url, payload) {
   });
   if (!response.ok) throw new Error("Request failed");
   return response.json();
-}
-
-function ssCreateLoopDraft(state, loop) {
-  if (!loop) {
-    return {
-      loopId: "",
-      question: state.workspace.learningGoal,
-      learningGoal: state.workspace.learningGoal,
-      surfaces: { ...state.setup.surfaces },
-      events: { ...state.setup.events },
-    };
-  }
-  const loopSurfaceIds = loop.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const loopEventIds = loop.eventIds || state.events.filter((event) => state.setup.events[event.event]).map((event) => event.id);
-  const loopSignalIds = loop.signalIds || [];
-  return {
-    loopId: loop.id,
-    question: loop.question,
-    learningGoal: state.workspace.learningGoal,
-    surfaces: Object.fromEntries(Object.keys(state.setup.surfaces).map((surface) => [surface, loopSurfaceIds.includes(surface)])),
-    events: Object.fromEntries(Object.keys(state.setup.events).map((eventName) => {
-      const event = state.events.find((item) => item.event === eventName);
-      return [eventName, loopSignalIds.includes(eventName) || (event ? loopEventIds.includes(event.id) : !!state.setup.events[eventName])];
-    })),
-  };
 }
 
 function SelfServeApp() {
@@ -594,8 +569,6 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           </div>
           <div className="ss-topbar-actions">
             {ssWorkspaceIsCustom(state) && <span className="ss-sim-pill" title="The people and replies below are simulated — your real panel fills in after you send invites.">Simulated preview</span>}
-            <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: firstLoopId, focusedTarget: firstLoopId || "create-loop" })}><i></i>Learning mode is on</button>
-            <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>Ask a question</Btn>
           </div>
         </header>
 
@@ -617,7 +590,6 @@ function HomeView({ state, patchState, navigate }) {
   const latestAnswer = state.answers[0];
   const activeConversationId = ssFirstActiveConversationId(state);
   const activePerson = ssPersonForConversation(state, state.conversations.find((item) => item.id === activeConversationId));
-  const memoryCount = state.loops.reduce((sum, loop) => sum + Number(loop.memory || 0), 0);
   const custom = ssWorkspaceIsCustom(state);
 
   return (
@@ -625,13 +597,13 @@ function HomeView({ state, patchState, navigate }) {
       <section className="ss-hero-status">
         <div>
           <span className="eyebrow no-rule">Always on</span>
-          <h2>{custom && !state.loops.length ? "Your panel is live." : "Learning is running."}</h2>
+          <h2>{custom && !state.loops.length ? "Your panel is live." : "Learning mode is on."}</h2>
           <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the users who opted in for " + product + ". Ask them anything, anytime — it keeps learning automatically." : "Observant is keeping one-on-one lines open with your users and bringing what it learns back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
-          <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
-          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })} />
-          <Metric n={String(state.conversations.length)} l="active private lines" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
+          <Metric n={String(state.people.length)} l="feedback partners" onClick={() => navigate({ section: "people" })} />
+          <Metric n={String(state.conversations.length)} l="active 1:1 conversations" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
+          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning" })} />
         </div>
       </section>
 
@@ -645,18 +617,10 @@ function HomeView({ state, patchState, navigate }) {
         </section>
       )}
 
-      <div className="ss-dashboard-grid">
-        <section className="ss-panel">
-          <PanelTitle k="Now" title="Active private lines" status="Live" />
-          {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
-        </section>
-        {state.events.length ? (
-          <section className="ss-panel">
-            <PanelTitle k="Signals" title="Behavior triggers" status="Advanced" />
-            <EventList state={state} events={state.events} navigate={navigate} />
-          </section>
-        ) : <ProUpsell />}
-      </div>
+      <section className="ss-panel">
+        <PanelTitle k="Now" title="Active lines" status="Live" />
+        {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
+      </section>
 
       <div className="ss-dashboard-grid">
         <AskObservant state={state} patchState={patchState} />
@@ -684,97 +648,25 @@ function HomeView({ state, patchState, navigate }) {
   );
 }
 
-function LearningView({ state, patchState, navigate, copied, copyText }) {
+function LearningView({ state, patchState, navigate }) {
   const product = SelfServeData.productName(state.workspace);
-  const readiness = SelfServeData.readiness(state.setup);
-  const selected = ssSelectedLoop(state);
   const custom = ssWorkspaceIsCustom(state);
-  const loopRun = selected ? ssActiveLoopRun(state, selected.id) : null;
-  const loopPeople = ssLoopPeople(state, selected);
-  const loopConversations = ssLoopConversations(state, selected);
-  const loopEvents = ssLoopEvents(state, selected);
-  const selectedSurfaceIds = selected ? (selected.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface])) : [];
-  const selectedSignalIds = selected ? (selected.signalIds || loopEvents.map((event) => event.event)) : [];
-  const [isEditing, setIsEditing] = useStateSS(false);
-  const [isCreating, setIsCreating] = useStateSS(false);
-  const [draft, setDraft] = useStateSS(() => ssCreateLoopDraft(state, selected));
-  const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${productSlug}"></script>`;
-  const webhook = `POST https://api.observant.ai/v1/events
-Authorization: Bearer <server-issued token>
-
-{
-  "event": "${selectedSignalIds[0] || "feature_opened"}",
-  "user_id": "synthetic_user_123",
-  "properties": {
-    "workspace": "${product}"
-  }
-}`;
-
-  useEffectSS(() => {
-    if (isEditing) setDraft(ssCreateLoopDraft(state, selected));
-  }, [selected ? selected.id : ""]);
-
-  const selectLoop = (loop) => {
-    patchState((current) => ({ ...current, selectedLoopId: loop.id, focusedTarget: loop.id }));
-  };
-
-  const openEdit = () => {
-    if (!selected) return;
-    setDraft(ssCreateLoopDraft(state, selected));
-    setIsEditing(true);
-  };
-
-  const closeEdit = () => {
-    setDraft(ssCreateLoopDraft(state, selected));
-    setIsEditing(false);
-  };
-
-  const updateDraft = (field, value) => {
-    setDraft((current) => ({ ...current, [field]: value }));
-  };
-
-  const toggleDraftSurface = (surface) => {
-    setDraft((current) => ({
-      ...current,
-      surfaces: { ...current.surfaces, [surface]: !current.surfaces[surface] },
-    }));
-  };
-
-  const saveEdit = () => {
-    if (!selected) return;
-    patchState((current) => ({
-      ...current,
-      workspace: { ...current.workspace, learningGoal: draft.learningGoal },
-      loops: ssUpdateById(current.loops, draft.loopId, () => ({
-        question: draft.question,
-        surfaceIds: Object.keys(draft.surfaces).filter((surface) => draft.surfaces[surface]),
-        signalIds: Object.keys(draft.events).filter((eventName) => draft.events[eventName]),
-        eventIds: current.events.filter((event) => draft.events[event.event]).map((event) => event.id),
-      })),
-      setup: {
-        ...current.setup,
-        surfaces: { ...draft.surfaces },
-        events: { ...draft.events },
-      },
-    }));
-    setIsEditing(false);
-  };
-
-  const openPerson = (person) => {
-    const conversationId = ssConversationIdForPerson(state, person.id);
-    navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
-  };
+  const [question, setQuestion] = useStateSS("");
+  const [slackConnected, setSlackConnected] = useStateSS(false);
+  const activeRun = (state.loopRuns || []).find((run) => run.status === "generating" || run.status === "collecting");
+  const stageLabel = activeRun
+    ? (activeRun.status === "generating"
+      ? SS_SIMULATION_STAGES[0].label
+      : ((activeRun.timeline || SS_SIMULATION_STAGES)[Math.max(0, activeRun.stageIndex)] || {}).label || "Sending it out")
+    : "";
 
   const startLoop = async (config) => {
     const runId = SelfServeData.makeRunId();
     const loop = SelfServeData.createCustomLoop(state.workspace, config, runId);
     const loopRun = SelfServeData.createLoopRun(runId, loop, config);
-    setIsCreating(false);
     patchState((current) => ({
       ...current,
       selectedLoopId: loop.id,
-      focusedTarget: loop.id,
       loops: [loop, ...current.loops],
       loopRuns: [loopRun, ...current.loopRuns],
       activity: ["Question created: " + loop.name + ".", ...current.activity],
@@ -815,160 +707,12 @@ Authorization: Bearer <server-issued token>
     });
   };
 
-  const audienceText = loopPeople.length
-    ? [...new Set(loopPeople.map((person) => person.segment))].join(", ")
-    : ((selected && selected.groupIds) || []).map((id) => {
-      const option = SS_GROUP_OPTIONS.find((group) => group.id === id);
-      return option ? option.label : id;
-    }).join(", ");
-
-  return (
-    <>
-      <div className="ss-learning-layout">
-        <section className="ss-panel">
-          <div className="ss-panel-title ss-panel-title-with-action">
-            <div>
-              <span>Always on</span>
-              <h2>Questions you've asked</h2>
-            </div>
-            <em>{state.loops.length + " asked"}</em>
-          </div>
-          {custom && (
-            <Btn variant={state.loops.length ? "ghost" : "primary"} size="sm" className="ss-wide-action" onClick={() => setIsCreating(true)}>
-              <Icon name="spark" size={15} /> Ask a question
-            </Btn>
-          )}
-          {custom && (isCreating || !state.loops.length) && (
-            <LoopCreatePanel state={state} onStart={startLoop} onCancel={state.loops.length ? () => setIsCreating(false) : null} />
-          )}
-          <div className="ss-loop-list">
-            {state.loops.map((loop) => (
-              <button
-                type="button"
-                className={"ss-loop-option" + (selected && selected.id === loop.id ? " on" : "") + ssFocusClass(state, loop.id)}
-                key={loop.id}
-                onClick={() => selectLoop(loop)}
-              >
-                <div>
-                  <span className="ss-status success">{loop.status}</span>
-                  <em>{loop.cadence}</em>
-                </div>
-                <h3>{loop.name}</h3>
-                <p>{loop.question}</p>
-                <small>{loop.people} people · {loop.memory} remembered moments</small>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {selected ? (
-          <section className={"ss-panel ss-loop-detail" + ssFocusClass(state, selected.id) + ssFocusClass(state, "learning-config")}>
-            <div className="ss-loop-detail-head">
-              <PanelTitle k="Question" title={selected.name} status={selected.status} />
-              <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit</Btn>
-            </div>
-            {loopRun && <CollectingProgress run={loopRun} />}
-            <div className="ss-loop-detail-grid">
-              <Metric n={String(selected.people)} l="people on it" />
-              <Metric n={String(selected.active)} l="active now" />
-              <Metric n={String(selected.memory)} l="memories" />
-              <Metric n={String(loopConversations.reduce((sum, conversation) => sum + (conversation.messages || []).filter((message) => message.t === "user").length, 0))} l="replies in" />
-            </div>
-
-            <div className="ss-loop-read-grid">
-              <ReadCard label="What you asked" text={selected.question} />
-            </div>
-
-            <div className="ss-loop-meta-grid">
-              <div><b>Cadence</b><span>{selected.cadence}</span></div>
-              <div><b>Who's on it</b><span>{audienceText || "Your always-on panel"}</span></div>
-              <div><b>Channels</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "Your open channels"}</span></div>
-            </div>
-
-            <div className="ss-loop-columns">
-              <section>
-                <h3>Related people</h3>
-                <div className="ss-related-list">
-                  {loopPeople.length ? loopPeople.map((person) => (
-                    <PersonLine
-                      key={person.id}
-                      person={person}
-                      meta={person.segment + " · " + person.surface}
-                      body={person.memory}
-                      card
-                      focused={state.focusedTarget === "person-" + person.id}
-                      onClick={() => openPerson(person)}
-                    />
-                  )) : <EmptyState title="Matching users" text="Synthetic users appear as collection progresses." />}
-                </div>
-              </section>
-              <section>
-                <h3>Relevant 1:1 lines</h3>
-                {loopConversations.length ? <ConversationList state={state} conversations={loopConversations} compact navigate={navigate} /> : <EmptyState title="No 1:1 lines yet" text="Private lines open after matching users." />}
-              </section>
-            </div>
-
-            <div className="ss-loop-columns">
-              <section>
-                <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="Triggers are part of the data-sharing tier — control exactly when a conversation starts. Book a call with us and we'll tailor them to this question." />}
-              </section>
-              <section className="ss-loop-install">
-                <h3>Channels in use</h3>
-                <div className="ss-surface-read-grid">
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async 1:1 lines." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("telegram")} icon="chat" title="Telegram" text="Private 1:1 with the Observant bot." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"A private line inside " + product + ". Data-sharing tier."} />
-                </div>
-              </section>
-            </div>
-
-            {selectedSignalIds.length ? (
-              <div className="ss-loop-config" id="learning-config">
-                <div>
-                  <h3>Behavior triggers on this question <span className="ss-adv-tag">advanced</span></h3>
-                  <div className="ss-event-read-grid">
-                    {selectedSignalIds.map((eventName) => (
-                      <span key={eventName} className="ss-event-pill on">
-                        <Icon name="check" size={15} />
-                        <b>{eventName}</b>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <CodeBlock label="In-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
-              </div>
-            ) : null}
-          </section>
-        ) : (
-          <section className="ss-panel ss-loop-detail">
-            <EmptyState title="No questions yet" text="Ask your always-on panel a question and watch Observant gather 1:1 answers for your product." />
-          </section>
-        )}
-      </div>
-      {isEditing && (
-        <LoopEditDrawer
-          draft={draft}
-          product={product}
-          onUpdate={updateDraft}
-          onToggleSurface={toggleDraftSurface}
-          onCancel={closeEdit}
-          onSave={saveEdit}
-        />
-      )}
-    </>
-  );
-}
-
-function LoopCreatePanel({ state, onStart, onCancel }) {
-  const product = SelfServeData.productName(state.workspace);
-  const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const [question, setQuestion] = useStateSS(state.workspace.learningGoal || "");
-
   const submit = () => {
     const q = question.trim();
-    if (!q) return;
-    onStart({
+    if (!q || activeRun) return;
+    const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
+    setQuestion("");
+    startLoop({
       name: q.length > 44 ? q.slice(0, 42) + "…" : q,
       question: q,
       // Everyone on the always-on panel — no per-question sampling.
@@ -979,97 +723,65 @@ function LoopCreatePanel({ state, onStart, onCancel }) {
   };
 
   return (
-    <div className="ss-create-loop" id="create-loop">
-      <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
-      <p className="ss-step-lead">Everyone who opted in is on a continuous one-on-one line. Ask anything, and Observant puts it to each of them and gathers the answers for you.</p>
-      <Field label="Your question">
-        <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
-      </Field>
-      <p className="ss-fineprint">Goes to your always-on panel — each person on the channel they chose ({activeSurfaces.length ? activeSurfaces.map(ssSurfaceLabel).join(", ") : "your open channels"}).</p>
-      <div className="ss-create-loop-actions">
-        {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
-        <Btn variant="primary" onClick={submit} disabled={!question.trim()}>
-          <Icon name="spark" size={15} /> Ask the panel
-        </Btn>
-      </div>
-    </div>
-  );
-}
-
-function CollectingProgress({ run }) {
-  const timeline = run.timeline || SS_SIMULATION_STAGES;
-  const current = Math.max(-1, run.stageIndex);
-  const percent = run.status === "generating" ? 8 : Math.round(((current + 1) / timeline.length) * 100);
-  const label = run.status === "generating"
-    ? "Preparing your panel"
-    : run.status === "running"
-      ? "Still learning"
-      : (timeline[current] ? timeline[current].label : "Collecting");
-
-  return (
-    <section className="ss-progress-card">
-      <div className="ss-progress-head">
+    <div className="ss-page-stack">
+      <section className="ss-panel ss-slack-banner">
         <div>
-          <span className="eyebrow no-rule">Collecting progress</span>
-          <h3>{label}</h3>
+          <PanelTitle k="Integrate" title="Ask straight from Slack" status="Recommended" />
+          <p className="ss-step-lead">Connect Slack and your team's questions relay here automatically — ask in your channel, your panel hears it, and responses start piping back within the hour.</p>
         </div>
-        <em>Collecting</em>
-      </div>
-      <div className="ss-progress-track"><span style={{ width: percent + "%" }} /></div>
-      <ol className="ss-progress-steps">
-        {timeline.map((step, index) => (
-          <li key={step.id || step.label} className={index <= current || run.status === "running" ? "done" : ""}>
-            <span>{index + 1}</span>
-            <div><b>{step.label}</b><p>{step.detail}</p></div>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
+        {slackConnected
+          ? <p className="ss-sent-note"><Icon name="check" size={15} sw={2.4} /> Slack connected — questions your team asks there will appear below.</p>
+          : <Btn variant="primary" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
+      </section>
 
-function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onCancel, onSave }) {
-  return (
-    <>
-      <button type="button" className="ss-edit-backdrop" aria-label="Cancel loop editing" onClick={onCancel} />
-      <aside className="ss-edit-drawer" aria-label="Edit question">
-        <div className="ss-edit-drawer-head">
-          <div>
-            <span className="eyebrow no-rule">Edit</span>
-            <h2>Edit this question</h2>
+      <section className={"ss-panel" + ssFocusClass(state, "create-loop")} id="create-loop">
+        <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
+        <p className="ss-step-lead">Everyone who opted in is on a continuous one-on-one line. Ask anything — Observant phrases it for each person and gathers the answers.</p>
+        <Field label="Your question">
+          <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
+        </Field>
+        {activeRun ? (
+          <div className="ss-asking"><span className="ss-spinner" /> {stageLabel}…</div>
+        ) : (
+          <div className="ss-panel-actions">
+            <Btn variant="primary" onClick={submit} disabled={!question.trim()}><Icon name="spark" size={15} /> Ask the panel</Btn>
           </div>
-          <button type="button" onClick={onCancel} aria-label="Close edit drawer"><Icon name="x" size={17} /></button>
-        </div>
-        <div className="ss-edit-drawer-body">
-          <Field label="Your question">
-            <textarea className="textarea" value={draft.question} onChange={(e) => onUpdate("question", e.target.value)} />
-          </Field>
-          <section>
-            <h3>Channels</h3>
-            <div className="ss-card-grid two">
-              <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1 lines." onClick={() => onToggleSurface("email")} />
-              <SurfaceCard active={draft.surfaces.telegram} icon="chat" title="Telegram" text="Private 1:1 with the Observant bot." onClick={() => onToggleSurface("telegram")} />
-            </div>
-          </section>
-        </div>
-        <div className="ss-edit-drawer-actions">
-          <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>
-          <Btn variant="primary" onClick={onSave}>Save changes</Btn>
-        </div>
-      </aside>
-    </>
+        )}
+      </section>
+
+      <section className="ss-panel">
+        <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
+        {state.loops.length ? (
+          <div className="ss-question-history">
+            {state.loops.map((loop) => {
+              const run = ssActiveLoopRun(state, loop.id);
+              const collecting = run && run.status !== "running";
+              return (
+                <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
+                  <p>{loop.question}</p>
+                  <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
+                </div>
+              );
+            })}
+          </div>
+        ) : <EmptyState title="No questions yet" text="Ask your panel anything — every question your team asks lands here." />}
+      </section>
+    </div>
   );
 }
 
 function PeopleView({ state, patchState }) {
   const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
   const person = ssPersonForConversation(state, selected);
+  const [followUpOpen, setFollowUpOpen] = useStateSS(false);
+  const [followUpQ, setFollowUpQ] = useStateSS("");
+  const [followUpStage, setFollowUpStage] = useStateSS("");
 
   if (!selected || !person) {
     return (
       <section className="ss-panel">
-        <PanelTitle k="People" title="People Observant learns from" status="No lines" />
-        <p className="mut">No private learning lines are available yet.</p>
+        <PanelTitle k="Partners" title="Your feedback partners" status="No lines" />
+        <p className="mut">No lines are open yet.</p>
       </section>
     );
   }
@@ -1085,18 +797,29 @@ function PeopleView({ state, patchState }) {
     }));
   };
 
-  const relayQuestion = () => {
-    patchState((current) => ({
-      ...current,
-      conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
-        messages: [
-          ...conversation.messages,
-          { t: "relay", text: current.nextQuestions[0], meta: "Relayed from your product team" },
-          { t: "them", text: "Observant is following up with the context already remembered for this person.", meta: "Observant" },
-        ],
-      })),
-      activity: ["Question relayed to " + person.name + ".", ...current.activity],
-    }));
+  // Follow-ups go through Observant, never straight to the person —
+  // the staged send makes the relay model felt.
+  const sendFollowUp = () => {
+    const q = followUpQ.trim();
+    if (!q || followUpStage) return;
+    setFollowUpStage("Refining your question");
+    setTimeout(() => setFollowUpStage("Sending it to " + person.name.split(" ")[0] + " over " + person.surface), 1400);
+    setTimeout(() => {
+      patchState((current) => ({
+        ...current,
+        conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
+          messages: [
+            ...conversation.messages,
+            { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
+            { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + person.name.split(" ")[0] + ".", meta: "Observant" },
+          ],
+        })),
+        activity: ["Follow-up sent to " + person.name + " via Observant.", ...current.activity],
+      }));
+      setFollowUpStage("");
+      setFollowUpQ("");
+      setFollowUpOpen(false);
+    }, 2800);
   };
 
   const requestLive = () => {
@@ -1121,7 +844,7 @@ function PeopleView({ state, patchState }) {
   return (
     <div className="ss-people-layout">
       <section className="ss-panel">
-        <PanelTitle k="People" title="People Observant learns from" status={state.people.length + " people"} />
+        <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " partners"} />
         <div className="ss-table-list">
           {state.people.map((rowPerson) => {
             const conversationId = ssConversationIdForPerson(state, rowPerson.id);
@@ -1131,7 +854,6 @@ function PeopleView({ state, patchState }) {
                 person={rowPerson}
                 meta={rowPerson.segment + " · " + rowPerson.surface}
                 body={rowPerson.last}
-                status={rowPerson.status}
                 selected={selected.id === conversationId}
                 focused={state.focusedTarget === "person-" + rowPerson.id}
                 onClick={() => setSelected(conversationId)}
@@ -1148,8 +870,9 @@ function PeopleView({ state, patchState }) {
             <h3>{person.name}</h3>
             <p>{person.segment} · {person.surface}</p>
           </div>
-          <span className="ss-live"><i></i>{selected.state}</span>
+          <span className="ss-via">{selected.mode === "voice" ? "Voice interview · transcript" : "Chat"} · via Observant</span>
         </div>
+        <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
         <div className="ss-person-context">
           <div><b>Learned context</b><span>{person.memory}</span></div>
           <div><b>Last signal</b><span>{person.last}</span></div>
@@ -1159,10 +882,36 @@ function PeopleView({ state, patchState }) {
           {selected.messages.map((message, i) => <ChatMessage key={i} message={message} />)}
         </div>
         <div className="ss-chat-actions">
-          <Btn variant="primary" size="sm" onClick={relayQuestion}><Icon name="relay" size={15} /> Relay a question</Btn>
+          <Btn variant="primary" size="sm" onClick={() => setFollowUpOpen(true)}><Icon name="relay" size={15} /> Follow up with a question</Btn>
           <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={15} /> Request live 1:1</Btn>
         </div>
       </section>
+      {followUpOpen && (
+        <>
+          <button type="button" className="ss-edit-backdrop" aria-label="Close" onClick={() => { if (!followUpStage) { setFollowUpOpen(false); } }} />
+          <div className="ss-modal" role="dialog" aria-label="Follow up with a question">
+            <div className="ss-modal-head">
+              <div>
+                <span className="eyebrow no-rule">Follow up</span>
+                <h2>Ask {person.name.split(" ")[0]} a question</h2>
+              </div>
+              {!followUpStage && <button type="button" className="ss-modal-close" onClick={() => setFollowUpOpen(false)} aria-label="Close"><Icon name="x" size={17} /></button>}
+            </div>
+            <p className="ss-modal-lead">Observant refines your question, phrases it for {person.name.split(" ")[0]}, and sends it over {person.surface} — you'll see the reply land in this line.</p>
+            <div className="ss-modal-body">
+              <textarea className="textarea" value={followUpQ} placeholder={"e.g. Would a live dashboard replace your weekly export?"} onChange={(e) => setFollowUpQ(e.target.value)} disabled={!!followUpStage} />
+              {followUpStage
+                ? <div className="ss-asking"><span className="ss-spinner" /> {followUpStage}…</div>
+                : (
+                  <div className="ss-modal-actions">
+                    <span />
+                    <Btn variant="primary" disabled={!followUpQ.trim()} onClick={sendFollowUp}>Send via Observant</Btn>
+                  </div>
+                )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1307,13 +1056,13 @@ function ConversationList({ state, conversations, compact, navigate }) {
         const person = ssPersonForConversation(state, conversation);
         if (!person) return null;
         const openConversation = () => navigate && navigate({ section: "people", conversationId: conversation.id, focusedTarget: "person-" + person.id });
+        const modeLabel = conversation.mode === "voice" ? "Voice interview · transcript" : "Chat";
         return (
           <PersonLine
             key={conversation.id}
             person={person}
-            meta={compact ? person.segment + " · " + person.surface : conversation.title}
+            meta={compact ? modeLabel + " · " + person.surface : conversation.title}
             body={compact ? person.last : person.memory}
-            status={conversation.state}
             compact={compact}
             focused={state.focusedTarget === "person-" + person.id}
             onClick={navigate ? openConversation : null}
