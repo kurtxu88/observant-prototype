@@ -283,7 +283,7 @@ function JoinWelcome({ product, channel, contactEmail }) {
         <h2>Track your {product} rewards</h2>
         {!accountDone ? (
           <>
-            <p className="jn-block-lead">Register an account to see your participated minutes add up and claim your {product} rewards whenever you like.</p>
+            <p className="jn-block-lead">Register an account with <b>Observant</b>, the user learning platform, to see your participated minutes add up and claim your {product} rewards whenever you like.</p>
             <div className="jn-account-form">
               <input
                 className="input"
