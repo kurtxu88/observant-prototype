@@ -28,7 +28,7 @@ function jnContext() {
   // path — rewrites serve this page, but the browser URL keeps no query string.
   if (!product) {
     const match = window.location.pathname.match(/^\/(?:join\/)?([a-z0-9][a-z0-9-]*)\/?$/i);
-    if (match && !["join", "app", "docs", "observant", "api"].includes(match[1].toLowerCase())) product = match[1];
+    if (match && !["join", "app", "docs", "observant", "api", "setup", "portal"].includes(match[1].toLowerCase())) product = match[1];
   }
   // Slugs become presentable names.
   if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {

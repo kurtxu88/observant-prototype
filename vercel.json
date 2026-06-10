@@ -5,6 +5,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/observant/Landing.html" },
+    { "source": "/setup", "destination": "/app/SelfServe.html" },
+    { "source": "/portal", "destination": "/app/SelfServe.html" },
     { "source": "/join", "destination": "/app/Join.html" },
     { "source": "/join/:slug", "destination": "/app/Join.html?product=:slug" },
     { "source": "/docs", "destination": "/docs/index.html" },

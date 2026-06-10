@@ -110,8 +110,30 @@ async function ssPostJson(url, payload) {
   return response.json();
 }
 
+// Deep links: /setup always lands on onboarding (clears a launched workspace,
+// keeps an in-progress one); /portal always lands on the dashboard (sample
+// workspace auto-created if none exists yet).
+const SS_VIEW = (() => {
+  const path = window.location.pathname.toLowerCase();
+  if (path.endsWith("/setup")) return "setup";
+  if (path.endsWith("/portal")) return "portal";
+  return "";
+})();
+
 function SelfServeApp() {
-  const [state, setState] = useStateSS(() => ssLoadState());
+  const [state, setState] = useStateSS(() => {
+    if (SS_VIEW === "setup") {
+      const saved = ssLoadState();
+      if (saved && saved.launched) { ssRemoveState(); return null; }
+      return saved;
+    }
+    let saved = ssLoadState();
+    if (SS_VIEW === "portal") {
+      if (!saved) saved = SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE);
+      if (!saved.launched) saved = { ...saved, launched: true, section: "home" };
+    }
+    return saved;
+  });
   const [copied, setCopied] = useStateSS("");
 
   useEffectSS(() => {
