@@ -449,16 +449,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
 
               <div className="ss-program-block">
-                <h3>Bring in your batch</h3>
-                <p>Name this batch so you can track it — add and label more anytime.</p>
-                <label className="ss-field ss-batch-field">
-                  <span>Batch name</span>
-                  <input className="input" value={setup.batchLabel} placeholder="e.g. Power users — June beta" onChange={(e) => patchSetup({ batchLabel: e.target.value })} />
-                </label>
+                <h3>Bring people in</h3>
+                <p>Connect each surface you picked, then invite. You can organize and label your users later.</p>
                 <div className="ss-setup-list">
                   {surfaceCount === 0 && <p className="ss-fineprint">Go back and pick at least one surface.</p>}
                   {setup.surfaces.email && (
-                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails for this batch — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
+                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
                   )}
                   {setup.surfaces.slack && (
                     <SetupRow icon="chat" title="Connect Observant to Slack" text="Install the Observant app in your shared customer Slack." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
@@ -480,7 +476,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead">Here's everything you set up. Get your magic link and turn it on.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="First batch" v={setup.batchLabel || "Your first batch"} />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
                 <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
