@@ -2302,6 +2302,18 @@
 .ss-route small { display: block; margin-top: 0.5rem; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
 .ss-route-grid + .ss-pro-upsell { margin-top: 1.2rem; }
 
+/* Preview-grid extras: tier lines inside the compensation row + inline row CTA */
+.ss-review-tier { display: block; }
+.ss-row-cta {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+.ss-invite-body { white-space: pre-wrap; }
+
 /* Suggestions block — informational, deliberately not a CTA */
 .ss-suggest {
   background: oklch(0.966 0.012 250 / .55);

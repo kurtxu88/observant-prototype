@@ -289,6 +289,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [inviteCopied, setInviteCopied] = useStateSS(false);
   const [linkGenerated, setLinkGenerated] = useStateSS(false);
+  const [showInvitePreview, setShowInvitePreview] = useStateSS(false);
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -431,22 +432,30 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
                 <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
-                <ReviewRowSS k="Compensation" v="By participated minutes" sub="Every text reply, voice chat, and call counts — Observant tracks and audits the minutes automatically." />
-                {SS_REWARD_TIERS.map((t) => (
-                  <ReviewRowSS key={t.id} k={t.name} v={setup.tierRewards[t.id]} sub={t.min + " participated minutes · ≈ $" + t.cash + " cash value"} />
-                ))}
+                <ReviewRowSS
+                  k="Compensation"
+                  v="By participated minutes"
+                  sub={<>
+                    {SS_REWARD_TIERS.map((t) => (
+                      <span className="ss-review-tier" key={t.id}>{t.name}: {setup.tierRewards[t.id]} ({t.min} min ≈ ${t.cash})</span>
+                    ))}
+                  </>}
+                />
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
+                <ReviewRowSS
+                  k="Invitation to users"
+                  v={<button type="button" className="ss-doc-link ss-row-cta" onClick={() => setShowInvitePreview((v) => !v)}>{showInvitePreview ? "Hide the invitation preview" : "Preview the invitation email →"}</button>}
+                  sub="The text you wrote in Step 1 — sent by you, under your brand."
+                />
               </div>
-
-              <div className="ss-program-block">
-                <h3>Your invitation to users</h3>
-                <p>The text you wrote in Step 2 — sent by you, under your brand. Want to change it? It lives in Step 2.</p>
-                <div className="ss-invite-copyblock">
-                  <pre>{inviteDraft}</pre>
-                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+              {showInvitePreview && (
+                <div className="ss-invite-preview">
+                  <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
+                  <p className="ss-invite-body">{inviteDraft}</p>
+                  <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a>
+                  <span className="ss-invite-note">The button is your magic link — it replaces the placeholder when you send. Tap it to see exactly what your users will see.</span>
                 </div>
-                <p className="ss-fineprint">The button behind your magic link — preview what your users tap into: <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a></p>
-              </div>
+              )}
 
               <div className="ss-program-block">
                 <h3>Your magic link</h3>
