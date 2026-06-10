@@ -269,20 +269,27 @@ function EntryScreen({ onCreate }) {
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "audience", t: "Who to listen to", d: "Pick who Observant learns from" },
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
   { id: "surfaces", t: "Where it happens", d: "Email, Slack, Discord, in-product" },
+  { id: "audience", t: "Who you'll learn from", d: "Pick who, and how you connect them" },
   { id: "review", t: "Turn it on", d: "Review and go live" },
+];
+
+const SS_CONNECT_OPTIONS = [
+  { id: "share", icon: "link", title: "Share a list or invite link", text: "Give Observant emails, a segment, or an invite link. The lightest way to start — nothing to install.", tag: "Easiest" },
+  { id: "inproduct", icon: "globe", title: "Connect inside your product", text: "Observant loads with a hashed user ID you pass it, so it always knows who it's talking to — without ever holding your real user data.", tag: "One-time setup" },
 ];
 
 function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const [step, setStep] = useStateSS(0);
+  const [showInvite, setShowInvite] = useStateSS(false);
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setCompensation = (id) => patchSetup({ compensation: id });
+  const setConnect = (id) => patchSetup({ connectMode: id });
   const toggleSurface = (surface) => patchState((current) => ({
     ...current,
     setup: { ...current.setup, surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] } },
@@ -295,6 +302,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const surfaceCount = Object.values(setup.surfaces).filter(Boolean).length;
   const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
   const compensation = SS_COMPENSATION_OPTIONS.find((opt) => opt.id === setup.compensation) || SS_COMPENSATION_OPTIONS[0];
+  const connect = SS_CONNECT_OPTIONS.find((opt) => opt.id === setup.connectMode) || SS_CONNECT_OPTIONS[0];
   const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
   const canLaunch = surfaceCount > 0;
 
@@ -329,27 +337,25 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         <main className="ss-activation-main">
           {step === 0 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 1" title="Who do you want to learn from?" />
-              <p className="ss-step-lead">Observant opens a continuous one-on-one line with each user who opts in, and keeps learning as you ship. Choose who it should reach.</p>
-              <div className="ss-card-grid">
-                {SS_AUDIENCE_OPTIONS.map((opt) => (
-                  <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
-                ))}
-              </div>
-              <div className="ss-callout">
-                <b>What to expect.</b>
-                <span>Usually 5–10% of users opt in, and they tend to be your most engaged.</span>
-              </div>
-            </section>
-          )}
-
-          {step === 1 && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3>Consent</h3>
-                <p>You send the invite — Observant never reaches your users without you. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap.</p>
+                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. Observant gives you a <b>magic link</b> to send to the users you want to recruit. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap.</p>
+                <button type="button" className="ss-preview-link" onClick={() => setShowInvite((v) => !v)}>
+                  {showInvite ? "Hide preview" : "Preview the invitation"} <Icon name={showInvite ? "back" : "arrow"} size={14} />
+                </button>
+                {showInvite && (
+                  <div className="ss-invite-preview">
+                    <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
+                    <p className="ss-invite-h">Help shape {product}</p>
+                    <p>Hi — you're one of our most active users, and we'd love your input as we keep building {product}.</p>
+                    <p>We've set up quick one-on-one check-ins you can do on your own time. You'll get {compensation.label.toLowerCase()} for your time, and you can stop anytime.</p>
+                    <p className="ss-invite-cta">Join as a feedback partner →</p>
+                    <p className="ss-invite-sign">— The {product} team</p>
+                    <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invite stays in your voice.</span>
+                  </div>
+                )}
               </div>
               <div className="ss-program-block">
                 <h3>Compensation</h3>
@@ -363,9 +369,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
             </section>
           )}
 
-          {step === 2 && (
+          {step === 1 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Where the conversations happen" status={surfaceCount + " on"} />
+              <PanelTitle k="Step 2" title="Where the conversations happen" status={surfaceCount + " on"} />
               <p className="ss-step-lead">Each person gets a private one-on-one line — never a noisy shared channel. <b>Email is the fastest way to start.</b> Slack or Discord work if you already talk to users there.</p>
               <div className="ss-card-grid two">
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The simplest place to start." onClick={() => toggleSurface("email")} />
@@ -373,7 +379,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
                 <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product" text="A private line inside " product={product} onClick={() => toggleSurface("product")} />
               </div>
-              <p className="ss-fineprint">In-product needs a one-time identity setup so Observant always knows who it's talking to (see the docs). Email, Slack, and Discord need none of that — which is why they're the quickest to launch.</p>
 
               <details className="ss-advanced">
                 <summary>
@@ -392,14 +397,41 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
             </section>
           )}
 
+          {step === 2 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 3" title="Who you'll learn from" />
+              <p className="ss-step-lead">Observant opens a continuous one-on-one line with each user who opts in, and keeps learning as you ship. Choose who it should reach.</p>
+              <div className="ss-card-grid">
+                {SS_AUDIENCE_OPTIONS.map((opt) => (
+                  <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
+                ))}
+              </div>
+              <div className="ss-callout">
+                <b>What to expect.</b>
+                <span>Usually 5–10% of users opt in, and they tend to be your most engaged.</span>
+              </div>
+
+              <div className="ss-program-block ss-connect-block">
+                <h3>How you'll connect them</h3>
+                <p>How Observant reaches the people who opt in — and what you share to make that work. It only ever needs enough to hold a 1:1 line, never raw user data you don't want to share.</p>
+                <div className="ss-card-grid two">
+                  {SS_CONNECT_OPTIONS.map((opt) => (
+                    <SelectCard key={opt.id} active={setup.connectMode === opt.id} icon={opt.icon} title={opt.title} text={opt.text} detail={opt.tag} onClick={() => setConnect(opt.id)} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
           {step === 3 && (
             <section className="ss-panel">
               <PanelTitle k="Step 4" title="Turn on continuous learning" status="Review" />
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
                 <ReviewRowSS k="They get" v={compensation.label} sub="Opt in as a feedback partner; opt out anytime." />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
+                <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
+                <ReviewRowSS k="Connecting via" v={connect.title} />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
               <div className="ss-launch-panel">

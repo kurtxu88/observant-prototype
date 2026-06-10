@@ -1829,3 +1829,72 @@
   vertical-align: middle;
 }
 .ss-create-loop .ss-step-lead { margin-bottom: 1rem; }
+
+/* Consent — preview of the user-facing invitation + connect block */
+.ss-connect-block { margin-top: 1.6rem; }
+
+.ss-preview-link {
+  margin-top: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+.ss-preview-link:hover { text-decoration: underline; }
+
+.ss-invite-preview {
+  margin-top: 0.9rem;
+  padding: 1.2rem 1.3rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--canvas);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.ss-invite-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+}
+.ss-invite-preview p {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.ss-invite-h {
+  font-family: var(--font-display) !important;
+  font-size: 1.1rem !important;
+  font-weight: 500;
+  color: var(--text-primary) !important;
+}
+.ss-invite-cta {
+  display: inline-block;
+  margin: 0.3rem 0 0.9rem !important;
+  padding: 0.5rem 0.95rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: oklch(0.99 0.01 70) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500;
+}
+.ss-invite-sign { color: var(--text-muted) !important; font-size: 0.9rem !important; }
+.ss-invite-note {
+  display: block;
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}

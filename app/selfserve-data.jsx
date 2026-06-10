@@ -118,6 +118,7 @@ function ssCreateSetup(workspace) {
   return {
     // People-first program. Solid defaults so a first version is usable out of the box.
     audienceMode: "representative",
+    connectMode: "share",
     compensation: "giftcard",
     consentAck: true,
     usersSource: "invite",
