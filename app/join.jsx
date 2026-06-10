@@ -87,7 +87,7 @@ function JoinApp() {
       {phase === "joined" && <JoinWelcome product={product} channel={channel} question={question} />}
 
       <footer className="jn-foot">
-        <p>This program is run by <b>Observant</b> on behalf of the {product} team — secure conversations, accurate notes, and automatic reward tracking. You can opt out anytime, in one tap, and your conversations are never shared outside the {product} team.</p>
+        <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
       </footer>
     </div>
   );
@@ -150,7 +150,7 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
       <section className="jn-hero">
         <span className="eyebrow">You're invited</span>
         <h1>Help shape {product}.</h1>
-        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b> — a direct line to the people building the product you use. You show them how {product} really works for you; they use it to build. You earn rewards for your time, automatically.</p>
+        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. You earn rewards for your time, tracked automatically.</p>
       </section>
 
       <section className="jn-block">
@@ -188,18 +188,37 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
         </div>
       </section>
 
-      <section className="jn-block jn-privacy">
-        <h2>The fine print, up front</h2>
-        <ul>
-          <li><b>Why Observant?</b> {product} uses Observant so your feedback is captured accurately and your privacy is protected — Observant runs the conversations and the reward tracking; the {product} team focuses on building.</li>
-          <li><b>A real direct line.</b> What you share goes to the founders and product people at {product} — not into a survey database.</li>
-          <li><b>You're in control.</b> Conversations are 1:1 and private. Skip any question, snooze the program, or opt out entirely — anytime, in one tap.</li>
-        </ul>
-      </section>
-
       <section className="jn-cta">
         <Btn variant="primary" size="lg" onClick={onJoin}>Join as a feedback partner <Icon name="arrow" size={16} /></Btn>
         <span>Takes about a minute. Opt out anytime.</span>
+      </section>
+
+      <section className="jn-block jn-faq">
+        <h2>Common questions</h2>
+        <details>
+          <summary>Who is Observant, and why am I hearing from them?</summary>
+          <p>Observant is {product}'s feedback partner — it runs these one-on-one conversations and the reward tracking on {product}'s behalf. {route === "inproduct" ? "You'll hear from Observant right inside " + product + " while you're using it." : "So the emails or Telegram messages asking about " + product + " will come from Observant."} The invitation comes from {product}; the conversations are run by Observant, for the {product} team only.</p>
+        </details>
+        <details>
+          <summary>How do I earn rewards?</summary>
+          <p>Your participated minutes accumulate every time you answer a chat or an email — or join a voice interview, if you happen to have a bigger block of time. You're always in control of when and how much you participate. Your minutes are tracked and audited automatically, and they're what you redeem rewards with.</p>
+        </details>
+        <details>
+          <summary>How do I redeem them?</summary>
+          <p>Like a gift card balance: claim smaller rewards often, or hold your balance and wait for a bigger one. You can cash out anytime.</p>
+        </details>
+        <details>
+          <summary>What about my privacy?</summary>
+          <p>Every conversation is a private 1:1 — never a group or a public channel. {route === "inproduct" ? "You're identified only by an anonymous ID inside " + product + "." : "The only thing identifying you is the email or handle you opt in with."} Skip any question, snooze the program, or opt out entirely — anytime, in one tap.</p>
+        </details>
+        <details>
+          <summary>What's the Gold tier?</summary>
+          <p>Gold is the inner circle — {(tiers[2] && tiers[2].reward) || "in-person event invites, early access & perks"}, for partners who've participated {(tiers[2] && tiers[2].min) || 200}+ minutes. First to see what's next.</p>
+        </details>
+        <details>
+          <summary>Who sees my responses?</summary>
+          <p>Your feedback goes to the founders and product people at {product} — not into a database that gets kept or sold.</p>
+        </details>
       </section>
     </main>
   );

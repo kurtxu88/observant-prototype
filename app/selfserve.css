@@ -2517,17 +2517,26 @@
 .jn-tier-head span { display: block; font-size: 0.76rem; color: var(--text-muted); }
 .jn-tier-reward { margin: 0.7rem 0 0; font-size: 0.92rem; font-weight: 600; }
 .jn-tier-note { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; }
-.jn-privacy ul { margin: 0.9rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.7rem; }
-.jn-privacy li {
-  padding: 0.85rem 1rem;
+.jn-faq details {
+  margin-top: 0.6rem;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--panel);
+  padding: 0.85rem 1rem;
+}
+.jn-faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.94rem;
+  list-style-position: outside;
+}
+.jn-faq summary::marker { color: var(--accent); }
+.jn-faq details p {
+  margin: 0.6rem 0 0;
   font-size: 0.9rem;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--text-secondary);
 }
-.jn-privacy li b { color: var(--text-primary); }
 .jn-cta {
   margin-top: 2.4rem;
   display: flex;
