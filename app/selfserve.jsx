@@ -273,9 +273,8 @@ function EntryScreen({ onCreate }) {
 
 const SS_ONBOARD_STEPS = [
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
-  { id: "surfaces", t: "Open your channels", d: "Where people can opt in" },
-  { id: "invite", t: "Invite your batch", d: "Who to invite, connect channels" },
-  { id: "golive", t: "Go live", d: "Your magic link" },
+  { id: "channels", t: "Choose your channels", d: "Email & Telegram, on by default" },
+  { id: "golive", t: "Go live", d: "Your magic link + invitation" },
 ];
 
 const SS_CONNECT_OPTIONS = [
@@ -288,14 +287,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const setup = state.setup;
   const [step, setStep] = useStateSS(0);
   const [showInvite, setShowInvite] = useStateSS(false);
-  const [setupDone, setSetupDone] = useStateSS({});
   const [linkCopied, setLinkCopied] = useStateSS(false);
-  const [previewNote, setPreviewNote] = useStateSS(false);
-  const [setupModal, setSetupModal] = useStateSS("");
-  const markDone = (key, summary) => {
-    setSetupDone((d) => ({ ...d, [key]: summary }));
-    setSetupModal("");
-  };
+  const [inviteCopied, setInviteCopied] = useStateSS(false);
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -308,17 +301,35 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     setup: { ...current.setup, surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] } },
   }));
 
-  const surfaceCount = Object.values(setup.surfaces).filter(Boolean).length;
-  const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
-  const connect = SS_CONNECT_OPTIONS.find((opt) => opt.id === setup.connectMode) || SS_CONNECT_OPTIONS[0];
-  const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
-  const setupSummary = Object.values(setupDone).filter(Boolean).join(" · ");
+  const surfaceCount = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]).length;
+  const surfaceSummary = SS_FAST_CHANNELS.filter((channel) => setup.surfaces[channel]).map(ssSurfaceLabel).join(" · ");
   const canLaunch = surfaceCount > 0;
   const magicLink = "observant.link/" + product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const copyLink = () => {
     if (navigator.clipboard) navigator.clipboard.writeText("https://" + magicLink).catch(() => {});
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
+  };
+  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
+  const inviteText = [
+    "Subject: You're invited to help shape " + product,
+    "",
+    "Hi there,",
+    "",
+    "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
+    "",
+    "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
+    "",
+    "Join here: https://" + magicLink,
+    "",
+    "You can opt out anytime, in one tap.",
+    "",
+    "— The " + product + " team",
+  ].join("\n");
+  const copyInvite = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(inviteText).catch(() => {});
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 1500);
   };
 
   const next = () => setStep((s) => Math.min(s + 1, SS_ONBOARD_STEPS.length - 1));
@@ -365,7 +376,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
                     <p className="ss-invite-h">You're invited to help shape {product}</p>
                     <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into our feedback partner program.</p>
-                    <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You show us how {product} really works for you; we use it to build.</p>
+                    <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email or Telegram. You show us how {product} really works for you; we use it to build.</p>
                     <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
                     <a className="ss-invite-cta" href={"Join.html?product=" + encodeURIComponent(product)} target="_blank" rel="noreferrer">Join the program →</a>
                     <p className="ss-invite-sign">— The {product} team</p>
@@ -406,76 +417,60 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
           {step === 1 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 2" title="Open channels for people to opt in" status={surfaceCount + " open"} />
-              <p className="ss-step-lead"><b>Your users choose where the conversation happens — you just open the doors.</b> Each channel you enable here is one more place people can opt in and talk, always on a private one-on-one line — never a noisy shared channel. Email is the lightest to open; Slack and Discord fit if you already talk to users there; in-product is the richest, with a one-time setup. Open as many as fit — add more anytime.</p>
-              <div className="ss-surface-grid">
-                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The lightest channel to open." onClick={() => toggleSurface("email")} />
-                <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="Share the link in your customer Slack — each person who opts in chats privately with the bot, never in the public channel." onClick={() => toggleSurface("slack")} />
-                <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="Share the link in your community Discord — every conversation is a private DM, never the public server." onClick={() => toggleSurface("discord")} />
-                <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product" text="Right at the moment of use, inside your product — the richest channel. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
-                <p className="ss-inproduct-note"><b>No data handover.</b> On email, Slack, and Discord the identifier arrives with the opt-in — their email or their handle. Only in-product needs a one-time setup, because inside your product Observant can't see who it's talking to. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></p>
+              <PanelTitle k="Step 2" title="How will people connect?" status={surfaceCount + " on"} />
+              <p className="ss-step-lead"><b>Your users choose where the conversation happens — you just open the doors.</b> You'll share one magic link; each person who opts in picks their channel, and that choice is also how Observant knows who they are — their email, or their Telegram handle. <b>You never hand over your user data.</b> Both channels are on by default; turn one off only if it doesn't fit your brand.</p>
+              <div className="ss-channel-grid">
+                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
+                <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
+              </div>
+              <div className="ss-upsell">
+                <div>
+                  <b>Want Observant inside your product?</b>
+                  <span>In-product is the richest surface — conversations at the exact moment of use — and it's part of the data-sharing tier, set up together with our team. Your users can still connect by email or Telegram alongside it. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></span>
+                </div>
+                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
               </div>
             </section>
           )}
 
           {step === 2 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Invite your batch" status="Almost there" />
-              <p className="ss-step-lead">It's up to you who you bring in — and you can add and label more anytime. A few ways to think about your first batch:</p>
-              <div className="ss-advice-block">
-                {SS_AUDIENCE_OPTIONS.map((opt) => (
-                  <div className="ss-advice-item" key={opt.id}>
-                    <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
-                    <div><b>{opt.label}</b><p>{opt.text}</p></div>
-                  </div>
-                ))}
-                <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
+              <PanelTitle k="Step 3" title="Go live" status="Last step" />
+              <p className="ss-step-lead">One link does everything from here. Each person who opens it opts in, picks their channel, and lands on a continuous 1:1 line — <b>their identifier arrives with the opt-in</b>, so there's nothing to connect or upload.</p>
+              <div className="ss-review">
+                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
+                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick whichever suits them at opt-in" : ""} />
+                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
+                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
 
               <div className="ss-program-block">
-                <h3>Your magic link does the recruiting</h3>
-                <p>Observant follows up with each person <b>continuously</b> — this isn't a one-time survey — so everyone needs a stable identifier. The magic link captures it at opt-in: their email on email, their handle on Slack or Discord. <b>You never hand over your user data.</b> Share the link on each channel you opened:</p>
-                <div className="ss-magiclink">
-                  <code>{magicLink}</code>
-                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
-                </div>
-                <div className="ss-setup-list">
-                  {setup.surfaces.email && (
-                    <SetupRow icon="mail" title="Email — send it under your brand" text="Paste the link into an invitation from your own address (Step 1 has the copy, ready to adapt). Each person who opts in is tracked by their email — no list upload needed." cta="Copy link" done={setupDone.email} onAction={() => { copyLink(); markDone("email", "Link copied — send the invitation from your own address"); }} />
-                  )}
-                  {setup.surfaces.slack && (
-                    <SetupRow icon="chat" title="Slack — post it in your group" text="Install the Observant app once, then drop the link in your customer Slack. Each opt-in opens a private 1:1 DM with the bot — never the public channel." cta="Add to Slack" done={setupDone.slack} onAction={() => setSetupModal("slack")} />
-                  )}
-                  {setup.surfaces.discord && (
-                    <SetupRow icon="chat" title="Discord — post it in your server" text="Install the Observant bot once, then share the link with your community. Every conversation is a private DM — never the public server." cta="Add to Discord" done={setupDone.discord} onAction={() => setSetupModal("discord")} />
-                  )}
-                  {setup.surfaces.product && (
-                    <SetupRow icon="globe" title="In-product — the one real setup" text="Inside your product, Observant can't see who it's talking to — so you pass a hashed user ID once. Your real user data stays with you." docLink cta="Set up" done={setupDone.product} onAction={() => setSetupModal("product")} />
-                  )}
+                <h3>Who to send it to</h3>
+                <p>It's up to you — share it with your whole list or hand-pick. A few ways to think about your first batch:</p>
+                <div className="ss-advice-block">
+                  {SS_AUDIENCE_OPTIONS.map((opt) => (
+                    <div className="ss-advice-item" key={opt.id}>
+                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                      <div><b>{opt.label}</b><p>{opt.text}</p></div>
+                    </div>
+                  ))}
+                  <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
                 </div>
               </div>
-              {setupModal === "slack" && <ConnectModal kind="Slack" placeholder="your-company.slack.com" hint="A one-time install so the bot can open private 1:1s. Then post your magic link in the group — each person who taps it starts their own DM with the bot. Observant never posts in the public channel." onClose={() => setSetupModal("")} onDone={(name) => markDone("slack", "Connected to " + name + " — now post your link in the group")} />}
-              {setupModal === "discord" && <ConnectModal kind="Discord" placeholder="Your server name or invite link" hint="A one-time install so the bot can DM people. Then share your magic link with the community — each opt-in becomes a private 1:1. Nothing ever lands in public channels." onClose={() => setSetupModal("")} onDone={(name) => markDone("discord", "Connected to " + name + " — now share your link with the community")} />}
-              {setupModal === "product" && <InProductModal product={product} onClose={() => setSetupModal("")} onDone={() => markDone("product", "Snippet ready — ID setup documented")} />}
-            </section>
-          )}
 
-          {step === 3 && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 4" title="Go live" status="Last step" />
-              <p className="ss-step-lead">Here's everything you set up. Get your magic link and turn it on.</p>
-              <div className="ss-review">
-                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick whichever suits them" : ""} />
-                <ReviewRowSS k="Connected" v={setupSummary || "Nothing connected yet"} sub={setupSummary ? "" : "Go back a step to bring people in — or do it after you're live."} />
-                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
-                {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
+              <div className="ss-program-block">
+                <h3>Send it under your brand</h3>
+                <p>A ready-to-paste invitation — adapt the voice, keep the link. Works as an email, a community post, or a DM.</p>
+                <div className="ss-invite-copyblock">
+                  <pre>{inviteText}</pre>
+                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+                </div>
               </div>
 
               <div className="ss-golive">
                 <span className="eyebrow no-rule">Your magic link</span>
                 <h2>You're ready to go live.</h2>
-                <p>This is the link people open to join your program. Open it yourself to test the whole experience first — then send it to your users.</p>
+                <p>Open the link yourself first — see exactly what your users will see, channel choice and all — then turn it on and send.</p>
                 <div className="ss-magiclink">
                   <code>{magicLink}</code>
                   <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
@@ -503,42 +498,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   );
 }
 
-function SetupRow({ icon, title, text, cta, done, onAction, docLink }) {
-  return (
-    <div className={"ss-setup-row" + (done ? " done" : "")}>
-      <span className="ss-setup-ic"><Icon name={done ? "check" : icon} size={18} /></span>
-      <div className="ss-setup-copy">
-        <b>{title}</b>
-        {done
-          ? <p className="ss-setup-done-note">{done}</p>
-          : <p>{text}{docLink ? <> <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>}
-      </div>
-      <Btn variant={done ? "ghost" : "primary"} size="sm" onClick={onAction}>
-        {done ? "Change" : cta}
-      </Btn>
-    </div>
-  );
-}
-
-function SetupModal({ title, lead, children, onClose }) {
-  return (
-    <>
-      <button type="button" className="ss-edit-backdrop" aria-label="Close dialog" onClick={onClose} />
-      <div className="ss-modal" role="dialog" aria-label={title}>
-        <div className="ss-modal-head">
-          <div>
-            <span className="eyebrow no-rule">Set up</span>
-            <h2>{title}</h2>
-          </div>
-          <button type="button" className="ss-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={17} /></button>
-        </div>
-        {lead && <p className="ss-modal-lead">{lead}</p>}
-        <div className="ss-modal-body">{children}</div>
-      </div>
-    </>
-  );
-}
-
 function ProUpsell() {
   return (
     <section className="ss-pro-upsell">
@@ -548,6 +507,7 @@ function ProUpsell() {
         <p>Everything above runs without Observant touching your user data. Share more with us, and it gets more powerful:</p>
       </div>
       <ul className="ss-pro-list">
+        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by email or Telegram too.</span></li>
         <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
         <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
         <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
@@ -556,46 +516,6 @@ function ProUpsell() {
         <a className="btn btn-primary btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
       </div>
     </section>
-  );
-}
-
-function ConnectModal({ kind, placeholder, hint, onClose, onDone }) {
-  const [name, setName] = useStateSS("");
-  return (
-    <SetupModal title={"Connect Observant to " + kind} lead={hint} onClose={onClose}>
-      <Field label={kind === "Slack" ? "Slack workspace" : "Discord server"}>
-        <input className="input" value={name} placeholder={placeholder} onChange={(e) => setName(e.target.value)} />
-      </Field>
-      <div className="ss-modal-actions">
-        <span className="ss-modal-count">You approve the install in {kind} — nothing happens without you.</span>
-        <Btn variant="primary" disabled={!name.trim()} onClick={() => onDone(name.trim())}>Connect</Btn>
-      </div>
-    </SetupModal>
-  );
-}
-
-function InProductModal({ product, onClose, onDone }) {
-  const [copied, setCopied] = useStateSS(false);
-  const slug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const snippet = '<script src="https://cdn.observant.ai/agent.js" data-workspace="' + slug + '"><\/script>\n\n// when the agent loads, pass a stable hashed ID:\nObservant.setUserIdentifier(hash(yourInternalUserId))';
-  const copy = () => {
-    if (navigator.clipboard) navigator.clipboard.writeText(snippet).catch(() => {});
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1400);
-  };
-  return (
-    <SetupModal
-      title="Set up in-product"
-      lead={"Two lines: load the Observant agent inside " + product + ", and pass a stable hashed user ID so it always knows who it's talking to — without ever holding your real user data."}
-      onClose={onClose}
-    >
-      <CodeBlock label="Add to your product" text={snippet} copied={copied} onCopy={copy} />
-      <p className="ss-fineprint">The ID must be unique, static, and non-reversible — hash your internal user ID on your side. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></p>
-      <div className="ss-modal-actions">
-        <span />
-        <Btn variant="primary" onClick={() => onDone()}>Mark as set up</Btn>
-      </div>
-    </SetupModal>
   );
 }
 
@@ -978,9 +898,8 @@ Authorization: Bearer <server-issued token>
                 <h3>Channels in use</h3>
                 <div className="ss-surface-read-grid">
                   <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async 1:1 lines." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("slack")} icon="chat" title="Slack" text="1:1 bot in your customer Slack." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("discord")} icon="chat" title="Discord" text="1:1 bot in your community Discord." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"A private line inside " + product + "."} />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("telegram")} icon="chat" title="Telegram" text="Private 1:1 with the Observant bot." />
+                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"A private line inside " + product + ". Data-sharing tier."} />
                 </div>
               </section>
             </div>
@@ -1110,9 +1029,7 @@ function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onCancel, o
             <h3>Channels</h3>
             <div className="ss-card-grid two">
               <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1 lines." onClick={() => onToggleSurface("email")} />
-              <SurfaceCard active={draft.surfaces.slack} icon="chat" title="Slack" text="1:1 bot in your customer Slack." onClick={() => onToggleSurface("slack")} />
-              <SurfaceCard active={draft.surfaces.discord} icon="chat" title="Discord" text="1:1 bot in your community Discord." onClick={() => onToggleSurface("discord")} />
-              <SurfaceCard active={draft.surfaces.product} icon="globe" title="In-product" text="A private line inside " product={product} onClick={() => onToggleSurface("product")} />
+              <SurfaceCard active={draft.surfaces.telegram} icon="chat" title="Telegram" text="Private 1:1 with the Observant bot." onClick={() => onToggleSurface("telegram")} />
             </div>
           </section>
         </div>

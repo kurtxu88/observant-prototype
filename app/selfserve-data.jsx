@@ -35,10 +35,15 @@ const SS_GROUP_OPTIONS = [
 
 const SS_SURFACE_OPTIONS = [
   { id: "email", label: "Email", icon: "mail" },
+  { id: "telegram", label: "Telegram", icon: "chat" },
   { id: "slack", label: "Slack", icon: "chat" },
   { id: "discord", label: "Discord", icon: "chat" },
   { id: "product", label: "In-product", icon: "globe" },
 ];
+
+// Fast-start connections a user can pick on the magic link.
+// Slack needs a workspace install and in-product needs the SDK — both live on the Pro side.
+const SS_FAST_CHANNELS = ["email", "telegram"];
 
 // People-first: how the always-on panel is built.
 const SS_AUDIENCE_OPTIONS = [
@@ -136,8 +141,9 @@ function ssCreateSetup(workspace) {
     consentAck: true,
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-    // Email leads as the MVP surface; Slack/Discord are channel substitutes; in-product is day-1.
-    surfaces: { email: true, slack: false, discord: false, product: false },
+    // Fast start: both user-pickable channels on by default — the client unchecks, not builds.
+    // In-product is a Pro surface (guided setup), never toggled here.
+    surfaces: { email: true, telegram: true, product: false },
     // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
@@ -166,7 +172,7 @@ function ssCreatePeople(workspace) {
       name: "Marcus T.",
       color: "green",
       segment: "Power user",
-      surface: "Slack",
+      surface: "Telegram",
       status: "Active now",
       memory: "Uses " + product + " for weekly ops reporting and wants share links.",
       last: "I need a link my ops lead can read, not another CSV.",
@@ -196,7 +202,7 @@ function ssCreatePeople(workspace) {
       name: "Leah M.",
       color: "rust",
       segment: "Upgrade evaluator",
-      surface: "Discord",
+      surface: "Telegram",
       status: "Watching",
       memory: "Paused on the upgrade page after comparing reporting permissions.",
       last: "I need to know whether the team can see this before we upgrade.",
@@ -311,7 +317,7 @@ function ssCreateLoops() {
       conversationIds: ["dana", "marcus", "owen"],
       peopleIds: ["dana", "marcus", "owen"],
       eventIds: ["evt-1", "evt-2"],
-      surfaceIds: ["email", "slack"],
+      surfaceIds: ["email", "telegram"],
     },
     {
       id: "loop-onboarding",
@@ -341,7 +347,7 @@ function ssCreateLoops() {
       conversationIds: ["leah"],
       peopleIds: ["leah"],
       eventIds: ["evt-4"],
-      surfaceIds: ["discord"],
+      surfaceIds: ["telegram"],
     },
   ];
 }
@@ -774,6 +780,7 @@ Object.assign(window, {
   SS_DEFAULT_WORKSPACE,
   SS_GROUP_OPTIONS,
   SS_SURFACE_OPTIONS,
+  SS_FAST_CHANNELS,
   SS_AUDIENCE_OPTIONS,
   SS_COMPENSATION_OPTIONS,
   SS_REWARD_TIERS,

@@ -2203,6 +2203,39 @@
 .ss-pro-list span { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; }
 .ss-pro-cta { margin-top: 1rem; }
 
+/* Fast-start channel chooser (Step 2): two cards, then the in-product Pro upsell */
+.ss-channel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin-top: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+@media (max-width: 720px) { .ss-channel-grid { grid-template-columns: 1fr; } }
+
+/* Ready-to-paste invitation text (Go live) */
+.ss-invite-copyblock {
+  position: relative;
+  margin-top: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.ss-invite-copyblock pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+.ss-invite-copyblock .ss-magiclink-copy {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+}
+
 /* Setup modals (Step 3 — bring people in) */
 .ss-modal {
   position: fixed;
@@ -2398,6 +2431,43 @@
   background: var(--surface);
 }
 .jn-chat-input .input { flex: 1; }
+.jn-choice-grid {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 640px) { .jn-choice-grid { grid-template-columns: 1fr; } }
+.jn-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.3rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.jn-choice-ic {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.jn-choice b { font-size: 1.05rem; }
+.jn-choice p { margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+.jn-choice-hint { font-size: 0.8rem !important; color: var(--text-muted) !important; margin-top: auto !important; }
+.jn-choice .btn { align-self: flex-start; }
+.jn-choice .input { margin-top: auto; }
+.jn-choice-note {
+  margin-top: 1.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 .jn-foot {
   border-top: 1px solid var(--border);
   padding: 1.4rem clamp(1.25rem, 4vw, 2.5rem) 2rem;

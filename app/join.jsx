@@ -43,7 +43,8 @@ function jnContext() {
 
 function JoinApp() {
   const { product, tiers } = jnContext();
-  const [joined, setJoined] = useStateJN(false);
+  const [phase, setPhase] = useStateJN("invite");
+  const [channel, setChannel] = useStateJN("");
 
   return (
     <div className="jn-page">
@@ -52,12 +53,56 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
-      {!joined ? <JoinInvite product={product} tiers={tiers} onJoin={() => setJoined(true)} /> : <JoinWelcome product={product} />}
+      {phase === "invite" && <JoinInvite product={product} tiers={tiers} onJoin={() => setPhase("choose")} />}
+      {phase === "choose" && <JoinChoose product={product} onConnect={(picked) => { setChannel(picked); setPhase("joined"); }} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} />}
 
       <footer className="jn-foot">
         <p>This program is run by <b>Observant</b> on behalf of the {product} team — secure conversations, accurate notes, and automatic reward tracking. You can opt out anytime, in one tap, and your conversations are never shared outside the {product} team.</p>
       </footer>
     </div>
+  );
+}
+
+function JoinChoose({ product, onConnect }) {
+  const [email, setEmail] = useStateJN("");
+  const emailValid = email.includes("@") && email.includes(".");
+
+  return (
+    <main className="jn-main">
+      <section className="jn-hero">
+        <span className="eyebrow">One last choice</span>
+        <h1>Where should we reach you?</h1>
+        <p>Your pick — this is where your one-on-one with the {product} team will live. You can switch channels later, and opt out anytime.</p>
+      </section>
+
+      <div className="jn-choice-grid">
+        <article className="jn-choice">
+          <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
+          <b>Email</b>
+          <p>Quiet and async — reply whenever you have five minutes. We'll only ever use this address for your 1:1.</p>
+          <input
+            className="input"
+            type="email"
+            value={email}
+            placeholder="you@example.com"
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email"); }}
+          />
+          <Btn variant="primary" size="sm" disabled={!emailValid} onClick={() => onConnect("email")}>Join by email</Btn>
+        </article>
+
+        <article className="jn-choice">
+          <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
+          <b>Telegram</b>
+          <p>A private chat with the Observant bot — one tap to connect, and replying feels like texting a friend.</p>
+          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
+          <Btn variant="primary" size="sm" onClick={() => onConnect("telegram")}>Connect Telegram</Btn>
+        </article>
+      </div>
+
+      <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands.</p>
+    </main>
   );
 }
 
@@ -79,7 +124,7 @@ function JoinInvite({ product, tiers, onJoin }) {
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email, Slack, Discord, or right inside {product} — and it remembers your context, so you never repeat yourself.</p>
+            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email or Telegram — and it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
             <b>Earn as you go</b>
@@ -122,9 +167,10 @@ function JoinInvite({ product, tiers, onJoin }) {
   );
 }
 
-function JoinWelcome({ product }) {
+function JoinWelcome({ product, channel }) {
+  const channelLabel = channel === "telegram" ? "Telegram" : "email";
   const [messages, setMessages] = useStateJN([
-    { t: "them", text: "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally, and you reply whenever suits you.", meta: "Observant, for the " + product + " team" },
+    { t: "them", text: "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + channelLabel + ", and you reply whenever suits you.", meta: "Observant, for the " + product + " team" },
     { t: "them", text: "To start us off — what made you give " + product + " a try in the first place?", meta: "Observant" },
   ]);
   const [draft, setDraft] = useStateJN("");
