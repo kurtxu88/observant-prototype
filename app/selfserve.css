@@ -2330,6 +2330,26 @@
 .ss-magiclink-open:hover code { color: var(--accent); }
 
 .ss-block-q { margin: 1.2rem 0 0.2rem; font-weight: 600; font-size: 0.95rem; }
+.ss-rate-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 1.2rem;
+}
+.ss-rate-input { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; }
+.ss-rate-input .input { width: 5.5rem; }
+.ss-rate-calc b { display: block; font-size: 1.05rem; }
+.ss-rate-calc span { font-size: 0.82rem; color: var(--text-muted); }
+.jn-rate-card {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 1.2rem 1.3rem;
+}
+.jn-rate-card b { font-family: var(--font-display); font-weight: 500; font-size: 1.4rem; }
+.jn-rate-card p { margin: 0.5rem 0 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.55; }
 .jn-perks-note {
   margin-top: 1rem;
   padding: 0.8rem 1rem;

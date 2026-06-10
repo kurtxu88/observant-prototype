@@ -136,8 +136,10 @@ function ssCreateSetup(workspace) {
     recruitMode: "byo",
     connectMode: "share",
     batchLabel: "",
-    // cash = managed by Observant (recommended); credits = self-managed by the team.
+    // Cash is the day-one model, managed by Observant. Product credits: coming.
     compensation: "cash",
+    // Dollars per participated minute — $1/min is the industry guideline.
+    rate: 1,
     tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
     consentAck: true,
     usersSource: "invite",

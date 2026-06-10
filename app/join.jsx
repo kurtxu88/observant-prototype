@@ -6,21 +6,6 @@
    ============================================================ */
 const { useState: useStateJN } = React;
 
-const JN_TIERS = [
-  {
-    id: "bronze", name: "Bronze", min: 30, cash: 30, color: "gold",
-    note: "A couple of quick chats gets you here.",
-  },
-  {
-    id: "silver", name: "Silver", min: 100, cash: 90, color: "teal",
-    note: "For regulars who check in over time.",
-  },
-  {
-    id: "gold", name: "Gold", min: 200, cash: 150, color: "rust",
-    note: "The inner circle of the program.",
-  },
-];
-
 function jnContext() {
   const params = new URLSearchParams(window.location.search);
   let product = (params.get("product") || "").trim();
@@ -34,8 +19,7 @@ function jnContext() {
   if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {
     product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   }
-  const tiers = JN_TIERS;
-  let compensation = "cash";
+  let rate = 1;
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
   try {
@@ -43,7 +27,7 @@ function jnContext() {
     if (raw) {
       const state = JSON.parse(raw);
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
-      if (state.setup && state.setup.compensation) compensation = state.setup.compensation === "credits" ? "credits" : "cash";
+      if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 1;
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "telegram"].filter((c) => state.setup.surfaces[c]);
       }
@@ -52,15 +36,14 @@ function jnContext() {
   } catch (err) { /* stale local state never blocks the invite */ }
   return {
     product: product || "Northwind",
-    tiers,
+    rate,
     channels: channels.length ? channels : ["email", "telegram"],
     route: route || "offproduct",
-    compensation,
   };
 }
 
 function JoinApp() {
-  const { product, tiers, channels, route, compensation } = jnContext();
+  const { product, rate, channels, route } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
@@ -77,7 +60,7 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
-      {phase === "invite" && <JoinInvite product={product} tiers={tiers} channels={channels} route={route} compensation={compensation} onJoin={onJoin} />}
+      {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} />}
 
@@ -135,7 +118,7 @@ function JoinChoose({ product, channels, onConnect }) {
   );
 }
 
-function JoinInvite({ product, tiers, channels, route, compensation, onJoin }) {
+function JoinInvite({ product, rate, channels, route, onJoin }) {
   const channelPhrase = channels.map((c) => c === "telegram" ? "Telegram" : "email").join(" or ");
   const reachLine = route === "inproduct"
     ? <>It reaches you right inside {product}, at the moment you're using it</>
@@ -168,18 +151,10 @@ function JoinInvite({ product, tiers, channels, route, compensation, onJoin }) {
 
       <section className="jn-block">
         <h2>Your rewards</h2>
-        <p className="jn-block-lead">Minutes add up like a balance — redeem as you go, or hold for a higher tier.</p>
-        <div className="jn-tier-grid">
-          {tiers.map((tier) => (
-            <article className="jn-tier" key={tier.id}>
-              <div className="jn-tier-head">
-                <Avatar name={tier.name} color={tier.color} cls="ss-tier-badge" />
-                <div><b>{tier.name}</b><span>{tier.min} participated minutes</span></div>
-              </div>
-              <p className="jn-tier-reward">{compensation === "credits" ? "$" + tier.cash + " in " + product + " credits" : "$" + tier.cash}</p>
-              <p className="jn-tier-note">{tier.note}</p>
-            </article>
-          ))}
+        <p className="jn-block-lead">Minutes add up like a balance — redeem as you go, whenever you like.</p>
+        <div className="jn-rate-card">
+          <b>${rate} per participated minute</b>
+          <p>Every reply, voice chat, and call counts — tracked and audited automatically. 30 minutes ≈ ${Math.round(30 * rate)}, and your balance works like a gift card: claim small amounts often, or save it up.</p>
         </div>
         <p className="jn-perks-note">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
       </section>
@@ -201,15 +176,15 @@ function JoinInvite({ product, tiers, channels, route, compensation, onJoin }) {
         </details>
         <details>
           <summary>How do I redeem my rewards?</summary>
-          <p>Once you register an account with Observant, you can log in anytime to track your participated minutes as they add up. Rewards work like a gift card balance — claim smaller amounts often, or hold your balance for a bigger one. {compensation === "credits" ? "The " + product + " team sends your credits directly; Observant shows them who's earned what." : "You cash out directly on Observant, anytime."}</p>
+          <p>Once you register an account with Observant, you can log in anytime to track your participated minutes as they add up. Rewards work like a gift card balance — claim smaller amounts often, or hold your balance for a bigger one. You cash out directly on Observant, anytime.</p>
         </details>
         <details>
           <summary>What about my privacy — who sees my responses?</summary>
           <p>Your feedback belongs to {product}. Their team has access to it — they're the ones asking — and everything is anonymized for their data-analysis purposes. It doesn't go into a database that anyone else keeps or sells. You can skip any question, or opt out entirely, anytime.</p>
         </details>
         <details>
-          <summary>What's the Gold tier — and the extra perks?</summary>
-          <p>Gold is the top milestone: {(tiers[2] && tiers[2].min) || 200}+ participated minutes, worth ${(tiers[2] && tiers[2].cash) || 150}. Beyond the tiers, teams often invite their long-time active partners to extras — in-person events or festivals (think Robinhood-style media events), early access, and time with the founding team. The {product} team decides who and when.</p>
+          <summary>Is there anything beyond the cash?</summary>
+          <p>Often, yes. Teams usually invite their long-time active partners to extras — in-person events or festivals (think Robinhood-style media events), conferences, early access, and time with the founding team. The {product} team decides who and when.</p>
         </details>
       </section>
     </main>
