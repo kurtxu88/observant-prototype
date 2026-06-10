@@ -160,7 +160,7 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. {reachLine} — and it remembers your context, so you never repeat yourself.</p>
+            <p>Every conversation is private. Most of the time it's a couple of messages or a short voice chat with the {product} team's <b>AI interviewer</b>. Occasionally the founding team requests a longer call — a one-on-one video chat where you talk to the <b>product folks at {product} themselves</b>. {reachLine}, and you say yes or no each time you're notified — you're in complete control. And it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
             <b>Earn as you go</b>
