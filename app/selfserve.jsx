@@ -464,7 +464,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <h3>Your magic link</h3>
                 {!linkGenerated ? (
                   <>
-                    <p>This is what replaces the placeholder in your invitation. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
+                    <p>This link introduces people to the program and the rewards. After they opt in, they choose their preferred way of being contacted — and you can preview that whole experience once you generate your link.</p>
                     <div className="ss-golive-actions">
                       <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
                     </div>
