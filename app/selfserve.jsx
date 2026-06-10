@@ -369,7 +369,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           {step === 0 && (
             <section className="ss-panel">
               <PanelTitle k="Step 1" title="Choose your feedback surface" status={surfaceCount + " on"} />
-              <p className="ss-step-lead"><b>The most important decision: where the learning happens.</b> You'll share one magic link; each person who opts in picks their channel, and that choice is also how Observant knows who they are — their email, or their Telegram handle. <b>You never hand over your user data.</b> Both are on by default; turn one off only if it doesn't fit your brand.</p>
+              <p className="ss-step-lead"><b>The most important decision: where the learning happens.</b></p>
+              <p className="ss-step-lead">You'll share one magic link. Each person who opts in picks their channel — and that choice is also how Observant knows who they are: their email, or their Telegram handle. <b>You never hand over your user data.</b></p>
+              <p className="ss-step-lead">Both are on by default. Turn one off only if it doesn't fit your brand.</p>
               <div className="ss-channel-grid">
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
                 <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
@@ -499,7 +501,7 @@ function ProUpsell() {
   return (
     <section className="ss-pro-upsell">
       <div className="ss-pro-head">
-        <span className="eyebrow no-rule">Go further</span>
+        <span className="ss-pro-badge">Pro</span>
         <b>Share more data, unlock more</b>
         <p>Everything above runs without Observant touching your user data. Share more with us, and it gets more powerful:</p>
       </div>

@@ -1713,6 +1713,7 @@
   line-height: 1.55;
   max-width: 60ch;
 }
+.ss-step-lead + .ss-step-lead { margin-top: -0.55rem; }
 
 .ss-callout {
   margin-top: 1.4rem;
@@ -2177,16 +2178,30 @@
   height: 100%;
 }
 
-/* Pro upsell — share more data, unlock more (the one consolidated upgrade block) */
+/* Pro upsell — share more data, unlock more (the one consolidated upgrade block).
+   Tinted like a price-tier card so it reads as Pro at a glance. */
 .ss-pro-upsell {
-  border: 1px dashed var(--border-strong);
+  border: 1px solid oklch(0.86 0.045 48);
   border-radius: 16px;
-  background: var(--panel);
+  background: linear-gradient(180deg, var(--accent-tint), oklch(0.965 0.022 52));
   padding: 1.3rem 1.4rem;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / .5);
+}
+.ss-pro-badge {
+  display: inline-block;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: oklch(0.99 0.01 70);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .ss-pro-head b {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.6rem;
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 1.25rem;
@@ -2195,9 +2210,9 @@
 .ss-pro-list { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.65rem; }
 .ss-pro-list li {
   padding: 0.75rem 0.9rem;
-  border: 1px solid var(--border);
+  border: 1px solid oklch(0.9 0.025 52);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--panel);
 }
 .ss-pro-list b { display: block; font-size: 0.92rem; margin-bottom: 0.15rem; }
 .ss-pro-list span { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; }
