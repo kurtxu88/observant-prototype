@@ -2326,6 +2326,8 @@
 .ss-sendpreview .ss-field { flex: 1; margin: 0; }
 .ss-sent-note { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--success); font-weight: 600; }
 .ss-sent-note .ss-row-cta { color: var(--accent); font-weight: 500; margin-left: 0.4rem; }
+.ss-magiclink-open { flex: 1; min-width: 0; }
+.ss-magiclink-open:hover code { color: var(--accent); }
 
 /* Suggestions block — informational, deliberately not a CTA */
 .ss-suggest {

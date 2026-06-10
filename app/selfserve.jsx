@@ -473,10 +473,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <>
                     <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
                     <div className="ss-magiclink">
-                      <code>{magicLink}</code>
+                      <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
                       <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
                     </div>
-                    <p className="ss-fineprint"><a className="ss-doc-link" href={joinUrl} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
                     <div className="ss-golive-actions">
                       <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
                     </div>
