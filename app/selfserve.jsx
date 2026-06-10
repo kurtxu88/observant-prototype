@@ -303,13 +303,16 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const setRoute = (id) => patchSetup({ route: id });
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
-  const magicLink = "observant.link/" + product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  // The link is real wherever the app is served (localhost dev server and the
+  // Vercel deploy both rewrite /join/:slug) — observant.link later just points here.
+  const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const magicLink = window.location.host + "/join/" + productSlug;
+  const joinUrl = "/join/" + productSlug + "?route=" + route;
   const copyLink = () => {
-    if (navigator.clipboard) navigator.clipboard.writeText("https://" + magicLink).catch(() => {});
+    if (navigator.clipboard) navigator.clipboard.writeText(window.location.origin + "/join/" + productSlug).catch(() => {});
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + SS_FAST_CHANNELS.join(",") + "&route=" + route;
   const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
