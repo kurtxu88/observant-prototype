@@ -2229,3 +2229,156 @@
 .ss-modal-count { font-size: 0.84rem; color: var(--text-muted); }
 .ss-setup-done-note { color: var(--text-secondary); }
 .ss-setup-row.done .ss-setup-ic { color: var(--success, oklch(0.55 0.12 150)); }
+
+/* ============================================================
+   Magic-link experience (Join.html) — participant-facing
+   ============================================================ */
+.jn-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(58% 42% at 50% 0%, oklch(0.955 0.018 52 / .7), transparent 70%),
+    var(--canvas);
+}
+.jn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem clamp(1.25rem, 4vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.jn-brand { font-weight: 600; font-size: 0.95rem; }
+.jn-brand em { font-style: normal; font-weight: 400; color: var(--text-muted); }
+.jn-powered {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.jn-main {
+  width: min(680px, calc(100% - 2.5rem));
+  margin: 0 auto;
+  padding-block: clamp(2rem, 6vw, 4rem) 2rem;
+  flex: 1;
+}
+.jn-hero h1 {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 5vw, 3.2rem);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.jn-hero p {
+  margin-top: 1.1rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.jn-block { margin-top: 2.6rem; }
+.jn-block h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.45rem;
+}
+.jn-block-lead { margin-top: 0.5rem; font-size: 0.95rem; color: var(--text-secondary); }
+.jn-steps {
+  margin-top: 1rem;
+  list-style: none;
+  counter-reset: jn-step;
+  display: grid;
+  gap: 0.9rem;
+  padding: 0;
+}
+.jn-steps li {
+  counter-increment: jn-step;
+  position: relative;
+  padding: 1rem 1.1rem 1rem 3.1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.jn-steps li::before {
+  content: counter(jn-step);
+  position: absolute;
+  left: 1.05rem;
+  top: 1.05rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: oklch(0.99 0.004 80);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.jn-steps b { display: block; font-size: 0.98rem; margin-bottom: 0.25rem; }
+.jn-steps p { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); }
+.jn-tier-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+}
+@media (max-width: 680px) { .jn-tier-grid { grid-template-columns: 1fr; } }
+.jn-tier {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 1rem;
+}
+.jn-tier-head { display: flex; align-items: center; gap: 0.6rem; }
+.jn-tier-head b { display: block; font-size: 0.95rem; }
+.jn-tier-head span { display: block; font-size: 0.76rem; color: var(--text-muted); }
+.jn-tier-reward { margin: 0.7rem 0 0; font-size: 0.92rem; font-weight: 600; }
+.jn-tier-note { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; }
+.jn-privacy ul { margin: 0.9rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.7rem; }
+.jn-privacy li {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.jn-privacy li b { color: var(--text-primary); }
+.jn-cta {
+  margin-top: 2.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.jn-cta span { font-size: 0.85rem; color: var(--text-muted); }
+.jn-chat {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.jn-chat-body { padding: 1.1rem; display: grid; gap: 0.8rem; }
+.jn-chat-input {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.jn-chat-input .input { flex: 1; }
+.jn-foot {
+  border-top: 1px solid var(--border);
+  padding: 1.4rem clamp(1.25rem, 4vw, 2.5rem) 2rem;
+}
+.jn-foot p {
+  margin: 0 auto;
+  width: min(680px, 100%);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}

@@ -364,7 +364,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into our feedback partner program.</p>
                     <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You show us how {product} really works for you; we use it to build.</p>
                     <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
-                    <p className="ss-invite-cta">Join the program →</p>
+                    <a className="ss-invite-cta" href={"Join.html?product=" + encodeURIComponent(product)} target="_blank" rel="noreferrer">Join the program →</a>
                     <p className="ss-invite-sign">— The {product} team</p>
                     <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invitation stays in your brand and voice.</span>
                   </div>
@@ -488,6 +488,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <code>{magicLink}</code>
                   <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
                 </div>
+                <p className="ss-fineprint"><a className="ss-doc-link" href={"Join.html?product=" + encodeURIComponent(product)} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
                 <div className="ss-golive-actions">
                   <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
                 </div>
