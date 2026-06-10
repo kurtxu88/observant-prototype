@@ -420,7 +420,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
                   <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
                 </div>
-                <p className="ss-fineprint">The "join here" line is a placeholder — it's replaced by the magic link you generate in the last step. Tailoring the invitation doesn't change your program setup.</p>
               </div>
             </section>
           )}
