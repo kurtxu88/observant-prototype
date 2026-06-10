@@ -202,20 +202,16 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
           <p>Your participated minutes accumulate every time you answer a chat or an email — or join a voice interview, if you happen to have a bigger block of time. You're always in control of when and how much you participate. Your minutes are tracked and audited automatically, and they're what you redeem rewards with.</p>
         </details>
         <details>
-          <summary>How do I redeem them?</summary>
-          <p>Like a gift card balance: claim smaller rewards often, or hold your balance and wait for a bigger one. You can cash out anytime.</p>
+          <summary>How do I redeem my rewards?</summary>
+          <p>Once you register an account with Observant, you can log in anytime to track your participated minutes as they add up. Rewards work like a gift card balance — claim smaller rewards often, or hold your balance for a bigger one. You can cash out anytime. All of that happens on Observant; the rewards themselves are delivered by the {product} team.</p>
         </details>
         <details>
-          <summary>What about my privacy?</summary>
-          <p>Every conversation is a private 1:1 — never a group or a public channel. {route === "inproduct" ? "You're identified only by an anonymous ID inside " + product + "." : "The only thing identifying you is the email or handle you opt in with."} Skip any question, snooze the program, or opt out entirely — anytime, in one tap.</p>
+          <summary>What about my privacy — who sees my responses?</summary>
+          <p>Your feedback belongs to {product}. Their team has access to it — they're the ones asking — and everything is anonymized for their data-analysis purposes. It doesn't go into a database that anyone else keeps or sells. You can skip any question, or opt out entirely, anytime.</p>
         </details>
         <details>
           <summary>What's the Gold tier?</summary>
-          <p>Gold is the inner circle — {(tiers[2] && tiers[2].reward) || "in-person event invites, early access & perks"}, for partners who've participated {(tiers[2] && tiers[2].min) || 200}+ minutes. First to see what's next.</p>
-        </details>
-        <details>
-          <summary>Who sees my responses?</summary>
-          <p>Your feedback goes to the founders and product people at {product} — not into a database that gets kept or sold.</p>
+          <p>Gold is the inner circle, for partners who've participated {(tiers[2] && tiers[2].min) || 200}+ minutes. Teams often fly their most engaged partners to in-person events or festivals — think Robinhood-style media events — along with early access and special perks. The {product} team designs what Gold looks like for their program; here it's: {(tiers[2] && tiers[2].reward) || "in-person event invites, early access & perks"}.</p>
         </details>
       </section>
     </main>
