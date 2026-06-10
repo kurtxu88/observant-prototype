@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>User identity &amp; data sharing — Observant docs</title>
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+
+<header class="doc-top">
+  <a href="/" style="color:inherit"><span class="wordmark">observant<span class="dot"></span></span></a>
+  <nav>
+    <a href="index.html">Docs</a>
+    <a href="/How-It-Works.html">How it works</a>
+    <a href="/MCP.html">MCP</a>
+  </nav>
+</header>
+
+<main class="doc-main">
+  <span class="eyebrow">Docs · Guide</span>
+  <h1>User identity &amp; data sharing</h1>
+  <p class="doc-lead">Observant asks for the minimum it needs to hold a continuous one-on-one line with each of your users — and never for raw PII it doesn't need. You stay in control: you send the invite, your users opt in, and they can opt out at any time.</p>
+
+  <h2>What each surface needs from you</h2>
+  <p>Three of the four surfaces need <b>no identity work at all</b> — the person is already identified on the channel where the conversation happens.</p>
+
+  <table class="doc-table">
+    <thead>
+      <tr><th>Surface</th><th>What we need from you</th><th>Identity work</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>Email</b></td><td>A way to reach opted-in users — an address list, or you forward our invite</td><td><b>None</b></td></tr>
+      <tr><td><b>Slack</b></td><td>The Observant app in your shared customer Slack</td><td><b>None</b> — the Slack handle is the identity</td></tr>
+      <tr><td><b>Discord</b></td><td>The Observant bot in your community Discord</td><td><b>None</b> — the Discord handle is the identity</td></tr>
+      <tr><td><b>In-product</b></td><td>A stable identifier passed when our snippet loads</td><td><b>The hashed Observant ID</b> (below)</td></tr>
+    </tbody>
+  </table>
+
+  <p>That's why email, Slack, and Discord are the fastest way to launch — you can be live this week with no SDK and no integration. <b>In-product is the only surface that needs an identity mechanism</b>, and it's a one-time setup.</p>
+
+  <h2>The Observant ID — in-product identity</h2>
+  <p>When Observant lives inside your product, it can't ask each user "who are you?" again — and it shouldn't hold your real user IDs. So you pass a <b>stable, unique, non-reversible identifier</b> when the agent loads. We call it the <b>Observant ID</b>.</p>
+
+  <p>Three properties make it work:</p>
+  <ul>
+    <li><b>Unique</b> — two users never share an ID.</li>
+    <li><b>Static</b> — once assigned, it doesn't change, so each person's conversation memory persists across sessions.</li>
+    <li><b>Mappable on your side, never reversible on ours</b> — run your internal user ID through a hash or anonymizing function. You keep the mapping; we never see the real ID.</li>
+  </ul>
+
+  <div class="doc-code"><span class="c">// when the Observant agent loads in your product:</span>
+Observant.setUserIdentifier(hash(yourInternalUserId))
+<span class="c">//                          └─ stable, unique, one-way.
+//                             We store this; we can't reverse it.</span></div>
+
+  <div class="doc-callout"><b>What this costs you:</b> a little integration work — generate the hashed ID and keep the real-ID ↔ hashed-ID mapping on your side. That one-time setup buys the richest surface: catching people at the exact moment of use.</div>
+
+  <h2>What we deliberately never ask for</h2>
+  <p>No names, no emails, no PII tied to the hashed ID — unless a user chooses to share something in their own 1:1. The hashed ID plus the conversation is enough to learn from, and your real user data stays where it belongs: with you.</p>
+
+  <h2>Starting light</h2>
+  <p>Most teams start on email or Slack/Discord — live in days, zero identity work — and add in-product once the program is delivering. When you're ready, the snippet plus the one line above is the whole setup. Questions about your specific stack? <a href="mailto:hello@observant.ai?subject=In-product identity setup">Get in touch</a> — we'll walk it with you.</p>
+</main>
+
+<footer class="doc-foot">Observant — user learning on autopilot. Questions? <a href="mailto:hello@observant.ai">hello@observant.ai</a></footer>
+
+</body>
+</html>

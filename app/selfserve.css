@@ -1887,6 +1887,7 @@
   color: oklch(0.99 0.01 70) !important;
   font-size: 0.9rem !important;
   font-weight: 500;
+  text-decoration: none;
 }
 .ss-invite-sign { color: var(--text-muted) !important; font-size: 0.9rem !important; }
 .ss-invite-note {
