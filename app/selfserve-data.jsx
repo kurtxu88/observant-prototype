@@ -218,11 +218,27 @@ function ssCreateConversations(workspace) {
   const product = ssProductName(workspace);
   return [
     {
+      id: "dana-voice",
+      userId: "dana",
+      title: "Export workflow — voice interview",
+      state: "Done",
+      mode: "voice",
+      duration: "26 min",
+      messages: [
+        { t: "them", text: "You said Mondays are export day — walk me through what happens after you hit export.", meta: "Observant" },
+        { t: "user", text: "I pull the CSV, drop it into Sheets, and rebuild the pivot my team expects. Maybe twenty minutes of cleanup — every single week.", meta: "Dana" },
+        { t: "them", text: "If the dashboard gave you that view directly, what would still be missing?", meta: "Observant" },
+        { t: "user", text: "Sharing. My team doesn't have seats, so even a perfect dashboard dies at the paywall. The CSV is really a sharing workaround.", meta: "Dana" },
+        { t: "them", text: "So the export is less about the data and more about access.", meta: "Observant" },
+        { t: "user", text: "Exactly. Give me a read-only link and I'd never export again.", meta: "Dana" },
+      ],
+    },
+    {
       id: "dana",
       userId: "dana",
       title: "Weekly export workflow",
       state: "Active",
-      mode: "voice",
+      mode: "chat",
       messages: [
         { t: "them", text: "Hi Dana - I noticed you finished another weekly export in " + product + ". What happens after it leaves the app?", meta: "Observant - behavior-triggered" },
         { t: "user", text: "I paste it into a sheet and rebuild half of it by hand.", meta: "Dana" },
@@ -537,6 +553,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     userId: person.id,
     title: person.segment + " 1:1",
     mode: index === 1 ? "voice" : "chat",
+    duration: index === 1 ? "22 min" : "",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
       { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },

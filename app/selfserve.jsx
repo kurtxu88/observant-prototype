@@ -798,6 +798,7 @@ function PeopleView({ state, patchState }) {
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
   const [followUpQ, setFollowUpQ] = useStateSS("");
   const [followUpStage, setFollowUpStage] = useStateSS("");
+  const [modeTab, setModeTab] = useStateSS("chat");
 
   if (!selected || !person) {
     return (
@@ -808,9 +809,14 @@ function PeopleView({ state, patchState }) {
     );
   }
 
+  const personConversations = state.conversations.filter((item) => item.userId === person.id || item.id === person.id);
+  const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
+  const voiceConversations = personConversations.filter((item) => item.mode === "voice");
+
   const setSelected = (conversationId) => {
     const conversation = state.conversations.find((item) => item.id === conversationId);
     const rowPerson = ssPersonForConversation(state, conversation);
+    setModeTab(conversation && conversation.mode === "voice" ? "voice" : "chat");
     patchState((current) => ({
       ...current,
       section: "people",
@@ -829,7 +835,7 @@ function PeopleView({ state, patchState }) {
     setTimeout(() => {
       patchState((current) => ({
         ...current,
-        conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
+        conversations: ssUpdateById(current.conversations, (chatConversation || selected).id, (conversation) => ({
           messages: [
             ...conversation.messages,
             { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
@@ -892,17 +898,31 @@ function PeopleView({ state, patchState }) {
             <h3>{person.name}</h3>
             <p>{person.segment} · {person.surface}</p>
           </div>
-          <span className="ss-via">{selected.mode === "voice" ? "Voice interview · transcript" : "Chat"} · via Observant</span>
+          <span className="ss-via">via Observant over {person.surface}</span>
         </div>
         <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
-        <div className="ss-person-context">
-          <div><b>Learned context</b><span>{person.memory}</span></div>
-          <div><b>Last signal</b><span>{person.last}</span></div>
-          <div><b>Active line</b><span>{selected.title}</span></div>
+        <div className="ss-mode-tabs">
+          <button type="button" className={modeTab === "chat" ? "on" : ""} onClick={() => setModeTab("chat")}><Icon name="chat" size={15} /> 1:1 chat <em>async</em></button>
+          <button type="button" className={modeTab === "voice" ? "on" : ""} onClick={() => setModeTab("voice")}><Icon name="phone" size={15} /> Voice interviews <em>transcripts{voiceConversations.length ? " · " + voiceConversations.length : ""}</em></button>
         </div>
-        <div className="ss-chat-body">
-          {selected.messages.map((message, i) => <ChatMessage key={i} message={message} />)}
-        </div>
+        {modeTab === "chat" ? (
+          <div className="ss-chat-body">
+            {chatConversation
+              ? chatConversation.messages.map((message, i) => <ChatMessage key={i} message={message} />)
+              : <EmptyState title="No chat yet" text={"The async 1:1 with " + person.name.split(" ")[0] + " opens with their first reply."} />}
+          </div>
+        ) : (
+          <div className="ss-chat-body ss-transcript-body">
+            {voiceConversations.length ? voiceConversations.map((conversation) => (
+              <div className="ss-transcript" key={conversation.id}>
+                <div className="ss-transcript-head"><b>{conversation.title}</b><span>{conversation.duration || "voice"} · transcript</span></div>
+                {conversation.messages.map((message, i) => (
+                  <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
+                ))}
+              </div>
+            )) : <EmptyState title="No voice interviews yet" text={"When " + person.name.split(" ")[0] + " takes a focused voice interview, the full transcript lands here."} />}
+          </div>
+        )}
         <div className="ss-chat-actions">
           <Btn variant="primary" size="sm" onClick={() => setFollowUpOpen(true)}><Icon name="relay" size={15} /> Follow up with a question</Btn>
           <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={15} /> Request live 1:1</Btn>

@@ -2477,6 +2477,54 @@
   color: var(--text-muted);
 }
 
+/* Partner detail: modality tabs + transcripts */
+.ss-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.ss-mode-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.ss-mode-tabs button em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.ss-mode-tabs button.on { color: var(--text-primary); border-bottom-color: var(--accent); }
+.ss-mode-tabs button.on em { color: var(--accent); }
+.ss-transcript { border: 1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 1rem 1.1rem; }
+.ss-transcript + .ss-transcript { margin-top: 0.9rem; }
+.ss-transcript-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.ss-transcript-head b { font-size: 0.95rem; }
+.ss-transcript-head span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+.ss-turn { display: grid; grid-template-columns: 6.5rem 1fr; gap: 0.7rem; padding: 0.45rem 0; }
+.ss-turn b { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
+.ss-turn p { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); }
+
 /* People view: via-Observant relay framing */
 .ss-via {
   margin-left: auto;
