@@ -40,13 +40,11 @@ function jnContext() {
   let tiers = JN_TIERS;
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
-  let question = "";
   try {
     const raw = localStorage.getItem("observant.selfserve.v1");
     if (raw) {
       const state = JSON.parse(raw);
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
-      if (state.workspace && state.workspace.learningGoal) question = state.workspace.learningGoal;
       if (state.setup && state.setup.tierRewards) {
         tiers = JN_TIERS.map((tier) => ({ ...tier, reward: state.setup.tierRewards[tier.id] || tier.reward }));
       }
@@ -61,12 +59,11 @@ function jnContext() {
     tiers,
     channels: channels.length ? channels : ["email", "telegram"],
     route: route || "offproduct",
-    question,
   };
 }
 
 function JoinApp() {
-  const { product, tiers, channels, route, question } = jnContext();
+  const { product, tiers, channels, route } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
@@ -85,7 +82,7 @@ function JoinApp() {
 
       {phase === "invite" && <JoinInvite product={product} tiers={tiers} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} question={question} contactEmail={contactEmail} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -225,15 +222,15 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, question, contactEmail }) {
+function JoinWelcome({ product, channel, contactEmail }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
   const opener = channel === "inproduct"
     ? "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally, right inside " + product + " while you're using it, and you reply whenever suits you."
     : "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + (channel === "telegram" ? "Telegram" : "email") + ", and you reply whenever suits you.";
-  const firstQuestion = question
-    ? "To start us off, the team's curious: " + question.trim().replace(/\.?$/, question.trim().endsWith("?") ? "" : "?")
-    : "To start us off — what made you give " + product + " a try in the first place?";
+  // The team's research goals never reach users verbatim — the interviewer asks
+  // about their day-to-day and works the learning in behind the scenes.
+  const firstQuestion = "To start us off, something easy: did you get a chance to open " + product + " today? I'd love to hear what you came in to do — and whether anything felt harder than it should.";
   const [messages, setMessages] = useStateJN([
     { t: "them", text: opener, meta: "Observant, for the " + product + " team" },
     { t: "them", text: firstQuestion, meta: "Observant" },
@@ -287,10 +284,10 @@ function JoinWelcome({ product, channel, question, contactEmail }) {
       </section>
 
       <section className="jn-block jn-account">
-        <h2>One last thing — your rewards</h2>
+        <h2>Track your {product} rewards</h2>
         {!accountDone ? (
           <>
-            <p className="jn-block-lead">Set up your Observant account to see your minutes add up and claim rewards whenever you like.</p>
+            <p className="jn-block-lead">Register an account to see your participated minutes add up and claim your {product} rewards whenever you like.</p>
             <div className="jn-account-form">
               <input
                 className="input"
@@ -300,11 +297,11 @@ function JoinWelcome({ product, channel, question, contactEmail }) {
                 onChange={(e) => setAccountEmail(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && accountEmail.includes("@")) setAccountDone(true); }}
               />
-              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={() => setAccountDone(true)}>Set up my account</Btn>
+              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={() => setAccountDone(true)}>Register</Btn>
             </div>
           </>
         ) : (
-          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> You're set — we've sent a sign-in link to {accountEmail}. Your minutes and rewards will be waiting there.</p>
+          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> You're set — we've sent a sign-in link to {accountEmail}. Your minutes and {product} rewards will be waiting there.</p>
         )}
       </section>
     </main>
