@@ -69,6 +69,7 @@ function JoinApp() {
   const { product, tiers, channels, route, question } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
+  const [contactEmail, setContactEmail] = useStateJN("");
   // In-product programs have no contact-preference step — the conversation
   // lives inside the product. Off-product is where the user picks a channel.
   const onJoin = route === "inproduct"
@@ -83,8 +84,8 @@ function JoinApp() {
       </header>
 
       {phase === "invite" && <JoinInvite product={product} tiers={tiers} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked) => { setChannel(picked); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} question={question} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} question={question} contactEmail={contactEmail} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -118,9 +119,9 @@ function JoinChoose({ product, channels, onConnect }) {
               value={email}
               placeholder="you@example.com"
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email"); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email); }}
             />
-            <Btn variant="primary" size="sm" disabled={!emailValid} onClick={() => onConnect("email")}>Join by email</Btn>
+            <Btn variant="primary" size="sm" disabled={!emailValid} onClick={() => onConnect("email", email)}>Join by email</Btn>
           </article>
         )}
 
@@ -224,7 +225,9 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, question }) {
+function JoinWelcome({ product, channel, question, contactEmail }) {
+  const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
+  const [accountDone, setAccountDone] = useStateJN(false);
   const opener = channel === "inproduct"
     ? "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally, right inside " + product + " while you're using it, and you reply whenever suits you."
     : "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + (channel === "telegram" ? "Telegram" : "email") + ", and you reply whenever suits you.";
@@ -281,6 +284,28 @@ function JoinWelcome({ product, channel, question }) {
             <Btn variant="primary" size="sm" onClick={send} disabled={!draft.trim()}>Send</Btn>
           </div>
         </div>
+      </section>
+
+      <section className="jn-block jn-account">
+        <h2>One last thing — your rewards</h2>
+        {!accountDone ? (
+          <>
+            <p className="jn-block-lead">Set up your Observant account to see your minutes add up and claim rewards whenever you like.</p>
+            <div className="jn-account-form">
+              <input
+                className="input"
+                type="email"
+                value={accountEmail}
+                placeholder="you@example.com"
+                onChange={(e) => setAccountEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && accountEmail.includes("@")) setAccountDone(true); }}
+              />
+              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={() => setAccountDone(true)}>Set up my account</Btn>
+            </div>
+          </>
+        ) : (
+          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> You're set — we've sent a sign-in link to {accountEmail}. Your minutes and rewards will be waiting there.</p>
+        )}
       </section>
     </main>
   );

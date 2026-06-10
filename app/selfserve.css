@@ -2611,6 +2611,24 @@
   line-height: 1.55;
 }
 
+.jn-account {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 1.3rem 1.4rem;
+}
+.jn-account-form { display: flex; gap: 0.7rem; margin-top: 0.9rem; }
+.jn-account-form .input { flex: 1; max-width: 360px; }
+.jn-account-done {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.94rem;
+}
+
 .jn-foot {
   border-top: 1px solid var(--border);
   padding: 1.4rem clamp(1.25rem, 4vw, 2.5rem) 2rem;
