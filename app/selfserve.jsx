@@ -291,7 +291,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setCompensation = (id) => patchSetup({ compensation: id });
-  const setRewardMode = (id) => patchSetup({ rewardMode: id });
+  const setTierReward = (id, value) => patchSetup({ tierRewards: { ...setup.tierRewards, [id]: value } });
   const setConnect = (id) => patchSetup({ connectMode: id });
   const toggleSurface = (surface) => patchState((current) => ({
     ...current,
@@ -304,8 +304,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
   const surfaceCount = Object.values(setup.surfaces).filter(Boolean).length;
   const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
-  const compensation = SS_COMPENSATION_OPTIONS.find((opt) => opt.id === setup.compensation) || SS_COMPENSATION_OPTIONS[0];
-  const rewardMode = SS_REWARD_MODES.find((opt) => opt.id === setup.rewardMode) || SS_REWARD_MODES[0];
   const connect = SS_CONNECT_OPTIONS.find((opt) => opt.id === setup.connectMode) || SS_CONNECT_OPTIONS[0];
   const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
   const canLaunch = surfaceCount > 0;
@@ -355,7 +353,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <p className="ss-invite-h">You're invited to help shape {product}</p>
                     <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into a Design Partner program.</p>
                     <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You show us how {product} really works for you; we use it to build.</p>
-                    <p>You'll earn {compensation.label.toLowerCase()} for your time — tracked automatically — and you can opt out anytime.</p>
+                    <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
                     <p className="ss-invite-cta">Join the panel →</p>
                     <p className="ss-invite-sign">— The {product} team</p>
                     <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invitation stays in your brand and voice.</span>
@@ -364,32 +362,33 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
               <div className="ss-program-block">
                 <h3>Compensation</h3>
-                <p>What people get for their time — and how it adds up.</p>
+                <p>People earn by <b>participated minutes</b> — every text reply, voice interview, and call counts. <b>Observant measures and audits every minute for you.</b> Three status tiers, each with a reward. The defaults below are the standard baseline — edit any reward to fit your team.</p>
 
-                <p className="ss-sublabel">Reward</p>
-                <div className="ss-card-grid two">
-                  {SS_COMPENSATION_OPTIONS.map((opt) => (
-                    <SelectCard key={opt.id} active={setup.compensation === opt.id} icon="spark" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setCompensation(opt.id)} />
-                  ))}
-                </div>
-
-                <p className="ss-sublabel">How it adds up</p>
-                <div className="ss-card-grid three">
-                  {SS_REWARD_MODES.map((opt) => (
-                    <SelectCard key={opt.id} active={setup.rewardMode === opt.id} icon="clock" title={opt.title} text={opt.text} detail={opt.tag} onClick={() => setRewardMode(opt.id)} />
-                  ))}
-                </div>
-                {setup.rewardMode === "milestone" && (
-                  <div className="ss-tier-strip">
-                    {SS_REWARD_TIERS.map((t) => (
-                      <div className="ss-tier" key={t.id}>
+                <div className="ss-tier-cards">
+                  {SS_REWARD_TIERS.map((t) => (
+                    <div className="ss-tier-card" key={t.id}>
+                      <div className="ss-tier-head">
                         <Avatar name={t.name} color={t.color} cls="ss-tier-badge" />
-                        <div><b>{t.name}</b><span>{t.min} min</span></div>
+                        <div><b>{t.name}</b><span>{t.min} min · ≈ ${t.cash} cash</span></div>
                       </div>
+                      <label className="ss-tier-reward">
+                        <span>Reward</span>
+                        <input className="input" value={setup.tierRewards[t.id]} onChange={(e) => setTierReward(t.id, e.target.value)} />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="ss-conversion">
+                  <div className="ss-conversion-head"><b>Cash conversion</b><span>Redeem as cash anytime as you go, or hold for a tier reward.</span></div>
+                  <div className="ss-conversion-rows">
+                    {SS_REWARD_TIERS.map((t) => (
+                      <span key={t.id}>{t.min} min ≈ <b>${t.cash}</b></span>
                     ))}
                   </div>
-                )}
-                <p className="ss-fineprint">1:1 time is measured automatically across every format — a quick text reply, a voice interview, or a 30-minute call all count toward someone's total. Calculated and audited for you.</p>
+                </div>
+
+                <p className="ss-fineprint">Publish this conversion so participants know what their time is worth. Every minute is tracked and audited by Observant.</p>
               </div>
             </section>
           )}
@@ -464,7 +463,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <PanelTitle k="Step 4" title="Turn on continuous learning" status="Review" />
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="They get" v={compensation.label} sub={rewardMode.title + " · opt out anytime"} />
+                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
                 <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}

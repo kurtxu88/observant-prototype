@@ -1973,3 +1973,48 @@
 .ss-setup-copy b { display: block; font-size: 0.95rem; margin-bottom: 0.15rem; }
 .ss-setup-copy p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45; margin: 0; }
 .ss-setup-row .btn { flex-shrink: 0; }
+
+/* Compensation: one tier model — tier rows with editable reward + cash conversion chart */
+.ss-tier-cards { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1rem; }
+.ss-tier-card {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.ss-tier-head { display: flex; align-items: center; gap: 0.6rem; width: 175px; flex-shrink: 0; }
+.ss-tier-head b { display: block; font-size: 0.98rem; line-height: 1.2; }
+.ss-tier-head span { font-size: 0.78rem; color: var(--text-muted); }
+.ss-tier-reward { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.ss-tier-reward > span {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.ss-tier-reward .input { width: 100%; }
+
+.ss-conversion {
+  margin-top: 1.1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.ss-conversion-head { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.65rem; }
+.ss-conversion-head b { font-size: 0.92rem; }
+.ss-conversion-head span { font-size: 0.83rem; color: var(--text-secondary); }
+.ss-conversion-rows { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.ss-conversion-rows span {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.ss-conversion-rows b { color: var(--text-primary); }

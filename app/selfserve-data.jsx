@@ -3,7 +3,7 @@
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
-const SS_STATE_VERSION = 3;
+const SS_STATE_VERSION = 4;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
@@ -55,19 +55,15 @@ const SS_COMPENSATION_OPTIONS = [
   { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring time." },
 ];
 
-// How rewards are structured (the model). Carried over from the Design Partner program design.
-const SS_REWARD_MODES = [
-  { id: "milestone", title: "Milestone tiers", text: "Rewards unlock as people accrue 1:1 time — Bronze, Silver, Gold.", tag: "Recommended" },
-  { id: "peruse", title: "Per conversation", text: "A set reward each time someone gives feedback. Simplest to run.", tag: "Simple" },
-  { id: "capped", title: "Capped", text: "Limit how often each person can earn — spreads it across more users.", tag: "Budget control" },
+// One model: status tiers by participated minutes (text, voice, calls). Observant audits the minutes.
+// `cash` = redeem-as-you-go conversion baseline; `reward` = the team's default tier reward (customizable).
+const SS_REWARD_TIERS = [
+  { id: "bronze", name: "Bronze", min: 30, cash: 30, reward: "$30 gift card", color: "gold" },
+  { id: "silver", name: "Silver", min: 100, cash: 90, reward: "6 months free subscription", color: "teal" },
+  { id: "gold", name: "Gold", min: 200, cash: 150, reward: "In-person event invite, early access & perks", color: "rust" },
 ];
 
-// Status tiers accrue from total 1:1 time (text, voice, or a call), measured automatically.
-const SS_REWARD_TIERS = [
-  { id: "bronze", name: "Bronze", min: 30, color: "gold" },
-  { id: "silver", name: "Silver", min: 90, color: "teal" },
-  { id: "gold", name: "Gold", min: 180, color: "rust" },
-];
+const SS_DEFAULT_TIER_REWARDS = { bronze: "$30 gift card", silver: "6 months free subscription", gold: "In-person event invite, early access & perks" };
 
 const SS_SIGNAL_OPTIONS = [
   { id: "user_signed_up", label: "user_signed_up" },
@@ -134,7 +130,7 @@ function ssCreateSetup(workspace) {
     audienceMode: "representative",
     connectMode: "share",
     compensation: "giftcard",
-    rewardMode: "milestone",
+    tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
     consentAck: true,
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
@@ -774,7 +770,6 @@ Object.assign(window, {
   SS_SURFACE_OPTIONS,
   SS_AUDIENCE_OPTIONS,
   SS_COMPENSATION_OPTIONS,
-  SS_REWARD_MODES,
   SS_REWARD_TIERS,
   SS_SIGNAL_OPTIONS,
   SS_SIMULATION_STAGES,
