@@ -27,7 +27,13 @@ const JN_TIERS = [
 function jnContext() {
   const params = new URLSearchParams(window.location.search);
   let product = (params.get("product") || "").trim();
-  // Pretty URLs (/join/acme-app) hand us a slug — make it presentable.
+  // Pretty URLs (observant.link/northwind, /join/northwind) carry the slug in the
+  // path — rewrites serve this page, but the browser URL keeps no query string.
+  if (!product) {
+    const match = window.location.pathname.match(/^\/(?:join\/)?([a-z0-9][a-z0-9-]*)\/?$/i);
+    if (match && !["join", "app", "docs", "observant", "api"].includes(match[1].toLowerCase())) product = match[1];
+  }
+  // Slugs become presentable names.
   if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {
     product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   }
