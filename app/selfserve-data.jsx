@@ -47,12 +47,26 @@ const SS_AUDIENCE_OPTIONS = [
   { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to opt in.", tag: "Most engaged" },
 ];
 
-// What you offer people for opting in as a feedback partner.
+// What you offer people for opting in as a feedback partner (the currency).
 const SS_COMPENSATION_OPTIONS = [
-  { id: "giftcard", label: "Gift cards", text: "A simple thank-you per conversation. Universal and easy.", tag: "Default" },
+  { id: "giftcard", label: "Gift cards", text: "A simple thank-you. Universal and easy.", tag: "Default" },
   { id: "productcredits", label: "Your product credits", text: "Credit inside your own product.", tag: "In-product" },
   { id: "accountcredits", label: "Account credits", text: "Apply credit toward their plan or usage." },
-  { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring sessions." },
+  { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring time." },
+];
+
+// How rewards are structured (the model). Carried over from the Design Partner program design.
+const SS_REWARD_MODES = [
+  { id: "milestone", title: "Milestone tiers", text: "Rewards unlock as people accrue 1:1 time — Bronze, Silver, Gold.", tag: "Recommended" },
+  { id: "peruse", title: "Per conversation", text: "A set reward each time someone gives feedback. Simplest to run.", tag: "Simple" },
+  { id: "capped", title: "Capped", text: "Limit how often each person can earn — spreads it across more users.", tag: "Budget control" },
+];
+
+// Status tiers accrue from total 1:1 time (text, voice, or a call), measured automatically.
+const SS_REWARD_TIERS = [
+  { id: "bronze", name: "Bronze", min: 30, color: "gold" },
+  { id: "silver", name: "Silver", min: 90, color: "teal" },
+  { id: "gold", name: "Gold", min: 180, color: "rust" },
 ];
 
 const SS_SIGNAL_OPTIONS = [
@@ -120,6 +134,7 @@ function ssCreateSetup(workspace) {
     audienceMode: "representative",
     connectMode: "share",
     compensation: "giftcard",
+    rewardMode: "milestone",
     consentAck: true,
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
@@ -759,6 +774,8 @@ Object.assign(window, {
   SS_SURFACE_OPTIONS,
   SS_AUDIENCE_OPTIONS,
   SS_COMPENSATION_OPTIONS,
+  SS_REWARD_MODES,
+  SS_REWARD_TIERS,
   SS_SIGNAL_OPTIONS,
   SS_SIMULATION_STAGES,
   SelfServeData: {

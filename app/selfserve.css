@@ -1898,3 +1898,45 @@
   line-height: 1.45;
   color: var(--text-muted);
 }
+
+/* Compensation: sub-labels, reward tiers, doc link */
+.ss-sublabel {
+  margin: 1.4rem 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.ss-tier-strip {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
+}
+.ss-tier {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  flex: 1 1 0;
+  min-width: 130px;
+}
+.ss-tier b { display: block; font-size: 0.9rem; line-height: 1.2; }
+.ss-tier span { font-size: 0.8rem; color: var(--text-muted); }
+.ss-tier-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: oklch(0.99 0.01 70);
+  font-size: 0.68rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.ss-doc-link { color: var(--accent); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.ss-doc-link:hover { text-decoration: underline; }
