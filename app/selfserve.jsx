@@ -292,6 +292,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setCompensation = (id) => patchSetup({ compensation: id });
   const setTierReward = (id, value) => patchSetup({ tierRewards: { ...setup.tierRewards, [id]: value } });
+  const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
   const toggleSurface = (surface) => patchState((current) => ({
     ...current,
@@ -425,7 +426,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           {step === 2 && (
             <section className="ss-panel">
               <PanelTitle k="Step 3" title="Who you'll learn from" />
-              <p className="ss-step-lead">Observant opens a continuous one-on-one line with each user who opts in, and keeps learning as you ship. Choose who it should reach.</p>
+              <p className="ss-step-lead">Choose who you want to reach — Observant keeps a continuous one-on-one line with each person who opts in. You can always come back and update this.</p>
               <div className="ss-card-grid">
                 {SS_AUDIENCE_OPTIONS.map((opt) => (
                   <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
@@ -437,23 +438,35 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
 
               <div className="ss-program-block ss-connect-block">
-                <h3>Bring them in</h3>
-                <p>Now you know who you're learning from — here's the one quick setup for each surface you picked. Observant only ever needs enough to reach them.</p>
-                <div className="ss-setup-list">
-                  {surfaceCount === 0 && <p className="ss-fineprint">Pick at least one surface in "Where the conversations happen" to see setup steps here.</p>}
-                  {setup.surfaces.email && (
-                    <SetupRow icon="mail" title="Share your users' emails" text="Sync or upload the emails you want to invite. Encrypted in transit and at rest, used only to send your invitation — never shared or sold." cta="Share emails" done={setupDone.email} onAction={() => toggleDone("email")} />
-                  )}
-                  {setup.surfaces.slack && (
-                    <SetupRow icon="chat" title="Install the Observant Slack app" text="Add Observant to your shared customer Slack so it can open 1:1s with the people who opt in." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
-                  )}
-                  {setup.surfaces.discord && (
-                    <SetupRow icon="chat" title="Install the Observant Discord bot" text="Add Observant to your community Discord so it can open 1:1s with the people who opt in." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
-                  )}
-                  {setup.surfaces.product && (
-                    <SetupRow icon="globe" title="Whitelist people into the program" text="Pass a hashed user ID so Observant reaches the right users in-product — without ever holding your real user data." docLink cta="Set up whitelisting" done={setupDone.product} onAction={() => toggleDone("product")} />
-                  )}
+                <h3>How your panel grows</h3>
+                <p>Your panel is ongoing — choose how people come in. You can change this anytime.</p>
+                <div className="ss-card-grid two">
+                  <SelectCard active={setup.recruitMode === "byo"} icon="link" title="You bring the people" text="Upload or share a list of the users you want to invite. Simplest with email — like dropping in a CSV." detail="You're in control" onClick={() => setRecruit("byo")} />
+                  <SelectCard active={setup.recruitMode === "auto"} icon="users" title="Observant recruits in the background" text="Share your user data — encrypted and access-controlled — and Observant keeps inviting people who match your target, on its own, so your panel grows continuously." detail="Advanced · hands-off" onClick={() => setRecruit("auto")} />
                 </div>
+
+                {setup.recruitMode === "auto" ? (
+                  <div className="ss-callout">
+                    <b>Quiet background recruiting.</b>
+                    <span>You share your user data once — encrypted, access-controlled, used only to match and invite. Observant keeps bringing in people who fit, so you never have to top up the panel. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How data sharing works →</a></span>
+                  </div>
+                ) : (
+                  <div className="ss-setup-list">
+                    {surfaceCount === 0 && <p className="ss-fineprint">Pick at least one surface in "Where the conversations happen" to set up how people come in.</p>}
+                    {setup.surfaces.email && (
+                      <SetupRow icon="mail" title="Upload your user list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only to send your invitation, never shared or sold." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
+                    )}
+                    {setup.surfaces.slack && (
+                      <SetupRow icon="chat" title="Install the Observant Slack app" text="Add Observant to your shared customer Slack. You'll pick who to invite when you turn on." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
+                    )}
+                    {setup.surfaces.discord && (
+                      <SetupRow icon="chat" title="Install the Observant Discord bot" text="Add Observant to your community Discord. You'll pick who to invite when you turn on." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
+                    )}
+                    {setup.surfaces.product && (
+                      <SetupRow icon="globe" title="Whitelist people into the program" text="Pass a hashed user ID so Observant reaches the right users in-product — without ever holding your real user data." docLink cta="Set up whitelisting" done={setupDone.product} onAction={() => toggleDone("product")} />
+                    )}
+                  </div>
+                )}
               </div>
             </section>
           )}

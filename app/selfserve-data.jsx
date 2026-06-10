@@ -128,6 +128,7 @@ function ssCreateSetup(workspace) {
   return {
     // People-first program. Solid defaults so a first version is usable out of the box.
     audienceMode: "representative",
+    recruitMode: "byo",
     connectMode: "share",
     compensation: "giftcard",
     tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
