@@ -410,18 +410,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead"><b>Your users choose where the conversation happens — you just open the doors.</b> Each channel you enable here is one more place people can opt in and talk, always on a private one-on-one line — never a noisy shared channel. Email is the lightest to open; Slack and Discord fit if you already talk to users there; in-product is the richest, with a one-time setup. Open as many as fit — add more anytime.</p>
               <div className="ss-surface-grid">
                 <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. The lightest channel to open." onClick={() => toggleSurface("email")} />
-                <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="A one-on-one bot inside your shared customer Slack." onClick={() => toggleSurface("slack")} />
-                <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="A one-on-one bot inside your community Discord." onClick={() => toggleSurface("discord")} />
+                <SurfaceCard active={setup.surfaces.slack} icon="chat" title="Slack" text="Share the link in your customer Slack — each person who opts in chats privately with the bot, never in the public channel." onClick={() => toggleSurface("slack")} />
+                <SurfaceCard active={setup.surfaces.discord} icon="chat" title="Discord" text="Share the link in your community Discord — every conversation is a private DM, never the public server." onClick={() => toggleSurface("discord")} />
                 <SurfaceCard active={setup.surfaces.product} icon="globe" title="In-product" text="Right at the moment of use, inside your product — the richest channel. Needs a one-time ID setup." onClick={() => toggleSurface("product")} />
-                <p className="ss-inproduct-note">In-product needs a stable, anonymous user ID so Observant always knows who it's talking to. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a> Email, Slack, and Discord need none of that.</p>
-              </div>
-
-              <div className="ss-upsell">
-                <div>
-                  <b>Advanced — behavior triggers</b>
-                  <span>Want more control over who you hear from, and when? Triggers start a conversation the moment a user does something specific — say, abandons a checkout or opens a feature for the third time. We tailor them with you.</span>
-                </div>
-                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
+                <p className="ss-inproduct-note"><b>No data handover.</b> On email, Slack, and Discord the identifier arrives with the opt-in — their email or their handle. Only in-product needs a one-time setup, because inside your product Observant can't see who it's talking to. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></p>
               </div>
             </section>
           )}
@@ -441,27 +433,29 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               </div>
 
               <div className="ss-program-block">
-                <h3>Bring people in</h3>
-                <p>Connect each channel you opened, then invite. You can organize and label your users later.</p>
+                <h3>Your magic link does the recruiting</h3>
+                <p>Observant follows up with each person <b>continuously</b> — this isn't a one-time survey — so everyone needs a stable identifier. The magic link captures it at opt-in: their email on email, their handle on Slack or Discord. <b>You never hand over your user data.</b> Share the link on each channel you opened:</p>
+                <div className="ss-magiclink">
+                  <code>{magicLink}</code>
+                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                </div>
                 <div className="ss-setup-list">
-                  {surfaceCount === 0 && <p className="ss-fineprint">Go back and open at least one channel.</p>}
                   {setup.surfaces.email && (
-                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => setSetupModal("email")} />
+                    <SetupRow icon="mail" title="Email — send it under your brand" text="Paste the link into an invitation from your own address (Step 1 has the copy, ready to adapt). Each person who opts in is tracked by their email — no list upload needed." cta="Copy link" done={setupDone.email} onAction={() => { copyLink(); markDone("email", "Link copied — send the invitation from your own address"); }} />
                   )}
                   {setup.surfaces.slack && (
-                    <SetupRow icon="chat" title="Connect Observant to Slack" text="Install the Observant app in your shared customer Slack." cta="Add to Slack" done={setupDone.slack} onAction={() => setSetupModal("slack")} />
+                    <SetupRow icon="chat" title="Slack — post it in your group" text="Install the Observant app once, then drop the link in your customer Slack. Each opt-in opens a private 1:1 DM with the bot — never the public channel." cta="Add to Slack" done={setupDone.slack} onAction={() => setSetupModal("slack")} />
                   )}
                   {setup.surfaces.discord && (
-                    <SetupRow icon="chat" title="Connect Observant to Discord" text="Install the Observant bot in your community Discord." cta="Add to Discord" done={setupDone.discord} onAction={() => setSetupModal("discord")} />
+                    <SetupRow icon="chat" title="Discord — post it in your server" text="Install the Observant bot once, then share the link with your community. Every conversation is a private DM — never the public server." cta="Add to Discord" done={setupDone.discord} onAction={() => setSetupModal("discord")} />
                   )}
                   {setup.surfaces.product && (
-                    <SetupRow icon="globe" title="Set up in-product whitelisting" text="Pass a hashed user ID so Observant reaches the right users in-product — without holding your real user data." docLink cta="Set up" done={setupDone.product} onAction={() => setSetupModal("product")} />
+                    <SetupRow icon="globe" title="In-product — the one real setup" text="Inside your product, Observant can't see who it's talking to — so you pass a hashed user ID once. Your real user data stays with you." docLink cta="Set up" done={setupDone.product} onAction={() => setSetupModal("product")} />
                   )}
                 </div>
               </div>
-              {setupModal === "email" && <EmailListModal onClose={() => setSetupModal("")} onDone={(count) => markDone("email", count + " emails ready to invite")} />}
-              {setupModal === "slack" && <ConnectModal kind="Slack" placeholder="your-company.slack.com" hint="We'll open the install for the Observant app in this workspace. Each opted-in person gets a private 1:1 bot conversation — never a shared channel." onClose={() => setSetupModal("")} onDone={(name) => markDone("slack", "Connected to " + name)} />}
-              {setupModal === "discord" && <ConnectModal kind="Discord" placeholder="Your server name or invite link" hint="We'll open the install for the Observant bot on this server. Conversations happen in private DMs — never in public channels." onClose={() => setSetupModal("")} onDone={(name) => markDone("discord", "Connected to " + name)} />}
+              {setupModal === "slack" && <ConnectModal kind="Slack" placeholder="your-company.slack.com" hint="A one-time install so the bot can open private 1:1s. Then post your magic link in the group — each person who taps it starts their own DM with the bot. Observant never posts in the public channel." onClose={() => setSetupModal("")} onDone={(name) => markDone("slack", "Connected to " + name + " — now post your link in the group")} />}
+              {setupModal === "discord" && <ConnectModal kind="Discord" placeholder="Your server name or invite link" hint="A one-time install so the bot can DM people. Then share your magic link with the community — each opt-in becomes a private 1:1. Nothing ever lands in public channels." onClose={() => setSetupModal("")} onDone={(name) => markDone("discord", "Connected to " + name + " — now share your link with the community")} />}
               {setupModal === "product" && <InProductModal product={product} onClose={() => setSetupModal("")} onDone={() => markDone("product", "Snippet ready — ID setup documented")} />}
             </section>
           )}
@@ -492,13 +486,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 </div>
               </div>
 
-              <div className="ss-upsell">
-                <div>
-                  <b>Want Observant to recruit feedback partners for you?</b>
-                  <span>We can quietly bring in matching people in the background, continuously — and you stay in control of exactly who that is.</span>
-                </div>
-                <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
-              </div>
+              <ProUpsell />
             </section>
           )}
 
@@ -551,21 +539,23 @@ function SetupModal({ title, lead, children, onClose }) {
   );
 }
 
-function EmailListModal({ onClose, onDone }) {
-  const [raw, setRaw] = useStateSS("");
-  const emails = [...new Set(raw.split(/[\s,;]+/).filter((token) => token.includes("@") && token.includes(".")))];
+function ProUpsell() {
   return (
-    <SetupModal
-      title="Upload your email list"
-      lead="Paste emails — one per line or comma-separated, straight from a CSV export. They're encrypted at rest and used only for your invitation."
-      onClose={onClose}
-    >
-      <textarea className="textarea ss-modal-textarea" value={raw} placeholder={"dana@example.com\nmarcus@example.com\npriya@example.com"} onChange={(e) => setRaw(e.target.value)} />
-      <div className="ss-modal-actions">
-        <span className="ss-modal-count">{emails.length ? emails.length + (emails.length === 1 ? " email" : " emails") + " detected" : "No emails yet"}</span>
-        <Btn variant="primary" disabled={!emails.length} onClick={() => onDone(emails.length)}>Add {emails.length || ""} {emails.length === 1 ? "email" : "emails"}</Btn>
+    <section className="ss-pro-upsell">
+      <div className="ss-pro-head">
+        <span className="eyebrow no-rule">Go further</span>
+        <b>Share more data, unlock more</b>
+        <p>Everything above runs without Observant touching your user data. Share more with us, and it gets more powerful:</p>
       </div>
-    </SetupModal>
+      <ul className="ss-pro-list">
+        <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
+        <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
+        <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
+      </ul>
+      <div className="ss-pro-cta">
+        <a className="btn btn-primary btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
+      </div>
+    </section>
   );
 }
 
@@ -721,18 +711,12 @@ function HomeView({ state, patchState, navigate }) {
           <PanelTitle k="Now" title="Active private lines" status="Live" />
           {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
         </section>
-        <section className="ss-panel">
-          <PanelTitle k="Signals" title="Behavior triggers" status="Advanced" />
-          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : (
-            <div className="ss-upsell ss-upsell-fill">
-              <div>
-                <b>Want more control over who you hear from?</b>
-                <span>Behavior triggers start a conversation right when a user does something specific — so the feedback comes from exactly the people and moments you care about. We tailor them with you.</span>
-              </div>
-              <a className="btn btn-ghost btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
-            </div>
-          )}
-        </section>
+        {state.events.length ? (
+          <section className="ss-panel">
+            <PanelTitle k="Signals" title="Behavior triggers" status="Advanced" />
+            <EventList state={state} events={state.events} navigate={navigate} />
+          </section>
+        ) : <ProUpsell />}
       </div>
 
       <div className="ss-dashboard-grid">
@@ -988,7 +972,7 @@ Authorization: Bearer <server-issued token>
             <div className="ss-loop-columns">
               <section>
                 <h3>Behavior triggers <span className="ss-adv-tag">advanced</span></h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="For more control over who you hear from and when — triggers start a conversation the moment a user does something specific. Book a call with us and we'll tailor them to this question." />}
+                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="No triggers on this question" text="Triggers are part of the data-sharing tier — control exactly when a conversation starts. Book a call with us and we'll tailor them to this question." />}
               </section>
               <section className="ss-loop-install">
                 <h3>Channels in use</h3>

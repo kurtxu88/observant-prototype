@@ -22,22 +22,22 @@
   <h1>User identity &amp; data sharing</h1>
   <p class="doc-lead">Observant asks for the minimum it needs to hold a continuous one-on-one line with each of your users — and never for raw PII it doesn't need. You stay in control: you send the invite, your users opt in, and they can opt out at any time.</p>
 
-  <h2>What each surface needs from you</h2>
-  <p>Three of the four surfaces need <b>no identity work at all</b> — the person is already identified on the channel where the conversation happens.</p>
+  <h2>The identifier arrives with the opt-in</h2>
+  <p>Observant follows up with each person continuously, so everyone needs a stable identifier. On three of the four channels, <b>the opt-in itself provides it</b> — you share your magic link, each person who taps it starts their own private 1:1, and the channel tells us who they are. You hand over nothing.</p>
 
   <table class="doc-table">
     <thead>
-      <tr><th>Surface</th><th>What we need from you</th><th>Identity work</th></tr>
+      <tr><th>Channel</th><th>What you do</th><th>What identifies each person</th></tr>
     </thead>
     <tbody>
-      <tr><td><b>Email</b></td><td>A way to reach opted-in users — an address list, or you forward our invite</td><td><b>None</b></td></tr>
-      <tr><td><b>Slack</b></td><td>The Observant app in your shared customer Slack</td><td><b>None</b> — the Slack handle is the identity</td></tr>
-      <tr><td><b>Discord</b></td><td>The Observant bot in your community Discord</td><td><b>None</b> — the Discord handle is the identity</td></tr>
-      <tr><td><b>In-product</b></td><td>A stable identifier passed when our snippet loads</td><td><b>The hashed Observant ID</b> (below)</td></tr>
+      <tr><td><b>Email</b></td><td>Send the invitation with your magic link from your own address — no list upload</td><td>Their email, captured at opt-in</td></tr>
+      <tr><td><b>Slack</b></td><td>Install the Observant app once, post the link in your customer Slack</td><td>Their Slack handle — each opt-in is a private 1:1 DM, never the public channel</td></tr>
+      <tr><td><b>Discord</b></td><td>Install the Observant bot once, share the link with your community</td><td>Their Discord handle — every conversation is a private DM</td></tr>
+      <tr><td><b>In-product</b></td><td>Pass a stable identifier when our snippet loads</td><td><b>The hashed Observant ID</b> (below)</td></tr>
     </tbody>
   </table>
 
-  <p>That's why email, Slack, and Discord are the fastest way to launch — you can be live this week with no SDK and no integration. <b>In-product is the only surface that needs an identity mechanism</b>, and it's a one-time setup.</p>
+  <p>That's why email, Slack, and Discord are the fastest way to launch — live this week, no SDK, no data handover. <b>In-product is the only channel that needs an identity mechanism</b>, because inside your product Observant can't see who it's talking to. It's a one-time setup.</p>
 
   <h2>The Observant ID — in-product identity</h2>
   <p>When Observant lives inside your product, it can't ask each user "who are you?" again — and it shouldn't hold your real user IDs. So you pass a <b>stable, unique, non-reversible identifier</b> when the agent loads. We call it the <b>Observant ID</b>.</p>
@@ -57,7 +57,10 @@ Observant.setUserIdentifier(hash(yourInternalUserId))
   <div class="doc-callout"><b>What this costs you:</b> a little integration work — generate the hashed ID and keep the real-ID ↔ hashed-ID mapping on your side. That one-time setup buys the richest surface: catching people at the exact moment of use.</div>
 
   <h2>What we deliberately never ask for</h2>
-  <p>No names, no emails, no PII tied to the hashed ID — unless a user chooses to share something in their own 1:1. The hashed ID plus the conversation is enough to learn from, and your real user data stays where it belongs: with you.</p>
+  <p>No names, no segments, no PII beyond what the opt-in itself carries — unless a user chooses to share something in their own 1:1. The identifier plus the conversation is enough to learn from, and your real user data stays where it belongs: with you.</p>
+
+  <h2>Want to go further?</h2>
+  <p>Sharing more is optional — and it's where Observant gets more powerful. Merge conversations with names, segments, and behavior data for richer analysis; add behavior triggers to control exactly when a conversation starts; or have us recruit the right people into your panel in the background. <a href="mailto:hello@observant.ai?subject=Data sharing">Book a call with us</a> and we'll design it together.</p>
 
   <h2>Starting light</h2>
   <p>Most teams start on email or Slack/Discord — live in days, zero identity work — and add in-product once the program is delivering. When you're ready, the snippet plus the one line above is the whole setup. Questions about your specific stack? <a href="mailto:hello@observant.ai?subject=In-product identity setup">Get in touch</a> — we'll walk it with you.</p>
