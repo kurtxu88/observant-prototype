@@ -272,9 +272,9 @@ function EntryScreen({ onCreate }) {
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "program", t: "The program", d: "Consent, compensation, expectations" },
-  { id: "channels", t: "Choose your channels", d: "Email & Telegram, on by default" },
-  { id: "invite", t: "Invitation & preview", d: "Edit it, preview it, send it" },
+  { id: "channels", t: "Choose your surface", d: "Email & Telegram, on by default" },
+  { id: "program", t: "The program", d: "Consent, rewards, your invitation" },
+  { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
 const SS_CONNECT_OPTIONS = [
@@ -286,9 +286,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const [step, setStep] = useStateSS(0);
-  const [showInvite, setShowInvite] = useStateSS(false);
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [inviteCopied, setInviteCopied] = useStateSS(false);
+  const [linkGenerated, setLinkGenerated] = useStateSS(false);
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -368,26 +368,28 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         <main className="ss-activation-main">
           {step === 0 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 1" title="Choose your feedback surface" status={surfaceCount + " on"} />
+              <p className="ss-step-lead"><b>The most important decision: where the learning happens.</b> You'll share one magic link; each person who opts in picks their channel, and that choice is also how Observant knows who they are — their email, or their Telegram handle. <b>You never hand over your user data.</b> Both are on by default; turn one off only if it doesn't fit your brand.</p>
+              <div className="ss-channel-grid">
+                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
+                <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
+              </div>
+              <p className="ss-fineprint">The surfaces you enable set how rich the learning gets — and the richest options need a closer partnership:</p>
+              <ProUpsell />
+            </section>
+          )}
+
+          {step === 1 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 2" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
-                <h3>Consent</h3>
-                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. Observant gives you a <b>magic link</b> to send to the users you want to recruit. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap.</p>
-                <button type="button" className="ss-preview-link" onClick={() => setShowInvite((v) => !v)}>
-                  {showInvite ? "Hide preview" : "Preview a copy of the invitation"} <Icon name={showInvite ? "back" : "arrow"} size={14} />
-                </button>
-                {showInvite && (
-                  <div className="ss-invite-preview">
-                    <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
-                    <p className="ss-invite-h">You're invited to help shape {product}</p>
-                    <p>Hi {"{first_name}"} — the team at {product} would love your help building a better product. We're inviting a small group of our most engaged users into our feedback partner program.</p>
-                    <p>It's a direct line to our team. From time to time you'll have a quick one-on-one — sometimes a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — email or Telegram. You show us how {product} really works for you; we use it to build.</p>
-                    <p>You'll earn rewards for your time — tracked automatically as you go — and you can opt out anytime.</p>
-                    <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a>
-                    <p className="ss-invite-sign">— The {product} team</p>
-                    <span className="ss-invite-note">The button is your magic link. Observant runs the conversations behind it; the invitation stays in your brand and voice.</span>
-                  </div>
-                )}
+                <h3>Consent — and your invitation</h3>
+                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like. The join link inside is your magic link.</p>
+                <div className="ss-invite-copyblock">
+                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+                </div>
               </div>
               <div className="ss-program-block">
                 <h3>Compensation</h3>
@@ -420,46 +422,48 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
             </section>
           )}
 
-          {step === 1 && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 2" title="How will people connect?" status={surfaceCount + " on"} />
-              <p className="ss-step-lead"><b>Your users choose where the conversation happens — you just open the doors.</b> You'll share one magic link; each person who opts in picks their channel, and that choice is also how Observant knows who they are — their email, or their Telegram handle. <b>You never hand over your user data.</b> Both channels are on by default; turn one off only if it doesn't fit your brand.</p>
-              <div className="ss-channel-grid">
-                <SurfaceCard active={setup.surfaces.email} icon="mail" title="Email" text="Quiet async 1:1s, whenever the user has five minutes. Each person is identified by the email they opt in with." onClick={() => toggleSurface("email")} />
-                <SurfaceCard active={setup.surfaces.telegram} icon="chat" title="Telegram" text="A private 1:1 with the Observant bot — one tap to connect, and replying feels like texting a friend." onClick={() => toggleSurface("telegram")} />
-              </div>
-              <p className="ss-fineprint">The channels you enable set how rich the learning gets — and the richest options need a closer partnership:</p>
-              <ProUpsell />
-            </section>
-          )}
-
           {step === 2 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Invitation & preview" status="Last step" />
+              <PanelTitle k="Step 3" title="Preview" status="Last step" />
+              <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Channels" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
+                <ReviewRowSS k="Surface" v={surfaceSummary || "Open at least one channel"} sub={surfaceSummary ? "Your users pick one at opt-in" : ""} />
                 <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
 
               <div className="ss-program-block">
-                <h3>Edit your invitation</h3>
-                <p>Ready to send as-is, or make it yours — it carries your magic link. Works as an email, a community post, or a DM.</p>
+                <h3>Your invitation</h3>
+                <p>What your users receive — sent by you, under your brand. Want to change it? It lives in Step 2.</p>
                 <div className="ss-invite-copyblock">
-                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+                  <pre>{inviteDraft}</pre>
                   <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
                 </div>
               </div>
 
               <div className="ss-program-block">
-                <h3>Preview your magic link</h3>
-                <p>This is the link inside the invitation. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
-                <div className="ss-magiclink">
-                  <code>{magicLink}</code>
-                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
-                </div>
-                <p className="ss-fineprint"><a className="ss-doc-link" href={joinUrl} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
+                <h3>Your magic link</h3>
+                {!linkGenerated ? (
+                  <>
+                    <p>One link does the recruiting. Each person who opens it opts in, picks {channelPhrase ? channelPhrase.toLowerCase() : "their channel"}, and lands on their own continuous 1:1 line — their identifier arrives with the opt-in.</p>
+                    <div className="ss-golive-actions">
+                      <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p>Live and ready — put it in your invitation and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
+                    <div className="ss-magiclink">
+                      <code>{magicLink}</code>
+                      <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                    </div>
+                    <p className="ss-fineprint"><a className="ss-doc-link" href={joinUrl} target="_blank" rel="noreferrer">Open it yourself — see exactly what your users will see →</a></p>
+                    <div className="ss-golive-actions">
+                      <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="ss-program-block">
@@ -475,18 +479,14 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   <div className="ss-advice-foot"><b>What to expect:</b> usually 5–10% of those you invite opt in, and they tend to be your most engaged.</div>
                 </div>
               </div>
-
-              <div className="ss-golive-actions">
-                <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
-              </div>
             </section>
           )}
 
           <div className="ss-onboard-nav">
             {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
-            <span className="count">{step === 1 && surfaceCount === 0 ? "Open at least one channel to continue" : (step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
+            <span className="count">{step === 0 && surfaceCount === 0 ? "Turn on at least one surface to continue" : (step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
             {step < SS_ONBOARD_STEPS.length - 1
-              ? <Btn variant="primary" onClick={next} disabled={step === 1 && surfaceCount === 0}>Continue <Icon name="arrow" size={16} /></Btn>
+              ? <Btn variant="primary" onClick={next} disabled={step === 0 && surfaceCount === 0}>Continue <Icon name="arrow" size={16} /></Btn>
               : <span />}
           </div>
         </main>
