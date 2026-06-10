@@ -2313,6 +2313,19 @@
   font-weight: 600;
 }
 .ss-invite-body { white-space: pre-wrap; }
+.ss-sendpreview {
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.ss-sendpreview .ss-field { flex: 1; margin: 0; }
+.ss-sent-note { display: inline-flex; align-items: center; gap: 0.45rem; color: var(--success); font-weight: 600; }
+.ss-sent-note .ss-row-cta { color: var(--accent); font-weight: 500; margin-left: 0.4rem; }
 
 /* Suggestions block — informational, deliberately not a CTA */
 .ss-suggest {

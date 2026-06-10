@@ -289,7 +289,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [inviteCopied, setInviteCopied] = useStateSS(false);
   const [linkGenerated, setLinkGenerated] = useStateSS(false);
-  const [showInvitePreview, setShowInvitePreview] = useStateSS(false);
+  const [sendPreviewOpen, setSendPreviewOpen] = useStateSS(false);
+  const [previewEmail, setPreviewEmail] = useStateSS(state.workspace.email || "");
+  const [previewSentTo, setPreviewSentTo] = useStateSS("");
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -443,16 +445,18 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
                 <ReviewRowSS
                   k="Invitation to users"
-                  v={<button type="button" className="ss-doc-link ss-row-cta" onClick={() => setShowInvitePreview((v) => !v)}>{showInvitePreview ? "Hide the invitation preview" : "Preview the invitation email →"}</button>}
-                  sub="The text you wrote in Step 1 — sent by you, under your brand."
+                  v={previewSentTo
+                    ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Preview sent to {previewSentTo} <button type="button" className="ss-doc-link ss-row-cta" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></span>
+                    : <button type="button" className="ss-doc-link ss-row-cta" onClick={() => setSendPreviewOpen((v) => !v)}>Preview the invitation email →</button>}
+                  sub="The text you wrote in Step 1 — we'll email you a preview, exactly as your users receive it."
                 />
               </div>
-              {showInvitePreview && (
-                <div className="ss-invite-preview">
-                  <span className="ss-invite-meta">User-facing invitation · sent from {product}</span>
-                  <p className="ss-invite-body">{inviteDraft}</p>
-                  <a className="ss-invite-cta" href={joinUrl} target="_blank" rel="noreferrer">Join the program →</a>
-                  <span className="ss-invite-note">The button is your magic link — it replaces the placeholder when you send. Tap it to see exactly what your users will see.</span>
+              {sendPreviewOpen && !previewSentTo && (
+                <div className="ss-sendpreview">
+                  <Field label="What's your email address?">
+                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); } }} />
+                  </Field>
+                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@")} onClick={() => { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); }}>Send me the preview</Btn>
                 </div>
               )}
 
