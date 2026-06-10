@@ -271,8 +271,7 @@ function EntryScreen({ onCreate }) {
 const SS_ONBOARD_STEPS = [
   { id: "program", t: "The program", d: "Consent, compensation, expectations" },
   { id: "surfaces", t: "Where it happens", d: "Email, Slack, Discord, in-product" },
-  { id: "audience", t: "Who you'll learn from", d: "Pick who, and how you connect them" },
-  { id: "review", t: "Turn it on", d: "Review and go live" },
+  { id: "review", t: "Invite & go live", d: "Who to invite, your magic link" },
 ];
 
 const SS_CONNECT_OPTIONS = [
@@ -286,6 +285,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [step, setStep] = useStateSS(0);
   const [showInvite, setShowInvite] = useStateSS(false);
   const [setupDone, setSetupDone] = useStateSS({});
+  const [linkCopied, setLinkCopied] = useStateSS(false);
+  const [previewNote, setPreviewNote] = useStateSS(false);
   const toggleDone = (key) => setSetupDone((d) => ({ ...d, [key]: !d[key] }));
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
@@ -308,6 +309,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const connect = SS_CONNECT_OPTIONS.find((opt) => opt.id === setup.connectMode) || SS_CONNECT_OPTIONS[0];
   const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
   const canLaunch = surfaceCount > 0;
+  const magicLink = "observant.link/" + product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const copyLink = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText("https://" + magicLink).catch(() => {});
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1500);
+  };
 
   const next = () => setStep((s) => Math.min(s + 1, SS_ONBOARD_STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -425,69 +432,77 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 
           {step === 2 && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Who you'll learn from" />
-              <p className="ss-step-lead">Choose who you want to reach — Observant keeps a continuous one-on-one line with each person who opts in. You can always come back and update this.</p>
-              <div className="ss-card-grid">
-                {SS_AUDIENCE_OPTIONS.map((opt) => (
-                  <SelectCard key={opt.id} active={setup.audienceMode === opt.id} icon="users" title={opt.label} text={opt.text} detail={opt.tag} onClick={() => setAudience(opt.id)} />
-                ))}
-              </div>
-              <div className="ss-callout">
-                <b>What to expect.</b>
-                <span>Usually 5–10% of users opt in, and they tend to be your most engaged.</span>
-              </div>
-
-              <div className="ss-program-block ss-connect-block">
-                <h3>How your panel grows</h3>
-                <p>Your panel is ongoing — choose how people come in. You can change this anytime.</p>
-                <div className="ss-card-grid two">
-                  <SelectCard active={setup.recruitMode === "byo"} icon="link" title="You bring the people" text="Upload or share a list of the users you want to invite. Simplest with email — like dropping in a CSV." detail="You're in control" onClick={() => setRecruit("byo")} />
-                  <SelectCard active={setup.recruitMode === "auto"} icon="users" title="Observant recruits in the background" text="Share your user data — encrypted and access-controlled — and Observant keeps inviting people who match your target, on its own, so your panel grows continuously." detail="Advanced · hands-off" onClick={() => setRecruit("auto")} />
-                </div>
-
-                {setup.recruitMode === "auto" ? (
-                  <div className="ss-callout">
-                    <b>Quiet background recruiting.</b>
-                    <span>You share your user data once — encrypted, access-controlled, used only to match and invite. Observant keeps bringing in people who fit, so you never have to top up the panel. <a className="ss-doc-link" href="../DATA-SHARING.md" target="_blank" rel="noreferrer">How data sharing works →</a></span>
-                  </div>
-                ) : (
-                  <div className="ss-setup-list">
-                    {surfaceCount === 0 && <p className="ss-fineprint">Pick at least one surface in "Where the conversations happen" to set up how people come in.</p>}
-                    {setup.surfaces.email && (
-                      <SetupRow icon="mail" title="Upload your user list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only to send your invitation, never shared or sold." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
-                    )}
-                    {setup.surfaces.slack && (
-                      <SetupRow icon="chat" title="Install the Observant Slack app" text="Add Observant to your shared customer Slack. You'll pick who to invite when you turn on." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
-                    )}
-                    {setup.surfaces.discord && (
-                      <SetupRow icon="chat" title="Install the Observant Discord bot" text="Add Observant to your community Discord. You'll pick who to invite when you turn on." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
-                    )}
-                    {setup.surfaces.product && (
-                      <SetupRow icon="globe" title="Whitelist people into the program" text="Pass a hashed user ID so Observant reaches the right users in-product — without ever holding your real user data." docLink cta="Set up whitelisting" done={setupDone.product} onAction={() => toggleDone("product")} />
-                    )}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {step === 3 && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 4" title="Turn on continuous learning" status="Review" />
+              <PanelTitle k="Step 3" title="Invite your first batch & go live" status="Almost there" />
+              <p className="ss-step-lead">Here's what you set up. Now choose who to invite, get your magic link, and turn it on.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
-                <ReviewRowSS k="Listening to" v={audience.label} sub={state.workspace.userBase} />
+                <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
-              <div className="ss-launch-panel">
-                <div>
-                  <span className="eyebrow no-rule">Always on</span>
-                  <h2>Ready to start?</h2>
-                  <p>Observant opens a one-on-one line with each user who opts in and keeps learning automatically. Insight comes back to you as it goes.</p>
+
+              <div className="ss-program-block">
+                <h3>Who to invite</h3>
+                <p>It's up to you who you bring in — a few ways to think about your first batch:</p>
+                <div className="ss-advice-list">
+                  {SS_AUDIENCE_OPTIONS.map((opt) => (
+                    <div className="ss-advice" key={opt.id}>
+                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                      <div><b>{opt.label}</b><p>{opt.text}</p></div>
+                    </div>
+                  ))}
                 </div>
-                <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on learning <Icon name="arrow" size={16} /></Btn>
+                <div className="ss-callout">
+                  <b>What to expect.</b>
+                  <span>Usually 5–10% of those you invite opt in, and they tend to be your most engaged.</span>
+                </div>
+              </div>
+
+              <div className="ss-program-block">
+                <h3>Bring in your batch</h3>
+                <p>Name this batch so you can track it — add and label more anytime.</p>
+                <label className="ss-field ss-batch-field">
+                  <span>Batch name</span>
+                  <input className="input" value={setup.batchLabel} placeholder="e.g. Power users — June beta" onChange={(e) => patchSetup({ batchLabel: e.target.value })} />
+                </label>
+                <div className="ss-setup-list">
+                  {surfaceCount === 0 && <p className="ss-fineprint">Go back and pick at least one surface.</p>}
+                  {setup.surfaces.email && (
+                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails for this batch — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
+                  )}
+                  {setup.surfaces.slack && (
+                    <SetupRow icon="chat" title="Connect Observant to Slack" text="Install the Observant app in your shared customer Slack." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
+                  )}
+                  {setup.surfaces.discord && (
+                    <SetupRow icon="chat" title="Connect Observant to Discord" text="Install the Observant bot in your community Discord." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
+                  )}
+                  {setup.surfaces.product && (
+                    <SetupRow icon="globe" title="Set up in-product whitelisting" text="Pass a hashed user ID so Observant reaches the right users in-product — without holding your real user data." docLink cta="Set up" done={setupDone.product} onAction={() => toggleDone("product")} />
+                  )}
+                </div>
+              </div>
+
+              <div className="ss-golive">
+                <span className="eyebrow no-rule">Your magic link</span>
+                <h2>You're ready to go live.</h2>
+                <p>This is the link people open to join your program. Open it yourself to test the whole experience first — then send it to your users.</p>
+                <div className="ss-magiclink">
+                  <code>{magicLink}</code>
+                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                </div>
+                <div className="ss-golive-actions">
+                  <Btn variant="ghost" onClick={() => setPreviewNote((v) => !v)}><Icon name="search" size={15} /> Preview the experience</Btn>
+                  <Btn variant="primary" size="lg" disabled={!canLaunch} onClick={onLaunch}>Turn on &amp; open dashboard <Icon name="arrow" size={16} /></Btn>
+                </div>
+                {previewNote && <span className="ss-fineprint">Opens the participant view in a new tab — exactly what your users see when they tap the link.</span>}
+              </div>
+
+              <div className="ss-upsell">
+                <div>
+                  <b>Want Observant to recruit feedback partners for you?</b>
+                  <span>We can quietly bring in matching people in the background, continuously — it takes deeper data sharing. If you'd like this, get in touch.</span>
+                </div>
+                <a className="btn btn-ghost btn-sm" href="mailto:hello@observant.ai?subject=Background recruiting">Contact us</a>
               </div>
             </section>
           )}

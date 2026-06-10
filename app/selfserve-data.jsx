@@ -130,6 +130,7 @@ function ssCreateSetup(workspace) {
     audienceMode: "representative",
     recruitMode: "byo",
     connectMode: "share",
+    batchLabel: "",
     compensation: "giftcard",
     tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
     consentAck: true,
