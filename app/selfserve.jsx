@@ -272,8 +272,8 @@ function EntryScreen({ onCreate }) {
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "program", t: "The program", d: "Compensation, your invitation" },
-  { id: "surface", t: "Choose your surface", d: "Off-product or in-product" },
+  { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
+  { id: "surface", t: "Choose feedback surface", d: "Off-product or in-product" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
