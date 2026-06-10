@@ -380,7 +380,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 </div>
 
                 <div className="ss-conversion">
-                  <div className="ss-conversion-head"><b>Cash conversion</b><span>Minutes accumulate, and people redeem their rewards as they go — much like spending down a gift card balance. They can cash out anytime, or hold for a higher tier.</span></div>
+                  <div className="ss-conversion-head"><b>Cash conversion (only as a reference)</b><span>Minutes accumulate, and people redeem their rewards as they go — much like spending down a gift card balance. They can cash out anytime, or hold for a higher tier.</span></div>
                   <div className="ss-conversion-rows">
                     {SS_REWARD_TIERS.map((t) => (
                       <span key={t.id}>{t.min} min ≈ <b>${t.cash}</b></span>
