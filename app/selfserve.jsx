@@ -271,7 +271,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setCompensation = (id) => patchSetup({ compensation: id });
-  const setTierReward = (id, value) => patchSetup({ tierRewards: { ...setup.tierRewards, [id]: value } });
   const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
   const route = setup.route || "offproduct";
@@ -369,31 +368,29 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3>Compensation</h3>
-                <p>People earn by <b>participated minutes</b> — every text reply, voice interview, and call counts. <b>Observant measures and audits every minute for you.</b> Three status tiers, each with a reward. The defaults below are the standard baseline — edit any reward to fit your team.</p>
-
-                <div className="ss-tier-cards">
-                  {SS_REWARD_TIERS.map((t) => (
-                    <div className="ss-tier-card" key={t.id}>
-                      <div className="ss-tier-head">
-                        <Avatar name={t.name} color={t.color} cls="ss-tier-badge" />
-                        <div><b>{t.name}</b><span>{t.min} min · ≈ ${t.cash} cash</span></div>
-                      </div>
-                      <label className="ss-tier-reward">
-                        <span>Reward</span>
-                        <input className="input" value={setup.tierRewards[t.id]} onChange={(e) => setTierReward(t.id, e.target.value)} />
-                      </label>
-                    </div>
-                  ))}
-                </div>
-
+                <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> Minutes convert to value, and people redeem as they go — like spending down a gift card balance.</p>
                 <div className="ss-conversion">
-                  <div className="ss-conversion-head"><b>Cash conversion (only as a reference)</b><span>Minutes accumulate, and people redeem their rewards as they go — much like spending down a gift card balance. They can cash out anytime, or hold for a higher tier.</span></div>
+                  <div className="ss-conversion-head"><b>How minutes convert</b><span>Three status tiers mark the milestones. Partners redeem anytime, or hold for a higher tier.</span></div>
                   <div className="ss-conversion-rows">
                     {SS_REWARD_TIERS.map((t) => (
-                      <span key={t.id}>{t.min} min ≈ <b>${t.cash}</b></span>
+                      <span key={t.id}>{t.name} · {t.min} min ≈ <b>${t.cash}</b></span>
                     ))}
                   </div>
                 </div>
+
+                <p className="ss-block-q">How do you want to fund the rewards?</p>
+                <div className="ss-route-grid">
+                  <button type="button" className={"ss-route" + (setup.compensation !== "credits" ? " on" : "")} onClick={() => setCompensation("cash")}>
+                    <span className="ss-route-head"><span className="ss-route-radio" /><b>Cash</b><em className="ss-route-tag start">Recommended · managed by Observant</em></span>
+                    <p>The fast path: you pay Observant, we pay your participants, and they redeem directly on our site. Nothing for your team to run.</p>
+                  </button>
+                  <button type="button" className={"ss-route" + (setup.compensation === "credits" ? " on" : "")} onClick={() => setCompensation("credits")}>
+                    <span className="ss-route-head"><span className="ss-route-radio" /><b>Your product credits</b><em className="ss-route-tag">Self-managed</em></span>
+                    <p>Use the credit mechanism you already have. You send the credits yourself — and check Observant anytime to see who's earned what. Every credit system converts differently, so this one stays in your hands.</p>
+                  </button>
+                </div>
+
+                <p className="ss-fineprint"><b>Additional perks, when you choose:</b> long-time active partners can be invited to in-person events, early access, and time with the founding team. You decide who, and when.</p>
               </div>
               <div className="ss-program-block">
                 <h3>Your invitation</h3>
@@ -415,11 +412,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS
                   k="Compensation"
-                  v="By participated minutes"
+                  v={setup.compensation === "credits" ? "Your product credits — self-managed" : "Cash — managed by Observant"}
                   sub={<>
                     {SS_REWARD_TIERS.map((t) => (
-                      <span className="ss-review-tier" key={t.id}>{t.name}: {setup.tierRewards[t.id]} ({t.min} min ≈ ${t.cash})</span>
+                      <span className="ss-review-tier" key={t.id}>{t.name}: {t.min} min ≈ ${t.cash}</span>
                     ))}
+                    <span className="ss-review-tier">Plus perks you can invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />

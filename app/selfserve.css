@@ -2329,6 +2329,17 @@
 .ss-magiclink-open { flex: 1; min-width: 0; }
 .ss-magiclink-open:hover code { color: var(--accent); }
 
+.ss-block-q { margin: 1.2rem 0 0.2rem; font-weight: 600; font-size: 0.95rem; }
+.jn-perks-note {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  background: var(--accent-tint, oklch(0.955 0.018 52 / .5));
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
 /* Questions page: Slack banner, asking spinner, question history */
 .ss-slack-banner {
   display: flex;

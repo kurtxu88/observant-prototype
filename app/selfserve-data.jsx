@@ -136,7 +136,8 @@ function ssCreateSetup(workspace) {
     recruitMode: "byo",
     connectMode: "share",
     batchLabel: "",
-    compensation: "giftcard",
+    // cash = managed by Observant (recommended); credits = self-managed by the team.
+    compensation: "cash",
     tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
     consentAck: true,
     usersSource: "invite",
