@@ -288,7 +288,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [setupDone, setSetupDone] = useStateSS({});
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [previewNote, setPreviewNote] = useStateSS(false);
-  const toggleDone = (key) => setSetupDone((d) => ({ ...d, [key]: !d[key] }));
+  const [setupModal, setSetupModal] = useStateSS("");
+  const markDone = (key, summary) => {
+    setSetupDone((d) => ({ ...d, [key]: summary }));
+    setSetupModal("");
+  };
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -305,6 +309,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const audience = SS_AUDIENCE_OPTIONS.find((opt) => opt.id === setup.audienceMode) || SS_AUDIENCE_OPTIONS[0];
   const connect = SS_CONNECT_OPTIONS.find((opt) => opt.id === setup.connectMode) || SS_CONNECT_OPTIONS[0];
   const surfaceSummary = Object.keys(setup.surfaces).filter((s) => setup.surfaces[s]).map(ssSurfaceLabel).join(" · ");
+  const setupSummary = Object.values(setupDone).filter(Boolean).join(" · ");
   const canLaunch = surfaceCount > 0;
   const magicLink = "observant.link/" + product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const copyLink = () => {
@@ -443,19 +448,23 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <div className="ss-setup-list">
                   {surfaceCount === 0 && <p className="ss-fineprint">Go back and pick at least one surface.</p>}
                   {setup.surfaces.email && (
-                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => toggleDone("email")} />
+                    <SetupRow icon="mail" title="Upload your email list" text="Add the emails you want to invite — like a CSV. Encrypted at rest, used only for your invitation." cta="Upload list" done={setupDone.email} onAction={() => setSetupModal("email")} />
                   )}
                   {setup.surfaces.slack && (
-                    <SetupRow icon="chat" title="Connect Observant to Slack" text="Install the Observant app in your shared customer Slack." cta="Add to Slack" done={setupDone.slack} onAction={() => toggleDone("slack")} />
+                    <SetupRow icon="chat" title="Connect Observant to Slack" text="Install the Observant app in your shared customer Slack." cta="Add to Slack" done={setupDone.slack} onAction={() => setSetupModal("slack")} />
                   )}
                   {setup.surfaces.discord && (
-                    <SetupRow icon="chat" title="Connect Observant to Discord" text="Install the Observant bot in your community Discord." cta="Add to Discord" done={setupDone.discord} onAction={() => toggleDone("discord")} />
+                    <SetupRow icon="chat" title="Connect Observant to Discord" text="Install the Observant bot in your community Discord." cta="Add to Discord" done={setupDone.discord} onAction={() => setSetupModal("discord")} />
                   )}
                   {setup.surfaces.product && (
-                    <SetupRow icon="globe" title="Set up in-product whitelisting" text="Pass a hashed user ID so Observant reaches the right users in-product — without holding your real user data." docLink cta="Set up" done={setupDone.product} onAction={() => toggleDone("product")} />
+                    <SetupRow icon="globe" title="Set up in-product whitelisting" text="Pass a hashed user ID so Observant reaches the right users in-product — without holding your real user data." docLink cta="Set up" done={setupDone.product} onAction={() => setSetupModal("product")} />
                   )}
                 </div>
               </div>
+              {setupModal === "email" && <EmailListModal onClose={() => setSetupModal("")} onDone={(count) => markDone("email", count + " emails ready to invite")} />}
+              {setupModal === "slack" && <ConnectModal kind="Slack" placeholder="your-company.slack.com" hint="We'll open the install for the Observant app in this workspace. Each opted-in person gets a private 1:1 bot conversation — never a shared channel." onClose={() => setSetupModal("")} onDone={(name) => markDone("slack", "Connected to " + name)} />}
+              {setupModal === "discord" && <ConnectModal kind="Discord" placeholder="Your server name or invite link" hint="We'll open the install for the Observant bot on this server. Conversations happen in private DMs — never in public channels." onClose={() => setSetupModal("")} onDone={(name) => markDone("discord", "Connected to " + name)} />}
+              {setupModal === "product" && <InProductModal product={product} onClose={() => setSetupModal("")} onDone={() => markDone("product", "Snippet ready — ID setup documented")} />}
             </section>
           )}
 
@@ -466,6 +475,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
                 <ReviewRowSS k="Where" v={surfaceSummary || "Pick at least one surface"} />
+                <ReviewRowSS k="Connected" v={setupSummary || "Nothing connected yet"} sub={setupSummary ? "" : "Go back a step to bring people in — or do it after you're live."} />
                 <ReviewRowSS k="They get" v="Tiered rewards by minutes" sub="Bronze · Silver · Gold — audited automatically" />
                 {state.workspace.learningGoal ? <ReviewRowSS k="On your mind" v={state.workspace.learningGoal} /> : null}
               </div>
@@ -509,15 +519,94 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
 function SetupRow({ icon, title, text, cta, done, onAction, docLink }) {
   return (
     <div className={"ss-setup-row" + (done ? " done" : "")}>
-      <span className="ss-setup-ic"><Icon name={icon} size={18} /></span>
+      <span className="ss-setup-ic"><Icon name={done ? "check" : icon} size={18} /></span>
       <div className="ss-setup-copy">
         <b>{title}</b>
-        <p>{text}{docLink ? <> <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>
+        {done
+          ? <p className="ss-setup-done-note">{done}</p>
+          : <p>{text}{docLink ? <> <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></> : null}</p>}
       </div>
       <Btn variant={done ? "ghost" : "primary"} size="sm" onClick={onAction}>
-        {done ? <><Icon name="check" size={14} sw={2.6} /> Done</> : cta}
+        {done ? "Change" : cta}
       </Btn>
     </div>
+  );
+}
+
+function SetupModal({ title, lead, children, onClose }) {
+  return (
+    <>
+      <button type="button" className="ss-edit-backdrop" aria-label="Close dialog" onClick={onClose} />
+      <div className="ss-modal" role="dialog" aria-label={title}>
+        <div className="ss-modal-head">
+          <div>
+            <span className="eyebrow no-rule">Set up</span>
+            <h2>{title}</h2>
+          </div>
+          <button type="button" className="ss-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" size={17} /></button>
+        </div>
+        {lead && <p className="ss-modal-lead">{lead}</p>}
+        <div className="ss-modal-body">{children}</div>
+      </div>
+    </>
+  );
+}
+
+function EmailListModal({ onClose, onDone }) {
+  const [raw, setRaw] = useStateSS("");
+  const emails = [...new Set(raw.split(/[\s,;]+/).filter((token) => token.includes("@") && token.includes(".")))];
+  return (
+    <SetupModal
+      title="Upload your email list"
+      lead="Paste emails — one per line or comma-separated, straight from a CSV export. They're encrypted at rest and used only for your invitation."
+      onClose={onClose}
+    >
+      <textarea className="textarea ss-modal-textarea" value={raw} placeholder={"dana@example.com\nmarcus@example.com\npriya@example.com"} onChange={(e) => setRaw(e.target.value)} />
+      <div className="ss-modal-actions">
+        <span className="ss-modal-count">{emails.length ? emails.length + (emails.length === 1 ? " email" : " emails") + " detected" : "No emails yet"}</span>
+        <Btn variant="primary" disabled={!emails.length} onClick={() => onDone(emails.length)}>Add {emails.length || ""} {emails.length === 1 ? "email" : "emails"}</Btn>
+      </div>
+    </SetupModal>
+  );
+}
+
+function ConnectModal({ kind, placeholder, hint, onClose, onDone }) {
+  const [name, setName] = useStateSS("");
+  return (
+    <SetupModal title={"Connect Observant to " + kind} lead={hint} onClose={onClose}>
+      <Field label={kind === "Slack" ? "Slack workspace" : "Discord server"}>
+        <input className="input" value={name} placeholder={placeholder} onChange={(e) => setName(e.target.value)} />
+      </Field>
+      <div className="ss-modal-actions">
+        <span className="ss-modal-count">You approve the install in {kind} — nothing happens without you.</span>
+        <Btn variant="primary" disabled={!name.trim()} onClick={() => onDone(name.trim())}>Connect</Btn>
+      </div>
+    </SetupModal>
+  );
+}
+
+function InProductModal({ product, onClose, onDone }) {
+  const [copied, setCopied] = useStateSS(false);
+  const slug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const snippet = '<script src="https://cdn.observant.ai/agent.js" data-workspace="' + slug + '"><\/script>\n\n// when the agent loads, pass a stable hashed ID:\nObservant.setUserIdentifier(hash(yourInternalUserId))';
+  const copy = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(snippet).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+  return (
+    <SetupModal
+      title="Set up in-product"
+      lead={"Two lines: load the Observant agent inside " + product + ", and pass a stable hashed user ID so it always knows who it's talking to — without ever holding your real user data."}
+      onClose={onClose}
+    >
+      <CodeBlock label="Add to your product" text={snippet} copied={copied} onCopy={copy} />
+      <p className="ss-fineprint">The ID must be unique, static, and non-reversible — hash your internal user ID on your side. <a className="ss-doc-link" href="../docs/user-id.html" target="_blank" rel="noreferrer">How the user ID works →</a></p>
+      <div className="ss-modal-actions">
+        <span />
+        <Btn variant="primary" onClick={() => onDone()}>Mark as set up</Btn>
+      </div>
+    </SetupModal>
   );
 }
 
