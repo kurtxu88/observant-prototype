@@ -171,13 +171,13 @@ function JoinInvite({ product, tiers, channels, route, onJoin }) {
 
       <section className="jn-block">
         <h2>Your rewards</h2>
-        <p className="jn-block-lead">Minutes add up like a balance — redeem as you go, cash out anytime, or hold for a higher tier.</p>
+        <p className="jn-block-lead">Minutes add up like a balance — redeem as you go, or hold for a higher tier.</p>
         <div className="jn-tier-grid">
           {tiers.map((tier) => (
             <article className="jn-tier" key={tier.id}>
               <div className="jn-tier-head">
                 <Avatar name={tier.name} color={tier.color} cls="ss-tier-badge" />
-                <div><b>{tier.name}</b><span>{tier.min} participated minutes · ≈ ${tier.cash} cash value</span></div>
+                <div><b>{tier.name}</b><span>{tier.min} participated minutes</span></div>
               </div>
               <p className="jn-tier-reward">{tier.reward}</p>
               <p className="jn-tier-note">{tier.note}</p>
