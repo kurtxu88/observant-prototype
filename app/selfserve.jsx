@@ -309,7 +309,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + SS_FAST_CHANNELS.join(",");
+  const joinUrl = "Join.html?product=" + encodeURIComponent(product) + "&channels=" + SS_FAST_CHANNELS.join(",") + "&route=" + route;
   const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
@@ -318,7 +318,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     "",
     "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
     "",
-    "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
+    route === "inproduct"
+      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. You earn rewards for every minute you participate, tracked automatically."
+      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
     "",
     "Join here: [your magic link — generated in the last step]",
     "",
@@ -327,8 +329,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
     "— The " + product + " team",
   ].join("\n");
   const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
-  // Channel changes rewrite the invitation, so the link/copy always match what's enabled.
-  useEffectSS(() => { setInviteDraft(inviteText); }, [channelPhrase, product]);
+  // Surface-route changes rewrite the invitation, so the copy always matches the setup.
+  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product]);
   const copyInvite = () => {
     if (navigator.clipboard) navigator.clipboard.writeText(inviteDraft).catch(() => {});
     setInviteCopied(true);
@@ -464,7 +466,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                 <h3>Your magic link</h3>
                 {!linkGenerated ? (
                   <>
-                    <p>This link introduces people to the program and the rewards. After they opt in, they choose their preferred way of being contacted — and you can preview that whole experience once you generate your link.</p>
+                    <p>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</p>
                     <div className="ss-golive-actions">
                       <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
                     </div>

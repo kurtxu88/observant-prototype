@@ -6,6 +6,7 @@
   "rewrites": [
     { "source": "/", "destination": "/observant/Landing.html" },
     { "source": "/join", "destination": "/app/Join.html" },
+    { "source": "/join/:slug", "destination": "/app/Join.html?product=:slug" },
     { "source": "/docs", "destination": "/docs/index.html" },
     { "source": "/Landing.html", "destination": "/observant/Landing.html" },
     { "source": "/Landing-v1-panel.html", "destination": "/observant/Landing-v1-panel.html" },

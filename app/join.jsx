@@ -27,28 +27,47 @@ const JN_TIERS = [
 function jnContext() {
   const params = new URLSearchParams(window.location.search);
   let product = (params.get("product") || "").trim();
+  // Pretty URLs (/join/acme-app) hand us a slug — make it presentable.
+  if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {
+    product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  }
   let tiers = JN_TIERS;
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
+  let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
+  let question = "";
   try {
     const raw = localStorage.getItem("observant.selfserve.v1");
     if (raw) {
       const state = JSON.parse(raw);
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
+      if (state.workspace && state.workspace.learningGoal) question = state.workspace.learningGoal;
       if (state.setup && state.setup.tierRewards) {
         tiers = JN_TIERS.map((tier) => ({ ...tier, reward: state.setup.tierRewards[tier.id] || tier.reward }));
       }
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "telegram"].filter((c) => state.setup.surfaces[c]);
       }
+      if (!route && state.setup && state.setup.route) route = state.setup.route;
     }
   } catch (err) { /* stale local state never blocks the invite */ }
-  return { product: product || "Northwind", tiers, channels: channels.length ? channels : ["email", "telegram"] };
+  return {
+    product: product || "Northwind",
+    tiers,
+    channels: channels.length ? channels : ["email", "telegram"],
+    route: route || "offproduct",
+    question,
+  };
 }
 
 function JoinApp() {
-  const { product, tiers, channels } = jnContext();
+  const { product, tiers, channels, route, question } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
+  // In-product programs have no contact-preference step — the conversation
+  // lives inside the product. Off-product is where the user picks a channel.
+  const onJoin = route === "inproduct"
+    ? () => { setChannel("inproduct"); setPhase("joined"); }
+    : () => setPhase("choose");
 
   return (
     <div className="jn-page">
@@ -57,9 +76,9 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
-      {phase === "invite" && <JoinInvite product={product} tiers={tiers} channels={channels} onJoin={() => setPhase("choose")} />}
+      {phase === "invite" && <JoinInvite product={product} tiers={tiers} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked) => { setChannel(picked); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} question={question} />}
 
       <footer className="jn-foot">
         <p>This program is run by <b>Observant</b> on behalf of the {product} team — secure conversations, accurate notes, and automatic reward tracking. You can opt out anytime, in one tap, and your conversations are never shared outside the {product} team.</p>
@@ -115,8 +134,11 @@ function JoinChoose({ product, channels, onConnect }) {
   );
 }
 
-function JoinInvite({ product, tiers, channels, onJoin }) {
+function JoinInvite({ product, tiers, channels, route, onJoin }) {
   const channelPhrase = channels.map((c) => c === "telegram" ? "Telegram" : "email").join(" or ");
+  const reachLine = route === "inproduct"
+    ? <>It reaches you right inside {product}, at the moment you're using it</>
+    : <>You choose where it reaches you — {channelPhrase}</>;
   return (
     <main className="jn-main">
       <section className="jn-hero">
@@ -134,7 +156,7 @@ function JoinInvite({ product, tiers, channels, onJoin }) {
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. You choose where it reaches you — {channelPhrase} — and it remembers your context, so you never repeat yourself.</p>
+            <p>Every conversation is private — just you and the {product} team's interviewer. Sometimes it's a couple of messages, sometimes a short voice chat, occasionally a longer call. {reachLine} — and it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
             <b>Earn as you go</b>
@@ -177,13 +199,19 @@ function JoinInvite({ product, tiers, channels, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel }) {
-  const channelLabel = channel === "telegram" ? "Telegram" : "email";
+function JoinWelcome({ product, channel, question }) {
+  const opener = channel === "inproduct"
+    ? "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally, right inside " + product + " while you're using it, and you reply whenever suits you."
+    : "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + (channel === "telegram" ? "Telegram" : "email") + ", and you reply whenever suits you.";
+  const firstQuestion = question
+    ? "To start us off, the team's curious: " + question.trim().replace(/\.?$/, question.trim().endsWith("?") ? "" : "?")
+    : "To start us off — what made you give " + product + " a try in the first place?";
   const [messages, setMessages] = useStateJN([
-    { t: "them", text: "Hi! I'm the " + product + " team's interviewer — great to have you. First, no schedules here: I'll only check in occasionally over " + channelLabel + ", and you reply whenever suits you.", meta: "Observant, for the " + product + " team" },
-    { t: "them", text: "To start us off — what made you give " + product + " a try in the first place?", meta: "Observant" },
+    { t: "them", text: opener, meta: "Observant, for the " + product + " team" },
+    { t: "them", text: firstQuestion, meta: "Observant" },
   ]);
   const [draft, setDraft] = useStateJN("");
+  const minutes = messages.filter((message) => message.t === "user").length;
 
   const send = () => {
     const text = draft.trim();
@@ -201,13 +229,14 @@ function JoinWelcome({ product, channel }) {
       <section className="jn-hero">
         <span className="eyebrow">You're in</span>
         <h1>Welcome to the {product} feedback partner program.</h1>
-        <p>Watch your inbox — the first check-in arrives soon, and most take just a few minutes. Your minutes and rewards are tracked automatically from the very first reply.</p>
+        <p>{channel === "inproduct" ? "The first check-in will find you inside " + product + " — most take just a few minutes." : "Watch for the first check-in soon — most take just a few minutes."} Your minutes and rewards are tracked automatically from the very first reply.</p>
       </section>
 
       <section className="jn-block">
         <h2>Here's how a conversation feels</h2>
         <p className="jn-block-lead">Try it — type anything below.</p>
         <div className="jn-chat">
+          <div className="jn-chat-meter"><Icon name="clock" size={14} /> {minutes} participated {minutes === 1 ? "minute" : "minutes"} · Bronze at 30 min</div>
           <div className="jn-chat-body">
             {messages.map((message, index) => (
               <div className={"ss-chat-msg " + message.t} key={index}>
