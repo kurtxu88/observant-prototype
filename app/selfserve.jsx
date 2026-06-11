@@ -5,17 +5,22 @@ const { useState: useStateSS, useEffect: useEffectSS } = React;
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "learning", label: "Learning", icon: "spark" },
-  { id: "people", label: "People", icon: "users" },
+  { id: "learning", label: "Questions", icon: "chat" },
+  { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
+
+// PLACEHOLDER — swap for the real booking link before sharing externally.
+const SS_BOOK_CALL_URL = "https://calendly.com/observant-ai/intro";
 
 const SS_EMPTY_WORKSPACE_FORM = {
   founderName: "",
   email: "",
   companyName: "",
   productUrl: "",
+  productDescription: "",
+  userBase: "",
   learningGoal: "",
 };
 
@@ -83,7 +88,7 @@ function ssLoopEvents(state, loop) {
 }
 
 function ssSurfaceLabel(surface) {
-  const labels = { product: "In-product", browser: "Browser companion", email: "Email" };
+  const labels = { email: "Email", slack: "Slack", discord: "Discord", product: "In-product" };
   return labels[surface] || surface;
 }
 
@@ -105,33 +110,30 @@ async function ssPostJson(url, payload) {
   return response.json();
 }
 
-function ssCreateLoopDraft(state, loop) {
-  if (!loop) {
-    return {
-      loopId: "",
-      question: state.workspace.learningGoal,
-      learningGoal: state.workspace.learningGoal,
-      surfaces: { ...state.setup.surfaces },
-      events: { ...state.setup.events },
-    };
-  }
-  const loopSurfaceIds = loop.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const loopEventIds = loop.eventIds || state.events.filter((event) => state.setup.events[event.event]).map((event) => event.id);
-  const loopSignalIds = loop.signalIds || [];
-  return {
-    loopId: loop.id,
-    question: loop.question,
-    learningGoal: state.workspace.learningGoal,
-    surfaces: Object.fromEntries(Object.keys(state.setup.surfaces).map((surface) => [surface, loopSurfaceIds.includes(surface)])),
-    events: Object.fromEntries(Object.keys(state.setup.events).map((eventName) => {
-      const event = state.events.find((item) => item.event === eventName);
-      return [eventName, loopSignalIds.includes(eventName) || (event ? loopEventIds.includes(event.id) : !!state.setup.events[eventName])];
-    })),
-  };
-}
+// Deep links: /setup always lands on onboarding (clears a launched workspace,
+// keeps an in-progress one); /portal always lands on the dashboard (sample
+// workspace auto-created if none exists yet).
+const SS_VIEW = (() => {
+  const path = window.location.pathname.toLowerCase();
+  if (path.endsWith("/setup")) return "setup";
+  if (path.endsWith("/portal")) return "portal";
+  return "";
+})();
 
 function SelfServeApp() {
-  const [state, setState] = useStateSS(() => ssLoadState());
+  const [state, setState] = useStateSS(() => {
+    if (SS_VIEW === "setup") {
+      const saved = ssLoadState();
+      if (saved && saved.launched) { ssRemoveState(); return null; }
+      return saved;
+    }
+    let saved = ssLoadState();
+    if (SS_VIEW === "portal") {
+      if (!saved) saved = SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE);
+      if (!saved.launched) saved = { ...saved, launched: true, section: "home" };
+    }
+    return saved;
+  });
   const [copied, setCopied] = useStateSS("");
 
   useEffectSS(() => {
@@ -210,28 +212,28 @@ function SelfServeApp() {
 function EntryScreen({ onCreate }) {
   const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const canCreate = form.companyName.trim() && form.learningGoal.trim();
+  const canCreate = form.companyName.trim();
 
   return (
     <div className="ss-entry">
       <div className="ss-entry-left">
         <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
         <div className="ss-entry-copy">
-          <span className="eyebrow">Self-serve setup</span>
-          <h1>Create your Observant workspace.</h1>
-          <p>Turn on learning mode for your product. Observant will open private lines, remember user context, and surface what is changing while you ship.</p>
+          <span className="eyebrow">Step 1 · Product context</span>
+          <h1>Tell Observant about your product.</h1>
+          <p>This is all Observant needs to start — enough to know <b>who to talk to</b> and how to run <b>continuous, one-on-one learning</b> for you.</p>
         </div>
         <div className="ss-proof-grid" aria-label="Product signals">
-          <div><b>24/7</b><span>learning mode</span></div>
-          <div><b>1:1</b><span>private user lines</span></div>
+          <div><b>1:1</b><span>with every user</span></div>
+          <div><b>Always on</b><span>learning runs itself</span></div>
           <div><b>MCP</b><span>agent-ready output</span></div>
         </div>
       </div>
 
       <main className="ss-entry-card">
         <div className="ss-card-head">
-          <span className="eyebrow gray">Workspace</span>
-          <h2>Start with your product.</h2>
+          <span className="eyebrow gray">About your product</span>
+          <h2>Start with the basics.</h2>
         </div>
         <div className="ss-form-grid">
           <Field label="Your name">
@@ -246,59 +248,97 @@ function EntryScreen({ onCreate }) {
           <Field label="Product URL">
             <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
           </Field>
-          <Field label="Primary learning goal" wide>
-            <textarea className="textarea" value={form.learningGoal} placeholder="Learn why users start, stall, or hesitate before adopting the product." onChange={(e) => update("learningGoal", e.target.value)} />
+          <Field label="What does it do?" wide>
+            <textarea className="textarea" value={form.productDescription} placeholder="A reporting tool for ops teams. / A habit app for runners. — a sentence is plenty." onChange={(e) => update("productDescription", e.target.value)} />
+          </Field>
+          <Field label="Who uses it today?" wide>
+            <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
+          </Field>
+          <Field label="What are some top-of-mind questions you'd like to learn from users? (optional)" wide>
+            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other channels. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
         <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Create workspace <Icon name="arrow" size={16} /></Btn>
-          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Continue with sample workspace</Btn>
+          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Continue <Icon name="arrow" size={16} /></Btn>
+          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Use the sample workspace</Btn>
         </div>
-        <p className="ss-fineprint">Custom workspaces use synthetic users. No real signup, billing, or data connection is created.</p>
+        <p className="ss-fineprint">Set up your program in a couple of minutes — you can change any of this later.</p>
       </main>
     </div>
   );
 }
 
-function ActivationScreen({ state, patchState, onLaunch, copied, copyText, resetWorkspace }) {
-  const readiness = SelfServeData.readiness(state.setup);
+const SS_ONBOARD_STEPS = [
+  { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
+  { id: "surface", t: "Choose feedback surface", d: "Off-product or in-product" },
+  { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
+];
+
+const SS_CONNECT_OPTIONS = [
+  { id: "share", icon: "link", title: "Share a list or invite link", text: "Give Observant emails, a segment, or an invite link. The lightest way to start — nothing to install.", tag: "Easiest" },
+  { id: "inproduct", icon: "globe", title: "Connect inside your product", text: "Observant loads with a hashed user ID you pass it, so it always knows who it's talking to — without ever holding your real user data.", tag: "One-time setup" },
+];
+
+function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
-  const custom = ssWorkspaceIsCustom(state);
+  const setup = state.setup;
+  const [step, setStep] = useStateSS(0);
+  const [linkCopied, setLinkCopied] = useStateSS(false);
+  const [inviteCopied, setInviteCopied] = useStateSS(false);
+  const [linkGenerated, setLinkGenerated] = useStateSS(false);
+  const [sendPreviewOpen, setSendPreviewOpen] = useStateSS(false);
+  const [previewEmail, setPreviewEmail] = useStateSS(state.workspace.email || "");
+  const [previewSentTo, setPreviewSentTo] = useStateSS("");
 
-  const setUsersSource = (source) => {
-    patchState((current) => ({
-      ...current,
-      setup: { ...current.setup, usersSource: source },
-      activity: ["User source selected: " + source + ".", ...current.activity],
-    }));
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const setAudience = (id) => patchSetup({ audienceMode: id });
+  const setRecruit = (id) => patchSetup({ recruitMode: id });
+  const setConnect = (id) => patchSetup({ connectMode: id });
+  const route = setup.route || "offproduct";
+  const setRoute = (id) => patchSetup({ route: id });
+
+  const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
+  // The link is real wherever the app is served (localhost dev server and the
+  // Vercel deploy both rewrite /join/:slug) — observant.link later just points here.
+  const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const magicLink = window.location.host + "/join/" + productSlug;
+  const joinUrl = "/join/" + productSlug + "?route=" + route;
+  const copyLink = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(window.location.origin + "/join/" + productSlug).catch(() => {});
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1500);
+  };
+  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
+  const inviteText = [
+    "Subject: You're invited to help shape " + product,
+    "",
+    "Hi there,",
+    "",
+    "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
+    "",
+    route === "inproduct"
+      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. You earn rewards for every minute you participate, tracked automatically."
+      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
+    "",
+    "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
+    "",
+    "Join here: [your magic link — generated in the last step]",
+    "",
+    "You can opt out anytime, in one tap.",
+    "",
+    "— The " + product + " team",
+  ].join("\n");
+  const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
+  // Surface-route changes rewrite the invitation, so the copy always matches the setup.
+  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product]);
+  const copyInvite = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(inviteDraft).catch(() => {});
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 1500);
   };
 
-  const toggleSurface = (surface) => {
-    patchState((current) => ({
-      ...current,
-      setup: {
-        ...current.setup,
-        surfaces: { ...current.setup.surfaces, [surface]: !current.setup.surfaces[surface] },
-      },
-    }));
-  };
-
-  const toggleEvent = (eventName) => {
-    patchState((current) => ({
-      ...current,
-      setup: {
-        ...current.setup,
-        events: { ...current.setup.events, [eventName]: !current.setup.events[eventName] },
-      },
-    }));
-  };
-
-  const updateGoal = (value) => {
-    patchState((current) => ({ ...current, workspace: { ...current.workspace, learningGoal: value } }));
-  };
-
-  const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${product.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"></script>`;
-  const webhook = `POST https://api.observant.ai/v1/events\nAuthorization: Bearer <server-issued token>\n{\n  "event": "feature_opened",\n  "user_id": "synthetic_user_123",\n  "properties": { "workspace": "${product}" }\n}`;
+  const next = () => setStep((s) => Math.min(s + 1, SS_ONBOARD_STEPS.length - 1));
+  const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (
     <div className="ss-activation">
@@ -306,91 +346,200 @@ function ActivationScreen({ state, patchState, onLaunch, copied, copyText, reset
         <Wordmark size="1.45rem" />
         <div className="ss-top-right">
           <span>{product}</span>
-          <button type="button" onClick={resetWorkspace}>Reset workspace</button>
+          <button type="button" onClick={resetWorkspace}>Start over</button>
         </div>
       </header>
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
-          <span className="eyebrow">Activation</span>
-          <h1>Turn on learning mode.</h1>
-          <p>{custom ? "Choose the surfaces and synthetic signals Observant should simulate before your real install exists." : "Connect the minimum pieces Observant needs to keep learning from your users."}</p>
-          <Checklist readiness={readiness} launched={state.launched} />
+          <span className="eyebrow">Getting started</span>
+          <h1>Set up Observant.</h1>
+          <p>A few choices and Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
+          <ol className="ss-checks ss-onboard-rail">
+            {SS_ONBOARD_STEPS.map((s, i) => (
+              <li key={s.id} className={i === step ? "active" : i < step ? "done" : ""}>
+                <span>{i < step ? <Icon name="check" size={13} sw={2.4} /> : i + 1}</span>
+                <div className="ss-check-label"><b>{s.t}</b><em>{s.d}</em></div>
+              </li>
+            ))}
+          </ol>
         </aside>
 
         <main className="ss-activation-main">
-          <section className="ss-panel">
-            <PanelTitle k="Workspace" title="Create workspace" status="Complete" />
-            <div className="ss-workspace-card">
-              <Avatar name={product} color="oklch(0.255 0.018 58)" />
-              <div>
-                <h3>{product}</h3>
-                <p>{state.workspace.productUrl}</p>
-              </div>
-              <span className="ss-status success">Ready</span>
-            </div>
-          </section>
-
-          <section className="ss-panel">
-            <PanelTitle k="Learning goal" title="Define what Observant should learn" status="Saved" />
-            <textarea className="textarea" value={state.workspace.learningGoal} onChange={(e) => updateGoal(e.target.value)} />
-          </section>
-
-          <section className="ss-panel">
-            <PanelTitle k="Users" title="Choose who Observant learns from" status={readiness.users ? "Selected" : "Required"} />
-            <div className="ss-card-grid two">
-              <SelectCard
-                active={state.setup.usersSource === "invite"}
-                icon="link"
-                title={custom ? "Use synthetic lookalikes" : "Invite your users"}
-                text={custom ? "Simulate people who match your target users without contacting anyone real." : "Share an invite link with power users, early adopters, or a segment from your product."}
-                detail={custom ? "No real users contacted" : state.setup.inviteUrl}
-                onClick={() => setUsersSource("invite")}
-              />
-              <SelectCard
-                active={state.setup.usersSource === "recruit"}
-                icon="users"
-                title={custom ? "Generate a test panel" : "Recruit a vetted group"}
-                text={custom ? "Create a synthetic panel for your first learning loops." : "Start before launch with screened people who match your best-customer profile."}
-                detail={custom ? "Generated for this prototype" : "Managed by Observant"}
-                onClick={() => setUsersSource("recruit")}
-              />
-            </div>
-          </section>
-
-          <section className="ss-panel">
-            <PanelTitle k="Surfaces" title={custom ? "Choose simulated surfaces" : "Connect where conversations happen"} status={readiness.surfaces ? readiness.connectedSurfaces + " connected" : "Required"} />
-            <div className="ss-card-grid three">
-              <SurfaceCard active={state.setup.surfaces.product} icon="globe" title="In-product" text="Open a private line inside " product={product} onClick={() => toggleSurface("product")} />
-              <SurfaceCard active={state.setup.surfaces.browser} icon="search" title="Browser companion" text="Catch web behavior and follow up in context." onClick={() => toggleSurface("browser")} />
-              <SurfaceCard active={state.setup.surfaces.email} icon="mail" title="Email" text="Keep quiet async lines open for users who prefer inbox replies." onClick={() => toggleSurface("email")} />
-            </div>
-            <CodeBlock label="Embed snippet" text={snippet} copied={copied === "embed"} onCopy={() => copyText("embed", snippet)} />
-          </section>
-
-          <section className="ss-panel">
-            <PanelTitle k="Events" title={custom ? "Choose simulated behavior signals" : "Install behavior events"} status={readiness.events ? readiness.installedEvents + " installed" : "Required"} />
-            <div className="ss-event-grid">
-              {Object.keys(state.setup.events).map((eventName) => (
-                <button type="button" key={eventName} className={`ss-event${state.setup.events[eventName] ? " on" : ""}`} onClick={() => toggleEvent(eventName)}>
-                  <span><Icon name={state.setup.events[eventName] ? "check" : "bolt"} size={15} /></span>
-                  <b>{eventName}</b>
+          {step === 1 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 2" title="Choose your feedback surface" status={route === "inproduct" ? "In-product" : "Off-product"} />
+              <p className="ss-step-lead"><b>One decision: where do the conversations live?</b></p>
+              <div className="ss-route-grid">
+                <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Start today</em></span>
+                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
+                  <small>Email: quiet async 1:1s, whenever they have five minutes. Telegram: a one-tap private chat with the Observant bot.</small>
                 </button>
-              ))}
-            </div>
-            <CodeBlock label="Webhook sample" text={webhook} copied={copied === "webhook"} onCopy={() => copyText("webhook", webhook)} />
-          </section>
+                <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
+                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Simple setup, walked through with our team.</p>
+                </button>
+              </div>
+              {route === "inproduct" && <ProUpsell />}
+            </section>
+          )}
 
-          <section className="ss-launch-panel">
-            <div>
-              <span className="eyebrow no-rule">Learning mode</span>
-              <h2>Ready to start continuous learning?</h2>
-              <p>{readiness.ready ? "Observant has enough to open synthetic private lines, remember context, and surface what changes." : "Complete user source, at least one surface, and at least one event to turn learning mode on."}</p>
-            </div>
-            <Btn variant="primary" size="lg" disabled={!readiness.ready} onClick={onLaunch}>Turn on learning mode <Icon name="arrow" size={16} /></Btn>
-          </section>
+          {step === 0 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
+              <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
+              <div className="ss-program-block">
+                <h3><span className="ss-substep">1</span> Compensation</h3>
+                <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> You pay Observant, we pay your participants, and they redeem as they go — like spending down a gift card balance.</p>
+
+                <div className="ss-comp-grid">
+                  <article className="ss-comp-card on">
+                    <em className="ss-comp-tag active">Active · managed by Observant</em>
+                    <b>Cash</b>
+                    <p>Set your rate — we handle payouts and redemption.</p>
+                    <div className="ss-comp-rate">
+                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 1) })} /> / min</span>
+                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 1))}</b>
+                    </div>
+                    <small>Industry guideline: $1 per minute.</small>
+                  </article>
+
+                  <article className="ss-comp-card">
+                    <em className="ss-comp-tag coming">Coming</em>
+                    <b>Your product credits</b>
+                    <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
+                  </article>
+
+                  <article className="ss-comp-card">
+                    <em className="ss-comp-tag rec">Recommended add-on</em>
+                    <b>Additional perks</b>
+                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
+                  </article>
+                </div>
+              </div>
+              <div className="ss-program-block">
+                <h3><span className="ss-substep">2</span> Your invitation</h3>
+                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
+                <div className="ss-invite-copyblock">
+                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {step === 2 && (
+            <section className="ss-panel">
+              <PanelTitle k="Step 3" title="Preview" status="Last step" />
+              <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
+              <div className="ss-review">
+                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
+                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
+                <ReviewRowSS
+                  k="Compensation"
+                  v="Cash — managed by Observant"
+                  sub={<>
+                    <span className="ss-review-tier">${setup.rate || 1} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 1))} · redeem as you go</span>
+                    <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
+                  </>}
+                />
+                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
+                <ReviewRowSS
+                  k="Invitation to users"
+                  v={previewSentTo
+                    ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Preview sent to {previewSentTo} <button type="button" className="ss-doc-link ss-row-cta" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></span>
+                    : <button type="button" className="ss-doc-link ss-row-cta" onClick={() => setSendPreviewOpen((v) => !v)}>Preview the invitation email →</button>}
+                  sub="The text you wrote in Step 1 — we'll email you a preview, exactly as your users receive it."
+                />
+              </div>
+              {sendPreviewOpen && !previewSentTo && (
+                <div className="ss-sendpreview">
+                  <Field label="What's your email address?">
+                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); } }} />
+                  </Field>
+                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@")} onClick={() => { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); }}>Send me the preview</Btn>
+                </div>
+              )}
+
+              <div className="ss-program-block">
+                <h3>Your magic link</h3>
+                {!linkGenerated ? (
+                  <>
+                    <p>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</p>
+                    <div className="ss-golive-actions">
+                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
+                    <div className="ss-magiclink">
+                      <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
+                      <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                    </div>
+                    <div className="ss-golive-actions">
+                      <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="ss-program-block ss-suggest">
+                <span className="ss-suggest-badge">Our suggestions</span>
+                <h3>Who to send it to</h3>
+                <p>When you're thinking about who to send the magic link to — who you're inviting into your feedback program — here are a few ways to think about your first batch, if you want them. Keep in mind: usually <b>5–10% of those you invite opt in</b>, and they tend to be your most engaged.</p>
+                <div className="ss-advice-block">
+                  {SS_AUDIENCE_OPTIONS.map((opt) => (
+                    <div className="ss-advice-item" key={opt.id}>
+                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                      <div><b>{opt.label}</b><p>{opt.text}</p></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <div className="ss-onboard-nav">
+            {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
+            <span className="count">{(step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
+            {step < SS_ONBOARD_STEPS.length - 1
+              ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
+              : <span />}
+          </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function ProUpsell() {
+  return (
+    <section className="ss-pro-upsell">
+      <div className="ss-pro-head">
+        <span className="ss-pro-badge">Pro</span>
+        <b>Want people to provide feedback inside your app?</b>
+        <p>This is a Pro feature — we'll walk you through some simple setup. It unlocks the following:</p>
+      </div>
+      <ul className="ss-pro-list">
+        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by email or Telegram too.</span></li>
+        <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
+        <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
+        <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
+      </ul>
+      <div className="ss-pro-cta">
+        <a className="btn btn-primary btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
+      </div>
+    </section>
+  );
+}
+
+function ReviewRowSS({ k, v, sub }) {
+  return (
+    <div className="ss-review-row">
+      <span className="rk">{k}</span>
+      <span className="rv">{v}{sub ? <em>{sub}</em> : null}</span>
     </div>
   );
 }
@@ -441,8 +590,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
           </div>
           <div className="ss-topbar-actions">
-            <button type="button" className="ss-live ss-live-button" onClick={() => navigate({ section: "learning", loopId: firstLoopId, focusedTarget: firstLoopId || "create-loop" })}><i></i>Learning mode is on</button>
-            <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })}>Review learning</Btn>
+            {ssWorkspaceIsCustom(state) && <span className="ss-sim-pill" title="The people and replies below are simulated — your real panel fills in after you send invites.">Simulated preview</span>}
           </div>
         </header>
 
@@ -464,44 +612,37 @@ function HomeView({ state, patchState, navigate }) {
   const latestAnswer = state.answers[0];
   const activeConversationId = ssFirstActiveConversationId(state);
   const activePerson = ssPersonForConversation(state, state.conversations.find((item) => item.id === activeConversationId));
-  const memoryCount = state.loops.reduce((sum, loop) => sum + Number(loop.memory || 0), 0);
   const custom = ssWorkspaceIsCustom(state);
 
   return (
     <div className="ss-page-stack">
       <section className="ss-hero-status">
         <div>
-          <span className="eyebrow no-rule">Operating system</span>
-          <h2>{custom && !state.loops.length ? "Learning mode is ready." : "Learning mode is on."}</h2>
-          <p>{custom && !state.loops.length ? "Create a learning loop to simulate synthetic users, private lines, and product insight for " + product + "." : "Observant is watching behavior, keeping private lines open, and bringing signal back to " + product + " while you ship."}</p>
+          <span className="eyebrow no-rule">Always on</span>
+          <h2>{custom && !state.loops.length ? "Your panel is live." : "Learning mode is on."}</h2>
+          <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the users who opted in for " + product + ". Ask them anything, anytime — it keeps learning automatically." : "Observant is keeping one-on-one lines open with your users and bringing what it learns back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
-          <Metric n={String(memoryCount)} l="moments remembered" onClick={() => navigate({ section: state.insights.length ? "insights" : "learning", focusedTarget: state.insights[0] ? state.insights[0].id : "create-loop" })} />
-          <Metric n={String(readiness.connectedSurfaces)} l="surfaces connected" onClick={() => navigate({ section: "learning", focusedTarget: "learning-config" })} />
-          <Metric n={String(state.conversations.length)} l="active private lines" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
+          <Metric n={String(state.people.length)} l="feedback partners" onClick={() => navigate({ section: "people" })} />
+          <Metric n={String(state.conversations.length)} l="active 1:1 conversations" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
+          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning" })} />
         </div>
       </section>
 
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
-          <PanelTitle k="Next" title="Create your first learning loop" status="Ready" />
-          <p>Ask a question about your product, pick the synthetic users Observant should learn from, and watch replies and insights arrive in stages.</p>
+          <PanelTitle k="Next" title="Ask your panel a question" status="Ready" />
+          <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Create learning loop</Btn>
+            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Ask a question</Btn>
           </div>
         </section>
       )}
 
-      <div className="ss-dashboard-grid">
-        <section className="ss-panel">
-          <PanelTitle k="Now" title="Active private lines" status="Live" />
-          {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No private lines yet" text="Create a learning loop to open synthetic 1:1 lines." />}
-        </section>
-        <section className="ss-panel">
-          <PanelTitle k="Signals" title="Recent behavior triggers" status="Watching" />
-          {state.events.length ? <EventList state={state} events={state.events} navigate={navigate} /> : <EmptyState title="No signals yet" text="Signals appear as the loop collects synthetic behavior." />}
-        </section>
-      </div>
+      <section className="ss-panel">
+        <PanelTitle k="Now" title="Active lines" status="Live" />
+        {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
+      </section>
 
       <div className="ss-dashboard-grid">
         <AskObservant state={state} patchState={patchState} />
@@ -520,7 +661,7 @@ function HomeView({ state, patchState, navigate }) {
                 </li>
               ))}
             </ul>
-          ) : <EmptyState title="No memory yet" text="Observant will remember context once the first loop starts collecting." />}
+          ) : <EmptyState title="No memory yet" text="Observant remembers each person's context as soon as the first conversations come in." />}
         </section>
       </div>
 
@@ -529,107 +670,28 @@ function HomeView({ state, patchState, navigate }) {
   );
 }
 
-function LearningView({ state, patchState, navigate, copied, copyText }) {
+function LearningView({ state, patchState, navigate }) {
   const product = SelfServeData.productName(state.workspace);
-  const readiness = SelfServeData.readiness(state.setup);
-  const selected = ssSelectedLoop(state);
   const custom = ssWorkspaceIsCustom(state);
-  const loopRun = selected ? ssActiveLoopRun(state, selected.id) : null;
-  const loopPeople = ssLoopPeople(state, selected);
-  const loopConversations = ssLoopConversations(state, selected);
-  const loopEvents = ssLoopEvents(state, selected);
-  const selectedSurfaceIds = selected ? (selected.surfaceIds || Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface])) : [];
-  const selectedSignalIds = selected ? (selected.signalIds || loopEvents.map((event) => event.event)) : [];
-  const [isEditing, setIsEditing] = useStateSS(false);
-  const [isCreating, setIsCreating] = useStateSS(false);
-  const [draft, setDraft] = useStateSS(() => ssCreateLoopDraft(state, selected));
-  const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const snippet = `<script src="https://cdn.observant.ai/agent.js" data-workspace="${productSlug}"></script>`;
-  const webhook = `POST https://api.observant.ai/v1/events
-Authorization: Bearer <server-issued token>
-
-{
-  "event": "${selectedSignalIds[0] || "feature_opened"}",
-  "user_id": "synthetic_user_123",
-  "properties": {
-    "workspace": "${product}"
-  }
-}`;
-
-  useEffectSS(() => {
-    if (isEditing) setDraft(ssCreateLoopDraft(state, selected));
-  }, [selected ? selected.id : ""]);
-
-  const selectLoop = (loop) => {
-    patchState((current) => ({ ...current, selectedLoopId: loop.id, focusedTarget: loop.id }));
-  };
-
-  const openEdit = () => {
-    if (!selected) return;
-    setDraft(ssCreateLoopDraft(state, selected));
-    setIsEditing(true);
-  };
-
-  const closeEdit = () => {
-    setDraft(ssCreateLoopDraft(state, selected));
-    setIsEditing(false);
-  };
-
-  const updateDraft = (field, value) => {
-    setDraft((current) => ({ ...current, [field]: value }));
-  };
-
-  const toggleDraftSurface = (surface) => {
-    setDraft((current) => ({
-      ...current,
-      surfaces: { ...current.surfaces, [surface]: !current.surfaces[surface] },
-    }));
-  };
-
-  const toggleDraftEvent = (eventName) => {
-    setDraft((current) => ({
-      ...current,
-      events: { ...current.events, [eventName]: !current.events[eventName] },
-    }));
-  };
-
-  const saveEdit = () => {
-    if (!selected) return;
-    patchState((current) => ({
-      ...current,
-      workspace: { ...current.workspace, learningGoal: draft.learningGoal },
-      loops: ssUpdateById(current.loops, draft.loopId, () => ({
-        question: draft.question,
-        surfaceIds: Object.keys(draft.surfaces).filter((surface) => draft.surfaces[surface]),
-        signalIds: Object.keys(draft.events).filter((eventName) => draft.events[eventName]),
-        eventIds: current.events.filter((event) => draft.events[event.event]).map((event) => event.id),
-      })),
-      setup: {
-        ...current.setup,
-        surfaces: { ...draft.surfaces },
-        events: { ...draft.events },
-      },
-    }));
-    setIsEditing(false);
-  };
-
-  const openPerson = (person) => {
-    const conversationId = ssConversationIdForPerson(state, person.id);
-    navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
-  };
+  const [question, setQuestion] = useStateSS("");
+  const [slackConnected, setSlackConnected] = useStateSS(false);
+  const activeRun = (state.loopRuns || []).find((run) => run.status === "generating" || run.status === "collecting");
+  const stageLabel = activeRun
+    ? (activeRun.status === "generating"
+      ? SS_SIMULATION_STAGES[0].label
+      : ((activeRun.timeline || SS_SIMULATION_STAGES)[Math.max(0, activeRun.stageIndex)] || {}).label || "Sending it out")
+    : "";
 
   const startLoop = async (config) => {
     const runId = SelfServeData.makeRunId();
     const loop = SelfServeData.createCustomLoop(state.workspace, config, runId);
     const loopRun = SelfServeData.createLoopRun(runId, loop, config);
-    setIsCreating(false);
     patchState((current) => ({
       ...current,
       selectedLoopId: loop.id,
-      focusedTarget: loop.id,
       loops: [loop, ...current.loops],
       loopRuns: [loopRun, ...current.loopRuns],
-      activity: ["Learning loop created: " + loop.name + ".", ...current.activity],
+      activity: ["Question created: " + loop.name + ".", ...current.activity],
     }));
 
     let simulation;
@@ -667,322 +729,94 @@ Authorization: Bearer <server-issued token>
     });
   };
 
-  const audienceText = loopPeople.length
-    ? loopPeople.map((person) => person.segment).join(", ")
-    : ((selected && selected.groupIds) || []).map((id) => {
-      const option = SS_GROUP_OPTIONS.find((group) => group.id === id);
-      return option ? option.label : id;
-    }).join(", ");
-
-  return (
-    <>
-      <div className="ss-learning-layout">
-        <section className="ss-panel">
-          <div className="ss-panel-title ss-panel-title-with-action">
-            <div>
-              <span>Learning</span>
-              <h2>Learning loops</h2>
-            </div>
-            <em>{state.loops.length + " loops"}</em>
-          </div>
-          {custom && (
-            <Btn variant={state.loops.length ? "ghost" : "primary"} size="sm" className="ss-wide-action" onClick={() => setIsCreating(true)}>
-              <Icon name="spark" size={15} /> New loop
-            </Btn>
-          )}
-          {custom && (isCreating || !state.loops.length) && (
-            <LoopCreatePanel state={state} onStart={startLoop} onCancel={state.loops.length ? () => setIsCreating(false) : null} />
-          )}
-          <div className="ss-loop-list">
-            {state.loops.map((loop) => (
-              <button
-                type="button"
-                className={"ss-loop-option" + (selected && selected.id === loop.id ? " on" : "") + ssFocusClass(state, loop.id)}
-                key={loop.id}
-                onClick={() => selectLoop(loop)}
-              >
-                <div>
-                  <span className="ss-status success">{loop.status}</span>
-                  <em>{loop.cadence}</em>
-                </div>
-                <h3>{loop.name}</h3>
-                <p>{loop.question}</p>
-                <small>{loop.people} people · {loop.memory} remembered moments</small>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {selected ? (
-          <section className={"ss-panel ss-loop-detail" + ssFocusClass(state, selected.id) + ssFocusClass(state, "learning-config")}>
-            <div className="ss-loop-detail-head">
-              <PanelTitle k="Loop detail" title={selected.name} status={selected.status} />
-              <Btn variant="primary" size="sm" onClick={openEdit}><Icon name="settings" size={15} /> Edit loop</Btn>
-            </div>
-            {loopRun && <CollectingProgress run={loopRun} />}
-            <div className="ss-loop-detail-grid">
-              <Metric n={String(selected.people)} l="people watched" />
-              <Metric n={String(selected.active)} l="active now" />
-              <Metric n={String(selected.memory)} l="memories" />
-              <Metric n={String(selectedSignalIds.length || readiness.installedEvents)} l="signals watched" />
-            </div>
-
-            <div className="ss-loop-read-grid">
-              <ReadCard label="Loop question" text={selected.question} />
-              <ReadCard label="Primary learning goal" text={state.workspace.learningGoal} />
-            </div>
-
-            <div className="ss-loop-meta-grid">
-              <div><b>Cadence</b><span>{selected.cadence}</span></div>
-              <div><b>Audience</b><span>{audienceText || "Waiting for matched synthetic users"}</span></div>
-              <div><b>Surfaces</b><span>{selectedSurfaceIds.length ? selectedSurfaceIds.map(ssSurfaceLabel).join(", ") : "No surfaces connected"}</span></div>
-            </div>
-
-            <div className="ss-loop-columns">
-              <section>
-                <h3>Related people</h3>
-                <div className="ss-related-list">
-                  {loopPeople.length ? loopPeople.map((person) => (
-                    <PersonLine
-                      key={person.id}
-                      person={person}
-                      meta={person.segment + " · " + person.surface}
-                      body={person.memory}
-                      card
-                      focused={state.focusedTarget === "person-" + person.id}
-                      onClick={() => openPerson(person)}
-                    />
-                  )) : <EmptyState title="Matching users" text="Synthetic users appear as collection progresses." />}
-                </div>
-              </section>
-              <section>
-                <h3>Relevant 1:1 lines</h3>
-                {loopConversations.length ? <ConversationList state={state} conversations={loopConversations} compact navigate={navigate} /> : <EmptyState title="No 1:1 lines yet" text="Private lines open after matching users." />}
-              </section>
-            </div>
-
-            <div className="ss-loop-columns">
-              <section>
-                <h3>Signals watched by this loop</h3>
-                {loopEvents.length ? <EventList state={state} events={loopEvents} navigate={navigate} /> : <EmptyState title="Waiting for behavior" text="Synthetic signals arrive during collection." />}
-              </section>
-              <section className="ss-loop-install">
-                <h3>Connected surfaces</h3>
-                <div className="ss-surface-read-grid">
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("product")} icon="globe" title="In-product" text={"Private follow-ups inside " + product + "."} />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("browser")} icon="search" title="Browser companion" text="Behavior context and web follow-up." />
-                  <SurfaceStatusCard active={selectedSurfaceIds.includes("email")} icon="mail" title="Email" text="Quiet async learning lines." />
-                </div>
-              </section>
-            </div>
-
-            <div className="ss-loop-config" id="learning-config">
-              <div>
-                <h3>Signals this loop can use</h3>
-                <div className="ss-event-read-grid">
-                  {(selectedSignalIds.length ? selectedSignalIds : Object.keys(state.setup.events)).map((eventName) => (
-                    <span key={eventName} className="ss-event-pill on">
-                      <Icon name="check" size={15} />
-                      <b>{eventName}</b>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <CodeBlock label="Browser or in-product snippet" text={snippet} copied={copied === "learning-snippet"} onCopy={() => copyText("learning-snippet", snippet)} />
-              <CodeBlock label="Webhook sample" text={webhook} copied={copied === "learning-webhook"} onCopy={() => copyText("learning-webhook", webhook)} />
-            </div>
-          </section>
-        ) : (
-          <section className="ss-panel ss-loop-detail">
-            <EmptyState title="No learning loops yet" text="Create a loop to watch Observant collect synthetic 1:1 learning for your product." />
-          </section>
-        )}
-      </div>
-      {isEditing && (
-        <LoopEditDrawer
-          draft={draft}
-          product={product}
-          onUpdate={updateDraft}
-          onToggleSurface={toggleDraftSurface}
-          onToggleEvent={toggleDraftEvent}
-          onCancel={closeEdit}
-          onSave={saveEdit}
-        />
-      )}
-    </>
-  );
-}
-
-function LoopCreatePanel({ state, onStart, onCancel }) {
-  const product = SelfServeData.productName(state.workspace);
-  const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-  const activeSignals = Object.keys(state.setup.events).filter((eventName) => state.setup.events[eventName]);
-  const [draft, setDraft] = useStateSS({
-    name: product + " adoption loop",
-    question: state.workspace.learningGoal,
-    groupIds: ["power-users", "evaluators"],
-    surfaceIds: activeSurfaces.length ? activeSurfaces : ["product"],
-    signalIds: activeSignals.length ? activeSignals : ["feature_opened"],
-  });
-
-  const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
-  const toggleList = (field, id) => {
-    setDraft((current) => {
-      const values = current[field] || [];
-      const next = values.includes(id) ? values.filter((value) => value !== id) : [...values, id];
-      return { ...current, [field]: next.length ? next : values };
+  const submit = () => {
+    const q = question.trim();
+    if (!q || activeRun) return;
+    const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
+    setQuestion("");
+    startLoop({
+      name: q.length > 44 ? q.slice(0, 42) + "…" : q,
+      question: q,
+      // Everyone on the always-on panel — no per-question sampling.
+      groupIds: ["power-users", "new-signups", "evaluators"],
+      surfaceIds: activeSurfaces.length ? activeSurfaces : ["email"],
+      signalIds: [],
     });
   };
 
   return (
-    <div className="ss-create-loop" id="create-loop">
-      <PanelTitle k="New loop" title="Create learning loop" status="Synthetic" />
-      <Field label="Loop name">
-        <input className="input" value={draft.name} onChange={(e) => update("name", e.target.value)} />
-      </Field>
-      <Field label="Learning question">
-        <textarea className="textarea" value={draft.question} onChange={(e) => update("question", e.target.value)} />
-      </Field>
-      <div>
-        <h3>Who should Observant learn from?</h3>
-        <div className="ss-chip-grid">
-          {SS_GROUP_OPTIONS.map((group) => (
-            <button type="button" key={group.id} className={draft.groupIds.includes(group.id) ? "ss-choice-chip on" : "ss-choice-chip"} onClick={() => toggleList("groupIds", group.id)}>
-              <b>{group.label}</b>
-              <span>{group.text}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3>Surfaces</h3>
-        <div className="ss-small-toggle-grid">
-          {SS_SURFACE_OPTIONS.map((surface) => (
-            <button type="button" key={surface.id} className={draft.surfaceIds.includes(surface.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("surfaceIds", surface.id)}>
-              <span><Icon name={surface.icon} size={15} /></span>
-              <b>{surface.label}</b>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3>Signals</h3>
-        <div className="ss-small-toggle-grid">
-          {SS_SIGNAL_OPTIONS.map((signal) => (
-            <button type="button" key={signal.id} className={draft.signalIds.includes(signal.id) ? "ss-event on" : "ss-event"} onClick={() => toggleList("signalIds", signal.id)}>
-              <span><Icon name={draft.signalIds.includes(signal.id) ? "check" : "bolt"} size={15} /></span>
-              <b>{signal.label}</b>
-            </button>
-          ))}
-        </div>
-      </div>
-      <p className="ss-fineprint">This uses synthetic users only. No real users are contacted and no product data is installed.</p>
-      <div className="ss-create-loop-actions">
-        {onCancel && <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>}
-        <Btn variant="primary" onClick={() => onStart(draft)} disabled={!draft.name.trim() || !draft.question.trim()}>
-          <Icon name="spark" size={15} /> Start collecting
-        </Btn>
-      </div>
-    </div>
-  );
-}
-
-function CollectingProgress({ run }) {
-  const timeline = run.timeline || SS_SIMULATION_STAGES;
-  const current = Math.max(-1, run.stageIndex);
-  const percent = run.status === "generating" ? 8 : Math.round(((current + 1) / timeline.length) * 100);
-  const label = run.status === "generating"
-    ? "Preparing synthetic panel"
-    : run.status === "running"
-      ? "Still learning"
-      : (timeline[current] ? timeline[current].label : "Collecting");
-
-  return (
-    <section className="ss-progress-card">
-      <div className="ss-progress-head">
+    <div className="ss-page-stack">
+      <section className="ss-panel ss-slack-banner">
         <div>
-          <span className="eyebrow no-rule">Collecting progress</span>
-          <h3>{label}</h3>
+          <PanelTitle k="Integrate" title="Ask straight from Slack" status="Recommended" />
+          <p className="ss-step-lead">Connect Slack and your team's questions relay here automatically — ask in your channel, your panel hears it, and responses start piping back within the hour.</p>
         </div>
-        <em>{run.fallback ? "Local fallback" : "AI-assisted"}</em>
-      </div>
-      <div className="ss-progress-track"><span style={{ width: percent + "%" }} /></div>
-      <ol className="ss-progress-steps">
-        {timeline.map((step, index) => (
-          <li key={step.id || step.label} className={index <= current || run.status === "running" ? "done" : ""}>
-            <span>{index + 1}</span>
-            <div><b>{step.label}</b><p>{step.detail}</p></div>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
+        {slackConnected
+          ? <p className="ss-sent-note"><Icon name="check" size={15} sw={2.4} /> Slack connected — questions your team asks there will appear below.</p>
+          : <Btn variant="primary" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
+      </section>
 
-function LoopEditDrawer({ draft, product, onUpdate, onToggleSurface, onToggleEvent, onCancel, onSave }) {
-  return (
-    <>
-      <button type="button" className="ss-edit-backdrop" aria-label="Cancel loop editing" onClick={onCancel} />
-      <aside className="ss-edit-drawer" aria-label="Edit learning loop">
-        <div className="ss-edit-drawer-head">
-          <div>
-            <span className="eyebrow no-rule">Edit loop</span>
-            <h2>Learning configuration</h2>
+      <section className={"ss-panel" + ssFocusClass(state, "create-loop")} id="create-loop">
+        <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
+        <p className="ss-step-lead">Everyone who opted in is on a continuous one-on-one line. Ask anything — Observant phrases it for each person and gathers the answers.</p>
+        <Field label="Your question">
+          <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
+        </Field>
+        {activeRun ? (
+          <div className="ss-asking"><span className="ss-spinner" /> {stageLabel}…</div>
+        ) : (
+          <div className="ss-panel-actions">
+            <Btn variant="primary" onClick={submit} disabled={!question.trim()}><Icon name="spark" size={15} /> Ask the panel</Btn>
           </div>
-          <button type="button" onClick={onCancel} aria-label="Close edit drawer"><Icon name="x" size={17} /></button>
-        </div>
-        <div className="ss-edit-drawer-body">
-          <Field label="Loop question">
-            <textarea className="textarea" value={draft.question} onChange={(e) => onUpdate("question", e.target.value)} />
-          </Field>
-          <Field label="Primary learning goal">
-            <textarea className="textarea" value={draft.learningGoal} onChange={(e) => onUpdate("learningGoal", e.target.value)} />
-          </Field>
-          <section>
-            <h3>Connected surfaces</h3>
-            <div className="ss-card-grid two">
-              <SurfaceCard active={draft.surfaces.product} icon="globe" title="In-product" text="Private follow-ups inside " product={product} onClick={() => onToggleSurface("product")} />
-              <SurfaceCard active={draft.surfaces.browser} icon="search" title="Browser companion" text="Behavior context and web follow-up." onClick={() => onToggleSurface("browser")} />
-              <SurfaceCard active={draft.surfaces.email} icon="mail" title="Email" text="Quiet async learning lines." onClick={() => onToggleSurface("email")} />
-            </div>
-          </section>
-          <section>
-            <h3>Watched events</h3>
-            <div className="ss-event-grid">
-              {Object.keys(draft.events).map((eventName) => (
-                <button type="button" key={eventName} className={`ss-event${draft.events[eventName] ? " on" : ""}`} onClick={() => onToggleEvent(eventName)}>
-                  <span><Icon name={draft.events[eventName] ? "check" : "bolt"} size={15} /></span>
-                  <b>{eventName}</b>
-                </button>
-              ))}
-            </div>
-          </section>
-        </div>
-        <div className="ss-edit-drawer-actions">
-          <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>
-          <Btn variant="primary" onClick={onSave}>Save changes</Btn>
-        </div>
-      </aside>
-    </>
+        )}
+      </section>
+
+      <section className="ss-panel">
+        <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
+        {state.loops.length ? (
+          <div className="ss-question-history">
+            {state.loops.map((loop) => {
+              const run = ssActiveLoopRun(state, loop.id);
+              const collecting = run && run.status !== "running";
+              return (
+                <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
+                  <p>{loop.question}</p>
+                  <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
+                </div>
+              );
+            })}
+          </div>
+        ) : <EmptyState title="No questions yet" text="Ask your panel anything — every question your team asks lands here." />}
+      </section>
+    </div>
   );
 }
 
 function PeopleView({ state, patchState }) {
   const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
   const person = ssPersonForConversation(state, selected);
+  const [followUpOpen, setFollowUpOpen] = useStateSS(false);
+  const [followUpQ, setFollowUpQ] = useStateSS("");
+  const [followUpStage, setFollowUpStage] = useStateSS("");
+  const [modeTab, setModeTab] = useStateSS("chat");
 
   if (!selected || !person) {
     return (
       <section className="ss-panel">
-        <PanelTitle k="People" title="People Observant learns from" status="No lines" />
-        <p className="mut">No private learning lines are available yet.</p>
+        <PanelTitle k="Partners" title="Your feedback partners" status="No lines" />
+        <p className="mut">No lines are open yet.</p>
       </section>
     );
   }
 
+  const personConversations = state.conversations.filter((item) => item.userId === person.id || item.id === person.id);
+  const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
+  const voiceConversations = personConversations.filter((item) => item.mode === "voice");
+
   const setSelected = (conversationId) => {
     const conversation = state.conversations.find((item) => item.id === conversationId);
     const rowPerson = ssPersonForConversation(state, conversation);
+    setModeTab(conversation && conversation.mode === "voice" ? "voice" : "chat");
     patchState((current) => ({
       ...current,
       section: "people",
@@ -991,18 +825,29 @@ function PeopleView({ state, patchState }) {
     }));
   };
 
-  const relayQuestion = () => {
-    patchState((current) => ({
-      ...current,
-      conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
-        messages: [
-          ...conversation.messages,
-          { t: "relay", text: current.nextQuestions[0], meta: "Relayed from your product team" },
-          { t: "them", text: "Observant is following up with the context already remembered for this person.", meta: "Observant" },
-        ],
-      })),
-      activity: ["Question relayed to " + person.name + ".", ...current.activity],
-    }));
+  // Follow-ups go through Observant, never straight to the person —
+  // the staged send makes the relay model felt.
+  const sendFollowUp = () => {
+    const q = followUpQ.trim();
+    if (!q || followUpStage) return;
+    setFollowUpStage("Refining your question");
+    setTimeout(() => setFollowUpStage("Sending it to " + person.name.split(" ")[0] + " over " + person.surface), 1400);
+    setTimeout(() => {
+      patchState((current) => ({
+        ...current,
+        conversations: ssUpdateById(current.conversations, (chatConversation || selected).id, (conversation) => ({
+          messages: [
+            ...conversation.messages,
+            { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
+            { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + person.name.split(" ")[0] + ".", meta: "Observant" },
+          ],
+        })),
+        activity: ["Follow-up sent to " + person.name + " via Observant.", ...current.activity],
+      }));
+      setFollowUpStage("");
+      setFollowUpQ("");
+      setFollowUpOpen(false);
+    }, 2800);
   };
 
   const requestLive = () => {
@@ -1027,7 +872,7 @@ function PeopleView({ state, patchState }) {
   return (
     <div className="ss-people-layout">
       <section className="ss-panel">
-        <PanelTitle k="People" title="People Observant learns from" status={state.people.length + " people"} />
+        <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " partners"} />
         <div className="ss-table-list">
           {state.people.map((rowPerson) => {
             const conversationId = ssConversationIdForPerson(state, rowPerson.id);
@@ -1037,7 +882,6 @@ function PeopleView({ state, patchState }) {
                 person={rowPerson}
                 meta={rowPerson.segment + " · " + rowPerson.surface}
                 body={rowPerson.last}
-                status={rowPerson.status}
                 selected={selected.id === conversationId}
                 focused={state.focusedTarget === "person-" + rowPerson.id}
                 onClick={() => setSelected(conversationId)}
@@ -1054,21 +898,62 @@ function PeopleView({ state, patchState }) {
             <h3>{person.name}</h3>
             <p>{person.segment} · {person.surface}</p>
           </div>
-          <span className="ss-live"><i></i>{selected.state}</span>
+          <span className="ss-via">via Observant over {person.surface}</span>
         </div>
-        <div className="ss-person-context">
-          <div><b>Learned context</b><span>{person.memory}</span></div>
-          <div><b>Last signal</b><span>{person.last}</span></div>
-          <div><b>Active line</b><span>{selected.title}</span></div>
+        <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
+        <div className="ss-mode-tabs">
+          <button type="button" className={modeTab === "chat" ? "on" : ""} onClick={() => setModeTab("chat")}><Icon name="chat" size={15} /> 1:1 chat <em>async</em></button>
+          <button type="button" className={modeTab === "voice" ? "on" : ""} onClick={() => setModeTab("voice")}><Icon name="phone" size={15} /> Voice interviews <em>transcripts{voiceConversations.length ? " · " + voiceConversations.length : ""}</em></button>
         </div>
-        <div className="ss-chat-body">
-          {selected.messages.map((message, i) => <ChatMessage key={i} message={message} />)}
-        </div>
+        {modeTab === "chat" ? (
+          <div className="ss-chat-body">
+            {chatConversation
+              ? chatConversation.messages.map((message, i) => <ChatMessage key={i} message={message} />)
+              : <EmptyState title="No chat yet" text={"The async 1:1 with " + person.name.split(" ")[0] + " opens with their first reply."} />}
+          </div>
+        ) : (
+          <div className="ss-chat-body ss-transcript-body">
+            {voiceConversations.length ? voiceConversations.map((conversation) => (
+              <div className="ss-transcript" key={conversation.id}>
+                <div className="ss-transcript-head"><b>{conversation.title}</b><span>{conversation.duration || "voice"} · transcript</span></div>
+                {conversation.messages.map((message, i) => (
+                  <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
+                ))}
+              </div>
+            )) : <EmptyState title="No voice interviews yet" text={"When " + person.name.split(" ")[0] + " takes a focused voice interview, the full transcript lands here."} />}
+          </div>
+        )}
         <div className="ss-chat-actions">
-          <Btn variant="primary" size="sm" onClick={relayQuestion}><Icon name="relay" size={15} /> Relay a question</Btn>
+          <Btn variant="primary" size="sm" onClick={() => setFollowUpOpen(true)}><Icon name="relay" size={15} /> Follow up with a question</Btn>
           <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={15} /> Request live 1:1</Btn>
         </div>
       </section>
+      {followUpOpen && (
+        <>
+          <button type="button" className="ss-edit-backdrop" aria-label="Close" onClick={() => { if (!followUpStage) { setFollowUpOpen(false); } }} />
+          <div className="ss-modal" role="dialog" aria-label="Follow up with a question">
+            <div className="ss-modal-head">
+              <div>
+                <span className="eyebrow no-rule">Follow up</span>
+                <h2>Ask {person.name.split(" ")[0]} a question</h2>
+              </div>
+              {!followUpStage && <button type="button" className="ss-modal-close" onClick={() => setFollowUpOpen(false)} aria-label="Close"><Icon name="x" size={17} /></button>}
+            </div>
+            <p className="ss-modal-lead">Observant refines your question, phrases it for {person.name.split(" ")[0]}, and sends it over {person.surface} — you'll see the reply land in this line.</p>
+            <div className="ss-modal-body">
+              <textarea className="textarea" value={followUpQ} placeholder={"e.g. Would a live dashboard replace your weekly export?"} onChange={(e) => setFollowUpQ(e.target.value)} disabled={!!followUpStage} />
+              {followUpStage
+                ? <div className="ss-asking"><span className="ss-spinner" /> {followUpStage}…</div>
+                : (
+                  <div className="ss-modal-actions">
+                    <span />
+                    <Btn variant="primary" disabled={!followUpQ.trim()} onClick={sendFollowUp}>Send via Observant</Btn>
+                  </div>
+                )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1101,7 +986,7 @@ function InsightsView({ state, patchState, navigate }) {
             </button>
           ))}
         </div>
-      ) : <EmptyState title="No insight deliverables yet" text="Create a learning loop and Observant will draft insights once patterns emerge." />}
+      ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
     </div>
   );
 }
@@ -1140,7 +1025,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <input className="input" value={state.workspace.productUrl} onChange={(e) => updateWorkspace("productUrl", e.target.value)} />
       </Field>
       <div className="ss-default-list">
-        <div><b>Private lines</b><span>Default on for learning loops.</span></div>
+        <div><b>Private lines</b><span>One-on-one with every person on the panel.</span></div>
         <div><b>Team updates</b><span>Weekly digest and urgent insight alerts.</span></div>
         <div><b>Agent handoffs</b><span>Insight deliverables can include PRD and MCP-ready context.</span></div>
       </div>
@@ -1213,13 +1098,13 @@ function ConversationList({ state, conversations, compact, navigate }) {
         const person = ssPersonForConversation(state, conversation);
         if (!person) return null;
         const openConversation = () => navigate && navigate({ section: "people", conversationId: conversation.id, focusedTarget: "person-" + person.id });
+        const modeLabel = conversation.mode === "voice" ? "Voice interview · transcript" : "Chat";
         return (
           <PersonLine
             key={conversation.id}
             person={person}
-            meta={compact ? person.segment + " · " + person.surface : conversation.title}
+            meta={compact ? modeLabel + " · " + person.surface : conversation.title}
             body={compact ? person.last : person.memory}
-            status={conversation.state}
             compact={compact}
             focused={state.focusedTarget === "person-" + person.id}
             onClick={navigate ? openConversation : null}
@@ -1357,7 +1242,7 @@ function SurfaceStatusCard({ active, icon, title, text }) {
       <span><Icon name={icon} size={18} /></span>
       <b>{title}</b>
       <p>{text}</p>
-      <em>{active ? "Connected" : "Not connected"}</em>
+      <em>{active ? "Enabled" : "Not enabled"}</em>
     </article>
   );
 }
@@ -1368,7 +1253,9 @@ function SurfaceCard({ active, icon, title, text, product, onClick }) {
       <span><Icon name={icon} size={18} /></span>
       <b>{title}</b>
       <p>{text}{product ? product + "." : ""}</p>
-      <em>{active ? "Connected" : "Connect"}</em>
+      <em className="ss-surface-toggle">
+        {active ? <><Icon name="check" size={13} sw={2.8} /> Enabled</> : "Tap to enable"}
+      </em>
     </button>
   );
 }

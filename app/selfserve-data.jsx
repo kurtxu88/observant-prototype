@@ -3,13 +3,15 @@
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
-const SS_STATE_VERSION = 2;
+const SS_STATE_VERSION = 5;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
   email: "maya@northwind.ai",
   companyName: "Northwind",
   productUrl: "https://northwind.ai",
+  productDescription: "A reporting and analytics tool for ops and data teams.",
+  userBase: "Ops leads and analysts at 50–500 person B2B companies.",
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
 };
 
@@ -18,7 +20,9 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
   email: "founder@example.com",
   companyName: "Your product",
   productUrl: "https://yourproduct.example",
-  learningGoal: "Learn what users need next.",
+  productDescription: "What your product helps people do.",
+  userBase: "The people who use your product today.",
+  learningGoal: "",
 };
 
 const SS_GROUP_OPTIONS = [
@@ -30,10 +34,41 @@ const SS_GROUP_OPTIONS = [
 ];
 
 const SS_SURFACE_OPTIONS = [
-  { id: "product", label: "In-product", icon: "globe" },
-  { id: "browser", label: "Browser companion", icon: "search" },
   { id: "email", label: "Email", icon: "mail" },
+  { id: "telegram", label: "Telegram", icon: "chat" },
+  { id: "slack", label: "Slack", icon: "chat" },
+  { id: "discord", label: "Discord", icon: "chat" },
+  { id: "product", label: "In-product", icon: "globe" },
 ];
+
+// Fast-start connections a user can pick on the magic link.
+// Slack needs a workspace install and in-product needs the SDK — both live on the Pro side.
+const SS_FAST_CHANNELS = ["email", "telegram"];
+
+// People-first: how the always-on panel is built. Ranked — reach everyone leads.
+const SS_AUDIENCE_OPTIONS = [
+  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in.", tag: "Recommended" },
+  { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to opt in.", tag: "Most engaged" },
+  { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Full picture" },
+];
+
+// What you offer people for opting in as a feedback partner (the currency).
+const SS_COMPENSATION_OPTIONS = [
+  { id: "giftcard", label: "Gift cards", text: "A simple thank-you. Universal and easy.", tag: "Default" },
+  { id: "productcredits", label: "Your product credits", text: "Credit inside your own product.", tag: "In-product" },
+  { id: "accountcredits", label: "Account credits", text: "Apply credit toward their plan or usage." },
+  { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring time." },
+];
+
+// One model: status tiers by participated minutes (text, voice, calls). Observant audits the minutes.
+// `cash` = redeem-as-you-go conversion baseline; `reward` = the team's default tier reward (customizable).
+const SS_REWARD_TIERS = [
+  { id: "bronze", name: "Bronze", min: 30, cash: 30, reward: "$30 gift card", color: "gold" },
+  { id: "silver", name: "Silver", min: 100, cash: 90, reward: "6 months free subscription", color: "teal" },
+  { id: "gold", name: "Gold", min: 200, cash: 150, reward: "In-person event invite, early access & perks", color: "rust" },
+];
+
+const SS_DEFAULT_TIER_REWARDS = { bronze: "$30 gift card", silver: "6 months free subscription", gold: "In-person event invite, early access & perks" };
 
 const SS_SIGNAL_OPTIONS = [
   { id: "user_signed_up", label: "user_signed_up" },
@@ -43,10 +78,10 @@ const SS_SIGNAL_OPTIONS = [
 ];
 
 const SS_SIMULATION_STAGES = [
-  { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to the loop audience." },
-  { id: "lines", label: "Opening private lines", detail: "Observant opens 1:1 learning lines with matched people." },
-  { id: "replies", label: "Collecting replies", detail: "Early answers and behavior signals start coming in." },
-  { id: "patterns", label: "Detecting patterns", detail: "Repeated context is grouped into stronger signals." },
+  { id: "match", label: "Refining your question", detail: "Turning it into questions users can answer naturally." },
+  { id: "lines", label: "Finding the right participants", detail: "Matching people on your panel." },
+  { id: "replies", label: "Sending it out", detail: "First replies are coming in." },
+  { id: "patterns", label: "Listening", detail: "Repeated context is grouped into stronger signals." },
   { id: "insights", label: "Drafting insights", detail: "Evidence-backed recommendations are prepared for the team." },
 ];
 
@@ -77,6 +112,10 @@ function ssTrim(value, fallback) {
   return text || fallback;
 }
 
+function ssPhrase(value, fallback) {
+  return ssTrim(value, fallback).replace(/[.!?]+$/g, "");
+}
+
 function ssCreateWorkspace(input, fallback) {
   const base = fallback || SS_DEFAULT_WORKSPACE;
   const merged = { ...base, ...(input || {}) };
@@ -87,16 +126,33 @@ function ssCreateWorkspace(input, fallback) {
     email: ssTrim(merged.email, base.email),
     companyName: product,
     productUrl: ssTrim(merged.productUrl, "https://" + ssSlug(product).replace(/-/g, "") + ".com"),
-    learningGoal: ssTrim(merged.learningGoal, base.learningGoal),
+    productDescription: ssTrim(merged.productDescription, base.productDescription),
+    userBase: ssTrim(merged.userBase, base.userBase),
+    learningGoal: ssTrim(merged.learningGoal, base.learningGoal === undefined ? "" : base.learningGoal),
     createdAt: merged.createdAt || new Date().toISOString(),
   };
 }
 
 function ssCreateSetup(workspace) {
   return {
-    usersSource: "",
+    // People-first program. Solid defaults so a first version is usable out of the box.
+    audienceMode: "representative",
+    recruitMode: "byo",
+    connectMode: "share",
+    batchLabel: "",
+    // Cash is the day-one model, managed by Observant. Product credits: coming.
+    compensation: "cash",
+    // Dollars per participated minute — $1/min is the industry guideline.
+    rate: 1,
+    tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
+    consentAck: true,
+    usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-    surfaces: { product: false, browser: false, email: false },
+    // The client's one surface decision: off-product (start today) vs in-product (Pro).
+    // Email vs Telegram is the USER's choice at opt-in — both always available.
+    route: "offproduct",
+    surfaces: { email: true, telegram: true, product: false },
+    // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
       export_completed: false,
@@ -124,7 +180,7 @@ function ssCreatePeople(workspace) {
       name: "Marcus T.",
       color: "green",
       segment: "Power user",
-      surface: "Browser companion",
+      surface: "Telegram",
       status: "Active now",
       memory: "Uses " + product + " for weekly ops reporting and wants share links.",
       last: "I need a link my ops lead can read, not another CSV.",
@@ -154,7 +210,7 @@ function ssCreatePeople(workspace) {
       name: "Leah M.",
       color: "rust",
       segment: "Upgrade evaluator",
-      surface: "Browser companion",
+      surface: "Telegram",
       status: "Watching",
       memory: "Paused on the upgrade page after comparing reporting permissions.",
       last: "I need to know whether the team can see this before we upgrade.",
@@ -166,10 +222,27 @@ function ssCreateConversations(workspace) {
   const product = ssProductName(workspace);
   return [
     {
+      id: "dana-voice",
+      userId: "dana",
+      title: "Export workflow — voice interview",
+      state: "Done",
+      mode: "voice",
+      duration: "26 min",
+      messages: [
+        { t: "them", text: "You said Mondays are export day — walk me through what happens after you hit export.", meta: "Observant" },
+        { t: "user", text: "I pull the CSV, drop it into Sheets, and rebuild the pivot my team expects. Maybe twenty minutes of cleanup — every single week.", meta: "Dana" },
+        { t: "them", text: "If the dashboard gave you that view directly, what would still be missing?", meta: "Observant" },
+        { t: "user", text: "Sharing. My team doesn't have seats, so even a perfect dashboard dies at the paywall. The CSV is really a sharing workaround.", meta: "Dana" },
+        { t: "them", text: "So the export is less about the data and more about access.", meta: "Observant" },
+        { t: "user", text: "Exactly. Give me a read-only link and I'd never export again.", meta: "Dana" },
+      ],
+    },
+    {
       id: "dana",
       userId: "dana",
       title: "Weekly export workflow",
       state: "Active",
+      mode: "chat",
       messages: [
         { t: "them", text: "Hi Dana - I noticed you finished another weekly export in " + product + ". What happens after it leaves the app?", meta: "Observant - behavior-triggered" },
         { t: "user", text: "I paste it into a sheet and rebuild half of it by hand.", meta: "Dana" },
@@ -269,7 +342,7 @@ function ssCreateLoops() {
       conversationIds: ["dana", "marcus", "owen"],
       peopleIds: ["dana", "marcus", "owen"],
       eventIds: ["evt-1", "evt-2"],
-      surfaceIds: ["product", "browser"],
+      surfaceIds: ["email", "telegram"],
     },
     {
       id: "loop-onboarding",
@@ -299,7 +372,7 @@ function ssCreateLoops() {
       conversationIds: ["leah"],
       peopleIds: ["leah"],
       eventIds: ["evt-4"],
-      surfaceIds: ["browser"],
+      surfaceIds: ["telegram"],
     },
   ];
 }
@@ -358,14 +431,88 @@ function ssCreateSampleState(input) {
   };
 }
 
+function ssInitialCustomQuestion(workspace) {
+  const product = ssProductName(workspace);
+  const firstQuestion = String(workspace.learningGoal || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)[0];
+  if (firstQuestion) return firstQuestion;
+
+  const audience = ssPhrase(workspace.userBase, "the people who use " + product);
+  return "What would make " + product + " feel worth using regularly for " + audience + "?";
+}
+
+function ssInitialCustomConfig(workspace) {
+  const question = ssInitialCustomQuestion(workspace);
+  return {
+    name: question.length > 44 ? question.slice(0, 41) + "..." : question,
+    question,
+    groupIds: ["power-users", "new-signups", "evaluators"],
+    surfaceIds: ["email", "telegram"],
+    signalIds: ["user_signed_up", "feature_opened", "checkout_abandoned"],
+  };
+}
+
+function ssHydrateSimulationLoop(simulation) {
+  const conversations = simulation.conversations || [];
+  const users = simulation.users || [];
+  const events = simulation.events || [];
+  const firstConversation = conversations[0];
+  const replies = conversations.reduce((sum, conversation) => {
+    return sum + (conversation.messages || []).filter((message) => message.t === "user").length;
+  }, 0);
+
+  return {
+    ...simulation.loop,
+    status: "Learning",
+    cadence: "Still learning",
+    people: users.length,
+    active: conversations.filter((conversation) => conversation.state === "Active").length,
+    memory: replies,
+    conversationId: firstConversation ? firstConversation.id : "",
+    conversationIds: conversations.map((conversation) => conversation.id),
+    peopleIds: users.map((user) => user.id),
+    eventIds: events.map((event) => event.id),
+    generatedAt: simulation.generatedAt,
+  };
+}
+
 function ssCreateCustomState(input) {
   const workspace = ssCreateWorkspace(input, SS_CUSTOM_WORKSPACE_FALLBACK);
+  const base = ssBaseState(workspace, "custom");
+  const runId = "initial-" + ssSlug(workspace.companyName);
+  const config = ssInitialCustomConfig(workspace);
+  const simulation = ssFallbackSimulation(workspace, config, runId);
+  const loop = ssHydrateSimulationLoop(simulation);
+  const loopRun = {
+    ...ssCreateLoopRun(runId, loop, config),
+    status: "running",
+    stageIndex: SS_SIMULATION_STAGES.length - 1,
+    fallback: true,
+    generatedAt: simulation.generatedAt,
+    completedAt: simulation.generatedAt,
+    timeline: simulation.timeline || SS_SIMULATION_STAGES,
+  };
+
   return {
-    ...ssBaseState(workspace, "custom"),
-    nextQuestions: [
-      "What should Observant ask first about " + workspace.companyName + "?",
-      "Which user group should this learning loop watch next?",
-      "What would make this pattern worth shipping against?",
+    ...base,
+    selectedLoopId: loop.id,
+    selectedConversationId: loop.conversationId,
+    people: simulation.users,
+    groups: simulation.groups,
+    conversations: simulation.conversations,
+    events: simulation.events,
+    insights: simulation.insights,
+    loops: [loop],
+    loopRuns: [loopRun],
+    simulationRuns: [{ ...simulation, loop }],
+    nextQuestions: simulation.nextQuestions,
+    generatedAt: simulation.generatedAt,
+    activity: [
+      "Synthetic feedback partners generated for " + workspace.companyName + ".",
+      "Question created: " + loop.name + ".",
+      ...base.activity,
     ],
   };
 }
@@ -389,11 +536,12 @@ function ssSurfaceLabelData(id) {
 }
 
 function ssCreateCustomLoop(workspace, config, runId) {
-  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["product"]);
-  const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : ["feature_opened"]);
+  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["email"]);
+  // Behavior triggers are a contact-us add-on — never auto-attached to a question.
+  const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : []);
   return {
     id: "loop-" + runId,
-    name: ssTrim(config.name, "New learning loop"),
+    name: ssTrim(config.name, "New question"),
     status: "Collecting",
     cadence: "Synthetic panel",
     people: 0,
@@ -429,15 +577,17 @@ function ssCreateLoopRun(runId, loop, config) {
 
 function ssFallbackSimulation(workspace, config, runId) {
   const product = ssProductName(workspace);
+  const audience = ssPhrase(workspace.userBase, "the people who use " + product);
+  const productContext = ssPhrase(workspace.productDescription, "the workflow " + product + " supports");
   const actualRunId = runId || ssMakeRunId();
   const loop = ssCreateCustomLoop(workspace, config || {}, actualRunId);
   const groupIds = loop.groupIds.length ? loop.groupIds : ["power-users"];
-  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["product"];
-  const signalIds = loop.signalIds && loop.signalIds.length ? loop.signalIds : ["feature_opened"];
+  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["email"];
+  const signalIds = loop.signalIds || [];
   const colors = ["rust", "green", "blue", "gold", "teal", "plum"];
   const names = ["Avery N.", "Samir P.", "Elena R.", "Jordan M.", "Mina S.", "Theo L."];
   const quotes = [
-    "I understand the value, but I need to see how this fits the workflow we already trust.",
+    "I understand what " + product + " is trying to do, but I need to see how it fits the workflow we already trust.",
     "The feature sounds right. The missing piece is knowing who on my team will use it every week.",
     "I would try this if setup felt lighter and the first result was obvious.",
     "The current path works, but it takes too many small decisions to get to the answer.",
@@ -445,10 +595,10 @@ function ssFallbackSimulation(workspace, config, runId) {
     "The blocker is not interest. It is proving this can save time for more than one person.",
   ];
   const memories = [
-    "Compares product value against the team's current manual workflow.",
-    "Looks for shared visibility before asking the team to change habits.",
+    "Compares " + product + " against the workflows trusted by " + audience + ".",
+    "Looks for shared visibility before asking the team to change habits around " + product + ".",
     "Needs fast first-run confidence before committing setup time.",
-    "Repeats the same behavior after every release and wants fewer handoffs.",
+    "Keeps returning to the same decision point around " + productContext + ".",
     "Wants a recommendation grounded in what similar users already did.",
     "Needs proof that the workflow scales beyond a single champion.",
   ];
@@ -458,8 +608,8 @@ function ssFallbackSimulation(workspace, config, runId) {
     sourceId: id,
     name: ssGroupLabel(id),
     size: String(18 + (index * 7)) + " synthetic matches",
-    signal: signalIds[index % signalIds.length],
-    detail: "Matched to " + loop.question,
+    signal: signalIds.length ? signalIds[index % signalIds.length] : "",
+    detail: "Matched from " + audience + " for: " + loop.question,
   }));
 
   const users = names.slice(0, 5).map((name, index) => {
@@ -481,7 +631,9 @@ function ssFallbackSimulation(workspace, config, runId) {
   const conversations = users.map((person, index) => ({
     id: actualRunId + "-conv-" + index,
     userId: person.id,
-    title: person.segment + " learning line",
+    title: person.segment + " 1:1",
+    mode: index === 1 ? "voice" : "chat",
+    duration: index === 1 ? "22 min" : "",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
       { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },
@@ -491,7 +643,8 @@ function ssFallbackSimulation(workspace, config, runId) {
     ],
   }));
 
-  const events = users.slice(0, 4).map((person, index) => ({
+  // Behavior triggers are a contact-us add-on, so the simulation generates no trigger events.
+  const events = signalIds.length ? users.slice(0, 4).map((person, index) => ({
     id: actualRunId + "-evt-" + index,
     event: signalIds[index % signalIds.length],
     user: person.name,
@@ -499,16 +652,16 @@ function ssFallbackSimulation(workspace, config, runId) {
     time: ["2m ago", "9m ago", "21m ago", "46m ago"][index],
     type: "synthetic",
     conversationId: conversations[index].id,
-  }));
+  })) : [];
 
-  const metric = String(58 + (groupIds.length * 4)) + "%";
+  const metric = Math.max(2, users.length - 1) + " of " + users.length;
   const insights = [
     {
       id: actualRunId + "-insight-primary",
       title: "Users need proof that " + product + " fits their existing workflow.",
       metric,
-      detail: "Synthetic 1:1 lines show interest, but users keep asking for evidence that the product will reduce coordination work instead of adding another step.",
-      evidence: "Grounded in " + users.length + " synthetic users, " + conversations.length + " private lines, and " + events.length + " behavior signals.",
+      detail: "Synthetic 1:1 lines from " + audience + " show interest, but users keep asking for evidence that " + product + " will reduce coordination work instead of adding another step.",
+      evidence: "Grounded in " + users.length + " synthetic users and " + conversations.length + " private lines.",
       next: "Show a first useful output before asking users to commit setup time.",
       conversationId: conversations[0].id,
       loopId: loop.id,
@@ -516,8 +669,8 @@ function ssFallbackSimulation(workspace, config, runId) {
     {
       id: actualRunId + "-insight-secondary",
       title: "Team visibility is the strongest adoption question.",
-      metric: "3 signals",
-      detail: "Across synthetic groups, people ask how teammates will see, trust, or reuse the output.",
+      metric: "3 of " + users.length,
+      detail: "Across synthetic groups, people ask how teammates will see, trust, or reuse the output from " + product + ".",
       evidence: "Mentioned by " + users.slice(0, 3).map((person) => person.name).join(", ") + ".",
       next: "Add a shareable team-facing artifact to the activation path.",
       conversationId: conversations[1].id,
@@ -649,13 +802,15 @@ function ssRevealSimulation(state, runId, stageIndex) {
   const visibleEventIds = visibleEvents.map((event) => event.id);
   const finalStage = safeStage >= SS_SIMULATION_STAGES.length - 1;
   const firstConversation = visibleConversations[0];
+  // Memory = actual replies in visible 1:1s, so every number on screen is countable.
+  const visibleReplies = visibleConversations.reduce((sum, conversation) => sum + (conversation.messages || []).filter((message) => message.t === "user").length, 0);
   const loopPatch = {
     ...simulation.loop,
     status: finalStage ? "Learning" : "Collecting",
     cadence: finalStage ? "Still learning" : "Collecting now",
     people: visiblePeople.length,
     active: visibleConversations.filter((conversation) => conversation.state === "Active").length,
-    memory: finalStage ? 84 + visiblePeople.length * 16 : Math.max(8, safeStage * 18),
+    memory: visibleReplies,
     peopleIds: visibleQuestionIds,
     conversationIds: visibleConversationIds,
     eventIds: visibleEventIds,
@@ -728,6 +883,10 @@ Object.assign(window, {
   SS_DEFAULT_WORKSPACE,
   SS_GROUP_OPTIONS,
   SS_SURFACE_OPTIONS,
+  SS_FAST_CHANNELS,
+  SS_AUDIENCE_OPTIONS,
+  SS_COMPENSATION_OPTIONS,
+  SS_REWARD_TIERS,
   SS_SIGNAL_OPTIONS,
   SS_SIMULATION_STAGES,
   SelfServeData: {
