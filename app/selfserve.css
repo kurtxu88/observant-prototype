@@ -949,10 +949,38 @@
 }
 .ss-progress-track span {
   display: block;
+  position: relative;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover), var(--accent));
+  background-size: 190% 100%;
   transition: width .35s ease;
+  animation: ss-progress-flow 1.8s linear infinite;
+}
+.ss-progress-track span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / .32), transparent);
+  transform: translateX(-120%);
+  animation: ss-progress-glint 1.45s ease-in-out infinite;
+}
+@keyframes ss-progress-flow {
+  to { background-position: 190% 0; }
+}
+@keyframes ss-progress-glint {
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-progress-track span {
+    animation: none;
+  }
+  .ss-progress-track span::after {
+    display: none;
+    animation: none;
+  }
 }
 .ss-progress-steps {
   list-style: none;
