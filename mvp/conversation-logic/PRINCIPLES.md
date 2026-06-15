@@ -46,6 +46,15 @@ A setup dial sets how far the agent roams: **low** = protocol-tight (stick to th
 ### P13 — Reward visibility every batch (channel respect)
 Because the whole relationship lives in one thread, each batch must *give back*: show the person their **participated minutes + reward earned** and a **"track & redeem on Observant"** CTA, constantly. This motivates continued participation and keeps the channel from feeling like spam. *Encoded in: the test surface's reward strip; the real product surfaces it per message/batch.*
 
+### P14 — Every email is a batch (~3 questions), never one-then-wait
+On email, *every* message — first and follow-ups — carries a small batch of ~3 questions, so we extract as much as possible per reply. Follow-up batches mix one or two deeper probes (on what was thin/interesting) with one new question advancing the essence. Relying on people to keep returning for one-question-at-a-time exchanges is impractical and disrespectful of their time. (Telegram stays one-at-a-time — its cadence makes round-trips cheap.) *Encoded in: C2, channelHint.*
+
+### P15 — Knowing when to end (three levels)
+"Done" is decided at three levels: (1) the turn always ends after the batch (async); (2) the **round** ends by a *marginal-value test* — send another batch only if real value remains, else wind down; (3) the **engagement** never hard-ends — it goes **dormant** and re-engages on new value (new question / behavior trigger), winding down only on disengagement, diminishing returns, or opt-out (honored immediately). Every round ends with a graceful wind-down + the participation/reward summary, never on an interrogation. *Encoded in: C3.*
+
+### P12 addendum — temperature × company context
+The exploration temperature also governs how much the agent draws on the **company's context / uploaded materials** to open new angles: high = use it to roam; low = stick to the client's explicit questions. (Forward-looking — depends on the context/docs layer, C4-adjacent.)
+
 ### Email specifics (composed of the above)
 Generic, personal, relationship-level **subject** (rides the whole thread, never round-specific, never a "program" label); **first email** = professional catch-up + numbered set; **follow-ups** = recap paragraph, then the **bolded** new question in its own space; **embedded per-question survey fields** so replying is low-friction (real email needs AMP/hosted-form; mocked in the prototype).
 

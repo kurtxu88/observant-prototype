@@ -36,16 +36,18 @@ function fmtTime(ts) {
 
 function estMinutes(text) { const w = String(text || "").trim().split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 22)); }
 
-/* Pull numbered questions out of an agent message: {intro, questions[]} */
+/* Split an agent email into {intro, questions[], outro} preserving the
+   text before/after the numbered block so the survey can REPLACE the list. */
 function parseNumbered(text) {
-  const lines = String(text || "").split("\n");
-  const intro = []; const questions = [];
-  lines.forEach((raw) => {
+  const str = String(text || "");
+  const lines = str.split("\n");
+  const questions = []; let first = -1, last = -1;
+  lines.forEach((raw, idx) => {
     const m = raw.trim().match(/^(\d+)[.)]\s+(.*)/);
-    if (m) questions.push(m[2]);
-    else if (!questions.length && raw.trim()) intro.push(raw.trim());
+    if (m) { questions.push(m[2]); if (first < 0) first = idx; last = idx; }
   });
-  return { intro: intro.join(" "), questions };
+  if (!questions.length) return { intro: str, questions: [], outro: "" };
+  return { intro: lines.slice(0, first).join("\n").trim(), questions, outro: lines.slice(last + 1).join("\n").trim() };
 }
 
 /* body: paragraphs, numbered lists, bullets, **bold** */
@@ -88,13 +90,40 @@ function EmailMsg({ m, product }) {
   );
 }
 
+/* Email where the questions are asked ONCE — each with its answer field inline. */
+function SurveyEmail({ m, product, intro, questions, outro, survey, setSurvey, onSend, busy }) {
+  return (
+    <div className="gm-msg">
+      <div className="gm-head">
+        <Avatar name="Observant" color="rust" />
+        <div className="gm-from">
+          <b>Observant</b> <span>&lt;learning@observant.io&gt;</span>
+          <span className="gm-to">on behalf of {product}  ·  to you</span>
+        </div>
+        <span className="gm-time">{fmtTime(m.ts)}</span>
+      </div>
+      <div className="gm-body">
+        {renderBody(intro)}
+        {questions.map((q, i) => (
+          <div key={i} className="tw-surveyq">
+            <div className="tw-surveyq-label">{i + 1}. {q}</div>
+            <input className="input" value={survey[i] || ""} placeholder="Your answer…" onChange={(e) => setSurvey(Object.assign({}, survey, { [i]: e.target.value }))} disabled={busy} />
+          </div>
+        ))}
+        {outro ? renderBody(outro) : null}
+        <Btn variant="primary" size="sm" onClick={onSend} disabled={busy}>Send replies</Btn>
+      </div>
+    </div>
+  );
+}
+
 function ThreadSurface() {
   const pre = twPrefill();
   const [product, setProduct] = useStateTW(pre.product);
   const [question, setQuestion] = useStateTW(pre.question);
   const [wishlist, setWishlist] = useStateTW("");
   const [channel, setChannel] = useStateTW(pre.channel);
-  const [exploration, setExploration] = useStateTW("medium");
+  const [exploration, setExploration] = useStateTW(0.5); // continuous 0..1 temperature
 
   const [essence, setEssence] = useStateTW("");
   const [subject, setSubject] = useStateTW("");
@@ -119,8 +148,8 @@ function ThreadSurface() {
   const planNow = () => ({ essence, subject, questions });
 
   const lastAgent = started && messages[messages.length - 1].role === "assistant" ? messages[messages.length - 1] : null;
-  const pending = (isEmail && lastAgent && !wrapped) ? parseNumbered(lastAgent.content) : { intro: "", questions: [] };
-  const isSurvey = pending.questions.length >= 2;
+  const pending = (isEmail && lastAgent && !wrapped) ? parseNumbered(lastAgent.content) : { intro: "", questions: [], outro: "" };
+  const isSurvey = pending.questions.length >= 1;
 
   async function translate() {
     if (!question.trim()) { setErr("Type a question for the team to ask."); return; }
@@ -189,12 +218,11 @@ function ThreadSurface() {
                 <option value="email">Email — whole set in one message</option>
                 <option value="telegram">Telegram / IM — one at a time</option>
               </select></div>
-            <div className="tw-field"><label>Exploration — how far past your questions should Observant roam?</label>
-              <select className="input" value={exploration} onChange={(e) => setExploration(e.target.value)}>
-                <option value="low">Stick to the script (protocol-tight)</option>
-                <option value="medium">Balanced — follow good threads, return to plan</option>
-                <option value="high">Explore freely — chase interesting tangents</option>
-              </select></div>
+            <div className="tw-field">
+              <div className="tw-temp-head"><label>Temperature <span className="tw-muted">— how far past your questions Observant roams</span></label><span className="tw-temp-val">{exploration.toFixed(1)}</span></div>
+              <input type="range" className="tw-range" min="0" max="1" step="0.1" value={exploration} onChange={(e) => setExploration(Number(e.target.value))} />
+              <div className="tw-temp-ends"><span>stick to the script</span><span>explore freely</span></div>
+            </div>
             <Btn variant="primary" onClick={translate} disabled={busy}>
               {busy && !translated ? "Translating…" : translated ? "Re-translate" : "Translate the question"} <Icon name="arrow" size={15} />
             </Btn>
@@ -227,7 +255,12 @@ function ThreadSurface() {
             <div className="gm">
               <div className="gm-subject">{subject || "(no subject)"}</div>
               <div className="gm-list">
-                {messages.map((m, i) => <EmailMsg key={i} m={m} product={product} />)}
+                {messages.map((m, i) => {
+                  if (i === messages.length - 1 && isSurvey) {
+                    return <SurveyEmail key={i} m={m} product={product} intro={pending.intro} questions={pending.questions} outro={pending.outro} survey={survey} setSurvey={setSurvey} onSend={sendSurvey} busy={busy} />;
+                  }
+                  return <EmailMsg key={i} m={m} product={product} />;
+                })}
               </div>
             </div>
           ) : (
@@ -249,23 +282,12 @@ function ThreadSurface() {
           {started && (
             <div className="tw-reward">
               <span className="tw-reward-min">You've contributed <b>{minutes} min</b> so far <span className="tw-muted">· ≈ ${reward}</span></span>
-              <button className="tw-reward-cta" type="button">Track &amp; redeem on Observant →</button>
+              <button className="tw-reward-cta" type="button">Track and redeem rewards on Observant →</button>
             </div>
           )}
 
-          {/* reply: embedded survey for multi-question email, else single box */}
-          {replyOpen && (isEmail && isSurvey ? (
-            <div className="gm-reply">
-              <div className="gm-reply-to">Reply to Observant — answer each below</div>
-              {pending.questions.map((q, i) => (
-                <div key={i} className="tw-surveyq">
-                  <div className="tw-surveyq-label">{i + 1}. {q}</div>
-                  <input className="input" value={survey[i] || ""} placeholder="Your answer…" onChange={(e) => setSurvey(Object.assign({}, survey, { [i]: e.target.value }))} disabled={busy} />
-                </div>
-              ))}
-              <Btn variant="primary" size="sm" onClick={sendSurvey} disabled={busy}>Send replies</Btn>
-            </div>
-          ) : isEmail ? (
+          {/* reply: survey is INLINE in the email above (asked once). Here: email follow-ups (single Q) + telegram. */}
+          {replyOpen && !isSurvey && (isEmail ? (
             <div className="gm-reply">
               <div className="gm-reply-to">Reply to Observant</div>
               <textarea className="input" value={draft} placeholder="Write your reply as the user…" onChange={(e) => setDraft(e.target.value)} disabled={busy} />

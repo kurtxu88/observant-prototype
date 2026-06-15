@@ -8,6 +8,17 @@ This is the cornerstone the old engine has no analog for. In the synchronous int
 
 ---
 
+## Knowing when to end (the levels — this is the crux)
+"When are we done?" operates at three levels; be explicit about which one you're deciding:
+
+1. **End of an email/turn** — you always end after sending the batch and wait for the reply (it's async). Trivial; not a real decision.
+2. **End of an active round — the *marginal-value test*.** After each reply, decide whether ANOTHER email/batch is worth sending. Send one **only if there's real remaining value**: threads still thin but promising, or a worthwhile new angle to advance the essence. **Wind the round down** the moment marginal value drops — answers converging or thin, energy fading (P11), the topic saturated. Don't keep a thread alive for its own sake.
+3. **End / dormancy of the engagement.** Observant never abruptly "finishes" — it goes **dormant** and re-engages only when there's genuinely new value (a new team question; later, a behavior trigger). **Wind the relationship down** (stop reaching out) when the person has clearly disengaged (no reply after a single nudge), gives sustained thin answers (diminishing returns), or **opts out** — honor an opt-out immediately, always.
+
+**Graceful wind-down (every time a round ends):** close warmly, acknowledge what they gave, and surface their **participation + reward summary** — then go quiet. Never end on an interrogation; end on a thank-you and their reward balance.
+
+The four decisions below map onto this: **CONTINUE** = the marginal-value test passed, send another batch; **SUFFICIENT / PAUSE** = wind the round down (dormant, relationship stays open); **NUDGE** = one gentle nudge, then PAUSE.
+
 ## The decision (made after every user reply)
 
 Choose exactly one:

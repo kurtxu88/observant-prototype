@@ -63,7 +63,8 @@ async function nextTurn(payload) {
   const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
   const plan = payload.plan || {};
   const wishlist = limit(payload.wishlist, 500);
-  const exploration = ["low", "medium", "high"].includes(payload.exploration) ? payload.exploration : "medium";
+  let temp = Number(payload.exploration);
+  if (!(temp >= 0 && temp <= 1)) temp = 0.5; // continuous 0..1 "temperature"
   const messages = normalizeMessages(payload.messages);
   const minutesSinceReply = Number(payload.minutesSinceReply || 0);
 
@@ -77,50 +78,61 @@ async function nextTurn(payload) {
     "MINUTES SINCE USER'S LAST MESSAGE: " + minutesSinceReply + "\n" +
     "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +
     (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
-    "EXPLORATION LEVEL: " + exploration + " — " + explorationHint(exploration) + "\n" +
+    "EXPLORATION TEMPERATURE: " + temp.toFixed(2) + " on a 0-1 scale (0 = stick strictly to the client's questions, 1 = roam freely). " + explorationHint(temp) + "\n" +
     "\n" +
-    "Output JSON ONLY, no prose outside it, with this shape:\n" +
-    '{"message": string,            // your next message to the user. REQUIRED and NON-EMPTY whenever decision is CONTINUE or NUDGE — this is the actual follow-up the user receives. May be empty ONLY for SUFFICIENT or PAUSE.\n' +
-    ' "decision": "CONTINUE"|"SUFFICIENT"|"PAUSE"|"NUDGE",\n' +
-    ' "reason": string,             // one line: why this decision\n' +
-    ' "report": string }            // only when SUFFICIENT: the concrete answer + a quote, to hand the team. Otherwise "".';
+    "FORMAT — write your next message to the user in PLAIN TEXT (it may be multiple lines or a numbered list — do NOT JSON-encode it, do NOT use code fences). Then on its own line write exactly:\n" +
+    "---META---\n" +
+    "and then these three lines:\n" +
+    "DECISION: CONTINUE|SUFFICIENT|PAUSE|NUDGE\n" +
+    "REASON: <one line>\n" +
+    "REPORT: <only if SUFFICIENT — the concrete answer + a short quote for the team; otherwise leave blank>\n" +
+    "Everything before ---META--- is the message; it must be NON-EMPTY when DECISION is CONTINUE or NUDGE.";
 
-  const text = await callClaude(system, messages, 900);
-  const parsed = parseJson(text, null);
-  if (parsed && typeof parsed.message === "string") {
-    const decision = ["CONTINUE", "SUFFICIENT", "PAUSE", "NUDGE"].includes(parsed.decision) ? parsed.decision : "CONTINUE";
-    let message = parsed.message;
-    // Guard: CONTINUE/NUDGE must carry a real follow-up. If the model left it blank, ask one more turn for it.
-    if (!message.trim() && (decision === "CONTINUE" || decision === "NUDGE")) {
-      const retry = await callClaude(
-        system + "\n\nYour previous output had an empty message but decided " + decision + ". Send the actual follow-up message now. Output the SAME JSON shape, with a non-empty \"message\".",
-        messages, 700
-      );
-      const rp = parseJson(retry, null);
-      if (rp && typeof rp.message === "string" && rp.message.trim()) message = rp.message;
-    }
-    return {
-      message: message,
-      decision: decision,
-      reason: limit(parsed.reason, 300),
-      report: limit(parsed.report, 1200),
-    };
+  let out = await callClaude(system, messages, 900);
+  let meta = splitMeta(out);
+  if (!meta.message.trim() && (meta.decision === "CONTINUE" || meta.decision === "NUDGE")) {
+    const retry = await callClaude(
+      system + "\n\nYour previous reply had an empty message but decided " + meta.decision + ". Write the actual follow-up message now (plain text), then the ---META--- block.",
+      messages, 700
+    );
+    const rm = splitMeta(retry);
+    if (rm.message.trim()) meta = rm;
   }
-  // If the model returned plain prose, treat it as the message and assume CONTINUE.
-  return { message: limit(text, 1200), decision: "CONTINUE", reason: "unparsed", report: "" };
+  return meta;
 }
 
-function explorationHint(level) {
-  if (level === "low") return "stay close to the client's questions; don't chase tangents — protocol-tight.";
-  if (level === "high") return "actively chase interesting/off-brief threads and reframe; the client's questions are a starting point, not a fence (but every follow-up must still ladder to something useful).";
-  return "follow genuinely interesting threads when they surface, but keep returning to the client's questions.";
+/* Newline-safe parse: message is plain text before ---META---; decision/reason/report after. */
+function splitMeta(text) {
+  const raw = String(text || "");
+  const idx = raw.indexOf("---META---");
+  let message = (idx >= 0 ? raw.slice(0, idx) : raw).trim();
+  message = message.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "").trim();
+  const metaStr = idx >= 0 ? raw.slice(idx) : "";
+  const dm = metaStr.match(/DECISION:\s*(CONTINUE|SUFFICIENT|PAUSE|NUDGE)/i);
+  const rm = metaStr.match(/REASON:\s*([^\n]*)/i);
+  const pm = metaStr.match(/REPORT:\s*([\s\S]*)/i);
+  return {
+    message: message,
+    decision: dm ? dm[1].toUpperCase() : "CONTINUE",
+    reason: rm ? limit(rm[1], 300) : "",
+    report: pm ? limit(pm[1], 1200) : "",
+  };
+}
+
+function explorationHint(temp) {
+  if (temp <= 0.25) return "Protocol-tight: stay on the client's questions; don't chase tangents.";
+  if (temp >= 0.7) return "Explore freely: actively chase interesting/off-brief threads and reframe — the client's questions are a starting point, not a fence (every follow-up must still ladder to something useful).";
+  return "Balanced: follow genuinely interesting threads when they surface, but keep returning to the client's questions.";
 }
 
 function channelHint(channel) {
   if (channel === "telegram") {
     return "CHANNEL: telegram — texting cadence. Ask ONE question at a time, short and chatty; wait for the reply before the next.";
   }
-  return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). FIRST email: a sentence or two of context — a quick catch-up on what this feedback program is and why they're hearing from the team — then 'we have a few questions about your [topic] experience,' then the whole set as a short NUMBERED list, most important first. The person answers them all in one reply; do NOT drip one at a time on email. FOLLOW-UP emails: put the recap/acknowledgement in its own short paragraph, then the NEW question in a separate paragraph, and BOLD the new question (wrap it in **double asterisks**). Follow-ups are expected, not optional.";
+  return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). " +
+    "FIRST email — they have ALREADY opted in via the invitation, so do NOT re-pitch the program or repeat the rewards spiel. Just a short professional note that briefly recaps and sets how this thread works: (a) this is the [product] feedback program; (b) we'll have a back-and-forth right here in this email thread, and you can email us anytime with any new insight or anything you want to share; (c) we'll also periodically reach out with questions; (d) every response is logged and converted into rewards on the [product] platform. THEN 'To start, we have a few questions about your [topic] experience:' and the whole set as a short NUMBERED list, most important first. Tight and professional, not a re-pitch. " +
+    "RULE — EVERY email carries a small BATCH of ~3 questions; never one-question-then-wait (too costly — people won't keep returning to the thread). Extract as much as possible per reply and relate it to the client's questions/context. " +
+    "FOLLOW-UP emails: a short recap/acknowledgement paragraph, then a short NUMBERED batch of ~3 — typically one or two FOLLOW-UPS that go deeper on what was thin or interesting, plus one NEW question that advances the essence (bold the brand-new one with **double asterisks**). Maximize context per exchange.";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
