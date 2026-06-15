@@ -35,26 +35,25 @@ module.exports = async function handler(req, res) {
   }
 };
 
-/* ---------- C1: raw question -> interview plan ---------- */
+/* ---------- C1: raw question -> essence + opening question ---------- */
 async function translate(payload) {
   const question = limit(payload.question, 500);
   const product = limit(payload.product, 100) || "the product";
+  const wishlist = limit(payload.wishlist, 500);
   const context = limit(payload.context, 600);
   const system = readPrompt("C1-question-translator.md");
   const user =
     "PRODUCT: " + product + "\n" +
     (context ? "CONTEXT: " + context + "\n" : "") +
+    (wishlist ? "WISHLIST (where to dig deeper if it comes up): " + wishlist + "\n" : "") +
     'TEAM QUESTION: "' + question + '"\n\n' +
-    "Produce the interview plan as JSON only, with this shape: " +
-    '{"goal": string, "anchors": [string], "probes": [string], "success": string, "outOfScope": string}. ' +
-    "No prose outside the JSON.";
-  const text = await callClaude(system, [{ role: "user", content: user }], 900);
+    'Return JSON only: {"essence": string, "questions": [string], "subject": string}. ' +
+    "essence short; questions = a small set (2-4, usually 3), MOST IMPORTANT FIRST, present-grounded and behavioral; subject is a short human email subject line (used on email).";
+  const text = await callClaude(system, [{ role: "user", content: user }], 700);
   return parseJson(text, {
-    goal: question,
-    anchors: [question],
-    probes: [],
-    success: "A concrete behavioral story that answers the question.",
-    outOfScope: "",
+    essence: question,
+    questions: ["What's something you ran into with this recently — maybe today? What happened?"],
+    subject: "A quick question about your experience",
   });
 }
 
@@ -63,6 +62,7 @@ async function nextTurn(payload) {
   const product = limit(payload.product, 100) || "the product";
   const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
   const plan = payload.plan || {};
+  const wishlist = limit(payload.wishlist, 500);
   const messages = normalizeMessages(payload.messages);
   const minutesSinceReply = Number(payload.minutesSinceReply || 0);
 
@@ -72,9 +72,11 @@ async function nextTurn(payload) {
     readPrompt("C3-stop-policy.md") +
     "\n\n========================\nRUNTIME\n========================\n" +
     "PRODUCT: " + product + "\n" +
-    "CHANNEL: " + channel + " (match this channel's tone/length)\n" +
+    channelHint(channel) + "\n" +
     "MINUTES SINCE USER'S LAST MESSAGE: " + minutesSinceReply + "\n" +
-    "ACTIVE INTERVIEW PLAN: " + JSON.stringify(plan) + "\n\n" +
+    "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +
+    (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
+    "\n" +
     "Output JSON ONLY, no prose outside it, with this shape:\n" +
     '{"message": string,            // your next message to the user (empty string if decision is SUFFICIENT/PAUSE and no message is needed)\n' +
     ' "decision": "CONTINUE"|"SUFFICIENT"|"PAUSE"|"NUDGE",\n' +
@@ -93,6 +95,13 @@ async function nextTurn(payload) {
   }
   // If the model returned plain prose, treat it as the message and assume CONTINUE.
   return { message: limit(text, 1200), decision: "CONTINUE", reason: "unparsed", report: "" };
+}
+
+function channelHint(channel) {
+  if (channel === "telegram") {
+    return "CHANNEL: telegram — texting cadence. Ask ONE question at a time, short and chatty; wait for the reply before the next.";
+  }
+  return "CHANNEL: email — an ongoing thread, warm and human in tone, BUT this message must present the WHOLE remaining question set together: a short warm line, then the questions as a short numbered list, most important first. The person answers them all in one reply. Do NOT drip one question at a time on email. (Only on a later follow-up, if one answer was thin, a single targeted question is fine.)";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
@@ -151,11 +160,9 @@ function noKeyStub(action, payload) {
       ok: true,
       stub: true,
       plan: {
-        goal: "[ANTHROPIC_API_KEY not set] would translate: " + limit(payload.question, 200),
-        anchors: ["Set ANTHROPIC_API_KEY in the Vercel project (or local env) to run the live interviewer."],
-        probes: [],
-        success: "",
-        outOfScope: "",
+        essence: "[ANTHROPIC_API_KEY not set] would distill: " + limit(payload.question, 200),
+        questions: ["Set ANTHROPIC_API_KEY (local env or Vercel project) to run the live interviewer."],
+        subject: "(set ANTHROPIC_API_KEY)",
       },
     };
   }
