@@ -120,6 +120,41 @@ const SS_VIEW = (() => {
   return "";
 })();
 
+// --- demo login gate: lets you log out and walk someone through setup again ---
+const SS_AUTH_KEY = "observant.auth";
+function ssIsAuthed() { try { return !!localStorage.getItem(SS_AUTH_KEY); } catch (e) { return false; } }
+function ssSetAuth(email) { try { localStorage.setItem(SS_AUTH_KEY, JSON.stringify({ email: email || "", at: Date.now() })); } catch (e) {} }
+function ssLogout() { try { localStorage.removeItem(SS_AUTH_KEY); ssRemoveState(); } catch (e) {} window.location.href = "/"; }
+
+function LoginGate({ onLogin }) {
+  const [name, setName] = useStateSS("");
+  const [email, setEmail] = useStateSS("");
+  const ok = email.includes("@") && email.includes(".");
+  return (
+    <div className="ss-entry">
+      <div className="ss-entry-left">
+        <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
+        <div className="ss-entry-copy">
+          <span className="eyebrow">Welcome</span>
+          <h1>Log in to Observant.</h1>
+          <p>Set up your program, see your dashboard, and test-run the experience. Log out anytime to walk someone else through it from the top.</p>
+        </div>
+      </div>
+      <main className="ss-entry-card">
+        <div className="ss-card-head"><span className="eyebrow gray">Sign in</span><h2>Continue to your workspace.</h2></div>
+        <div className="ss-form-grid">
+          <Field label="Your name"><input className="input" value={name} placeholder="Your name" onChange={(e) => setName(e.target.value)} /></Field>
+          <Field label="Work email"><input className="input" value={email} placeholder="you@company.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && ok) onLogin(email); }} /></Field>
+        </div>
+        <div className="ss-entry-actions">
+          <Btn variant="primary" size="lg" disabled={!ok} onClick={() => onLogin(email)}>Log in <Icon name="arrow" size={16} /></Btn>
+        </div>
+        <p className="ss-fineprint">Demo login — no password. It just gates the flow so you can log out and show the setup again.</p>
+      </main>
+    </div>
+  );
+}
+
 function SelfServeApp() {
   const [state, setState] = useStateSS(() => {
     if (SS_VIEW === "setup") {
@@ -135,6 +170,7 @@ function SelfServeApp() {
     return saved;
   });
   const [copied, setCopied] = useStateSS("");
+  const [authed, setAuthed] = useStateSS(() => ssIsAuthed());
 
   useEffectSS(() => {
     if (state) ssSaveState(state);
@@ -175,6 +211,10 @@ function SelfServeApp() {
     setCopied(key);
     setTimeout(() => setCopied(""), 1400);
   };
+
+  if (!authed) {
+    return <LoginGate onLogin={(email) => { ssSetAuth(email); setAuthed(true); }} />;
+  }
 
   if (!state) {
     return <EntryScreen onCreate={createWorkspace} />;
@@ -635,6 +675,7 @@ function HomeView({ state, patchState, navigate }) {
           <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
             <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Ask a question</Btn>
+            <Btn variant="ghost" onClick={() => { const p = encodeURIComponent(state.workspace.companyName || "Your product"); const q = encodeURIComponent((state.workspace.learningGoal || "").split("\n")[0] || ""); window.open("/app/Thread.html?product=" + p + "&question=" + q + "&channel=email", "_blank"); }}><Icon name="mail" size={15} /> Test run the email thread</Btn>
           </div>
         </section>
       )}
@@ -1032,9 +1073,16 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
       <div className="ss-danger">
         <div>
           <b>Reset workspace</b>
-          <span>Clears local state and returns to onboarding.</span>
+          <span>Clears local state and returns to program setup.</span>
         </div>
         <Btn variant="ghost" onClick={resetWorkspace}>Reset workspace</Btn>
+      </div>
+      <div className="ss-danger">
+        <div>
+          <b>Log out</b>
+          <span>Ends the session. "Get started" will ask you to log in, then set up again.</span>
+        </div>
+        <Btn variant="ghost" onClick={ssLogout}>Log out</Btn>
       </div>
     </section>
   );

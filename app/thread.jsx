@@ -19,6 +19,13 @@ function twPrefill() {
       if (s.setup && s.setup.rate) out.rate = Number(s.setup.rate) || 1;
     }
   } catch (e) { /* ignore */ }
+  // Seeded from the dashboard's "Test run the email thread" link.
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get("product")) out.product = params.get("product");
+    if (params.get("question")) out.question = params.get("question");
+    if (["email", "telegram"].includes(params.get("channel"))) out.channel = params.get("channel");
+  } catch (e) { /* ignore */ }
   return out;
 }
 
