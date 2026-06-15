@@ -48,7 +48,7 @@ async function translate(payload) {
     (wishlist ? "WISHLIST (where to dig deeper if it comes up): " + wishlist + "\n" : "") +
     'TEAM QUESTION: "' + question + '"\n\n' +
     'Return JSON only: {"essence": string, "questions": [string], "subject": string}. ' +
-    "essence short; questions = a small set (2-4, usually 3), MOST IMPORTANT FIRST, present-grounded and behavioral; subject is a short human email subject line (used on email).";
+    "essence short; questions = a small set (2-4, usually 3), MOST IMPORTANT FIRST, anchored on TODAY and behavioral (no 'last time', no closed 'is there anything'); subject is a GENERIC relationship-level email subject for the ongoing thread, NOT tied to this question's topic.";
   const text = await callClaude(system, [{ role: "user", content: user }], 700);
   return parseJson(text, {
     essence: question,
@@ -78,7 +78,7 @@ async function nextTurn(payload) {
     (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
     "\n" +
     "Output JSON ONLY, no prose outside it, with this shape:\n" +
-    '{"message": string,            // your next message to the user (empty string if decision is SUFFICIENT/PAUSE and no message is needed)\n' +
+    '{"message": string,            // your next message to the user. REQUIRED and NON-EMPTY whenever decision is CONTINUE or NUDGE — this is the actual follow-up the user receives. May be empty ONLY for SUFFICIENT or PAUSE.\n' +
     ' "decision": "CONTINUE"|"SUFFICIENT"|"PAUSE"|"NUDGE",\n' +
     ' "reason": string,             // one line: why this decision\n' +
     ' "report": string }            // only when SUFFICIENT: the concrete answer + a quote, to hand the team. Otherwise "".';
@@ -86,9 +86,20 @@ async function nextTurn(payload) {
   const text = await callClaude(system, messages, 900);
   const parsed = parseJson(text, null);
   if (parsed && typeof parsed.message === "string") {
+    const decision = ["CONTINUE", "SUFFICIENT", "PAUSE", "NUDGE"].includes(parsed.decision) ? parsed.decision : "CONTINUE";
+    let message = parsed.message;
+    // Guard: CONTINUE/NUDGE must carry a real follow-up. If the model left it blank, ask one more turn for it.
+    if (!message.trim() && (decision === "CONTINUE" || decision === "NUDGE")) {
+      const retry = await callClaude(
+        system + "\n\nYour previous output had an empty message but decided " + decision + ". Send the actual follow-up message now. Output the SAME JSON shape, with a non-empty \"message\".",
+        messages, 700
+      );
+      const rp = parseJson(retry, null);
+      if (rp && typeof rp.message === "string" && rp.message.trim()) message = rp.message;
+    }
     return {
-      message: parsed.message,
-      decision: ["CONTINUE", "SUFFICIENT", "PAUSE", "NUDGE"].includes(parsed.decision) ? parsed.decision : "CONTINUE",
+      message: message,
+      decision: decision,
       reason: limit(parsed.reason, 300),
       report: limit(parsed.report, 1200),
     };
@@ -101,7 +112,7 @@ function channelHint(channel) {
   if (channel === "telegram") {
     return "CHANNEL: telegram — texting cadence. Ask ONE question at a time, short and chatty; wait for the reply before the next.";
   }
-  return "CHANNEL: email — an ongoing thread, warm and human in tone, BUT this message must present the WHOLE remaining question set together: a short warm line, then the questions as a short numbered list, most important first. The person answers them all in one reply. Do NOT drip one question at a time on email. (Only on a later follow-up, if one answer was thin, a single targeted question is fine.)";
+  return "CHANNEL: email — an ongoing thread, warm and human. For the OPENING message: ONE short sentence establishing the goal of this batch (e.g. \"Got a few questions about your [product].\"), then the whole question set as a short numbered list, most important first — no long intro/onboarding. The person answers them all in one reply. Do NOT drip one at a time on email. On a LATER turn, after they reply, send a normal email follow-up (a targeted question) on whatever's still thin — follow-ups are expected, not optional.";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */

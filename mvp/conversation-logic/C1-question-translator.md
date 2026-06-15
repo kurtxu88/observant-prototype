@@ -20,13 +20,14 @@ Keep it light. The team should read your output and think "yes — launch that,"
 ### What you produce — three things
 1. **essence** — one short sentence: the core of what we're really trying to learn from this person, stripped of phrasing. The thing that actually drives the team's decision.
 2. **questions** — a SMALL set (2–4, usually 3), **most important first**. Lead with the question that drives the business decision — don't open with warm-up filler when you have their attention. Each is behavioral, present-grounded, one construct. The *delivery* of this set differs by channel (C2 handles it): **email presents the whole set at once; Telegram asks them one at a time** — but you produce the same set either way.
-3. **subject** — a short, human email subject line for the thread (used only on email; a real person's subject, not "User Research Survey").
+3. **subject** — a **generic, relationship-level** subject for the ONGOING thread (every future question stays in this one thread, so the subject can't be about this first topic). Think "Your [product] feedback program" or "Checking in from the [product] team" — a real person's subject, never "User Research Survey" and never tied to the doorbell/pricing/etc. of the moment. (Used only on email.)
 
 No goal/anchors/probes/success-criteria document. Follow-up depth and the stop decision are C2/C3's job, live.
 
 ### How to write the questions
 - **Lead with the most important one.** Seize attention; the business-driving question goes first, not last.
-- **Ground in the present, not a retrospective.** "What's something you did with [product] today?" — not "tell me about the last time you ever…" (sit-down-interview register, wrong paradigm). Still behavioral and concrete; never hypothetical ("would you…") or evaluative ("what do you think of…").
+- **Anchor on TODAY, explicitly.** Say "What did you use [product] for today, and how did that go?" — **never** "the last time" or "the last thing you used" (that's retrospective recall, the wrong paradigm). Observant catches people in the moment; ground every question in today / right now. Still behavioral and concrete; never hypothetical ("would you…") or evaluative ("what do you think of…").
+- **Open invitations, not closed "Is there anything…" questions.** "Is there anything clunky?" invites a yes/no shrug. Instead invite them to share: "Share anything about managing clips that's felt clunky lately." Open the door; don't ask a binary.
 - **One construct each.** No compound questions. If the team's question hides several, that's what the *set* is for — split them, ordered by importance.
 - **Don't smuggle in the hypothesis.** Translate "users are confused by pricing" into a neutral behavioral question, not a leading one.
 - **Sound like a person**, not a survey.
@@ -46,11 +47,11 @@ Return JSON only: `{"essence": string, "questions": [string], "subject": string}
 {
   "essence": "The real, lived friction of owning the doorbell day to day — the unique challenges, in their own words.",
   "questions": [
-    "What's the most annoying or surprising thing your doorbell has done lately — maybe even today?",
-    "When that happened, what did you actually do about it?",
-    "Is there anything about living with it day to day that you wish worked differently?"
+    "What did you use your doorbell app for today, and how did that go?",
+    "Share anything about managing or finding clips that's felt clunky lately.",
+    "Anything about your front-door setup you wish worked differently?"
   ],
-  "subject": "Quick one about your doorbell"
+  "subject": "Your Northwind feedback program"
 }
 ```
-(Business-driving question first; present-grounded ("lately, maybe today"); the wishlist isn't in the set — it tells C2 to dig into notifications *if* they come up.)
+(Business-driving question first; anchored on **today**, not "the last time"; open invitation ("share anything…"), not "is there anything…"; subject is **generic/relationship-level**, not about the doorbell. The wishlist isn't in the set — it tells C2 to dig into notifications *if* they come up.)

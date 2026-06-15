@@ -45,7 +45,8 @@
   /* ---- Gmail-style email thread ---- */
   .gm { border: 1px solid var(--line,#e6e3dd); border-radius: 12px; overflow: hidden; background: #fff; }
   .gm-subject { padding: 14px 18px 12px; font-size: 1.18rem; font-weight: 600; border-bottom: 1px solid var(--line,#e6e3dd); }
-  .gm-list { max-height: 460px; overflow-y: auto; }
+  .gm-list { }  /* no inner scroll — let the page grow so follow-up emails are always visible */
+  .tw-seat { display: inline-block; font-size: .68rem; font-weight: 700; background: var(--accent,#b4532a); color: #fff; border-radius: 6px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; letter-spacing: .02em; }
   .gm-msg { padding: 14px 18px; border-bottom: 1px solid #f0ede7; }
   .gm-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .gm-from { font-size: .86rem; line-height: 1.2; flex: 1; }
