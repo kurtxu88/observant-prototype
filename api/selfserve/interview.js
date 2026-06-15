@@ -48,7 +48,7 @@ async function translate(payload) {
     (wishlist ? "WISHLIST (where to dig deeper if it comes up): " + wishlist + "\n" : "") +
     'TEAM QUESTION: "' + question + '"\n\n' +
     'Return JSON only: {"essence": string, "questions": [string], "subject": string}. ' +
-    "essence short; questions = a small set (2-4, usually 3), MOST IMPORTANT FIRST, anchored on TODAY and behavioral (no 'last time', no closed 'is there anything'); subject is a GENERIC relationship-level email subject for the ongoing thread, NOT tied to this question's topic.";
+    "essence short; questions = a small set (2-4, usually 3), MOST IMPORTANT FIRST, anchored on TODAY and behavioral (no 'last time', no closed 'is there anything'); subject = the subject of the ONE ongoing thread (not about this round's topic), reading like a REAL, personal note from the [product] team that warrants attention — NOT a 'feedback program'/onboarding label, not spammy. e.g. 'A couple questions from the Northwind team'.";
   const text = await callClaude(system, [{ role: "user", content: user }], 700);
   return parseJson(text, {
     essence: question,
