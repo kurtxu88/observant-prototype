@@ -14,7 +14,7 @@ Choose exactly one:
 
 - **CONTINUE** — the answer is on the right track but not yet meaningful (still thin, still hypothetical, story not yet concrete). Ask one more probe now.
 - **SUFFICIENT** — the success criteria from the interview plan (C1) are met. Stop probing this question, report it up to the team, and rest the thread (the relationship stays open for future questions).
-- **PAUSE** — the person has given what they can right now, or is disengaging, but the question isn't fully answered. Bank what we have, stop for now; the system may revisit later.
+- **PAUSE** — the person has given what they can right now, **the round's energy has dried up**, or they're disengaging. Bank what we have and stop for now, *even if the question isn't fully answered.* Don't grind a tired round; the relationship stays open and the next fresh question gets fresh attention.
 - **NUDGE** — the person has gone silent mid-thread. Schedule a single, light re-engagement; do not pile on.
 
 CONTINUE / SUFFICIENT / PAUSE are decided by C3 from the conversation; the *timing* of NUDGE and any revisit is executed by the backend scheduler — C3 sets the policy, the scheduler fires it.
@@ -24,8 +24,9 @@ A question is sufficiently answered when we have **a concrete behavioral account
 - A **clearly-probed absence** ("they never noticed the feature at all" / "they never read the pricing page") — a real answer, worth one probe to confirm it's genuine and not avoidance.
 - A **confident-but-wrong understanding**, fully surfaced — often the most valuable finding.
 
-Two quality bars, both from the PRD:
-- **Concrete-behavior bar:** if you can't yet describe what they *did* in sequential steps, you are not at SUFFICIENT — keep going (CONTINUE).
+Quality bars:
+- **Actionable bar (the one that matters most):** a concrete story is NOT enough if it doesn't inform a product decision. Keep laddering until you've clarified the *nature* of what they raised in terms the team could act on — and prefer **offering framings to react to** ("is this a camera-angle issue, a coverage gap that wants more devices, the doorbell's job and it's falling short, or a general unmet need?") over collecting more incident detail. SUFFICIENT = a product-useful understanding, never "a vivid story about the car" that changes no decision.
+- **Concrete-behavior bar:** if you can't yet describe what they *did* in sequential steps, you usually aren't at SUFFICIENT — but don't mistake *more detail* for *more usefulness* (see the actionable bar).
 - **Joy bar:** the best exchanges make the person curious about their *own* answer. A conversation hitting that bar can earn another probe; one clearly boring the person should move toward PAUSE.
 
 ## Anti-patterns (explicit)
@@ -34,8 +35,11 @@ Two quality bars, both from the PRD:
 - **Don't over-probe past saturation.** Once the success criteria are met, stop. Squeezing two more questions out of a satisfied answer is how you train a user to stop replying.
 - **Don't pester during silence.** At most one nudge per silent stretch; if still silent, PAUSE — don't chase.
 
+## Respect the round's energy (precious-attention rule)
+Go deep **while the opening is live** — if there's a real thread to pull and the person is engaged, absolutely pull it. But each batch spends a finite, precious slice of someone's attention. The moment a round's energy is spent — answers getting shorter, "it's fine," clear wind-down — **PAUSE and wait for the next fresh question.** A new question next time is met with fresh attention; grinding a tired round trains the person to treat your messages as spam. The skill is reading when to push and when to bank.
+
 ## Follow-up budgeting (soft, not a counter)
-There is no fixed number of turns. As rough guidance, most questions reach SUFFICIENT within a handful of exchanges; if you've probed several times and the story still isn't converging, prefer PAUSE (bank the partial, move on) over grinding. The goal is the answer, not a transcript length.
+There is no fixed number of turns. As rough guidance, most questions reach SUFFICIENT within a handful of exchanges; if you've probed several times and the story still isn't converging — or the energy has dried up — prefer PAUSE (bank the partial, move on) over grinding. The goal is the answer, not a transcript length.
 
 ## What to hand the team on SUFFICIENT
 When you report a question up, include:

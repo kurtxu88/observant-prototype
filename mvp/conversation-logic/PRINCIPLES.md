@@ -31,6 +31,24 @@ If the user volunteers something off-topic — a bug, a frustration — that's t
 ### P8 — Stop by sufficiency, not a clock
 No timer. Keep going until there's a concrete answer to the essence (or a clearly-probed absence), then stop — without over-probing a relationship you want to keep. *Encoded in: C3.*
 
+### P9 — Email is professional; Telegram is casual (tone, not just structure)
+Both channels share the continuous-thread *model*, but tone diverges: **email** is a composed, professional note from the team (the first email opens with a short professional catch-up on the program, then the questions); **Telegram** is casual, chatty, one-at-a-time. "Continuity ≠ flippancy" — email isn't breezy texting. *Encoded in: C2, channelHint.*
+
+### P10 — Follow-ups must ladder to PRODUCT-USEFUL, not collect detail
+The difference between a researcher and a transcriptionist. When a pain surfaces, clarify its *nature in product terms* and **offer framings to react to** ("angle issue? coverage gap wanting another device? the device's job and it's failing? a general unmet need?") instead of interrogating incident trivia (what the car did). Bridge surfaced pains to the wishlist. C3's SUFFICIENT bar = a product-useful/actionable understanding, never "a vivid story that changes no decision." *Encoded in: C2, C3.* **Most important logic principle.**
+
+### P11 — Respect the round's energy (precious attention)
+Go deep *while the opening is live*, but when a round's energy is spent (shorter replies, "it's fine", wind-down), PAUSE and wait for the next fresh question — don't grind. A new question next time gets fresh attention; over-asking trains the person to ignore you. *Encoded in: C3, C2.*
+
+### P12 — Exploration dial (per-program control)
+A setup dial sets how far the agent roams: **low** = protocol-tight (stick to the client's questions); **high** = explore freely (chase interesting tangents, reframe). It governs *roaming breadth* — never the ladder-to-useful rule (P10), which always holds. *Encoded in: interview.js (explorationHint) → C2; UI dial in the team seat.*
+
+### P13 — Reward visibility every batch (channel respect)
+Because the whole relationship lives in one thread, each batch must *give back*: show the person their **participated minutes + reward earned** and a **"track & redeem on Observant"** CTA, constantly. This motivates continued participation and keeps the channel from feeling like spam. *Encoded in: the test surface's reward strip; the real product surfaces it per message/batch.*
+
+### Email specifics (composed of the above)
+Generic, personal, relationship-level **subject** (rides the whole thread, never round-specific, never a "program" label); **first email** = professional catch-up + numbered set; **follow-ups** = recap paragraph, then the **bolded** new question in its own space; **embedded per-question survey fields** so replying is low-friction (real email needs AMP/hosted-form; mocked in the prototype).
+
 ---
 
-*Surfaces: the test surface (`/thread`) renders email as a Gmail-style thread and Telegram as IM, so these principles can be judged in each channel's real shape. C4 (memory), C5 (proactive routing), C6 (multi-question weaving), C7 (channel tone) are still to come.*
+*Surfaces: the test surface (`/thread`) renders email as a Gmail-style thread (with embedded survey + reward strip) and Telegram as IM, so these principles can be judged in each channel's real shape. C4 (memory), C5 (proactive routing), C6 (multi-question weaving) are still to come.*

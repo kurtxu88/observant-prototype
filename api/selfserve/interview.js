@@ -63,6 +63,7 @@ async function nextTurn(payload) {
   const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
   const plan = payload.plan || {};
   const wishlist = limit(payload.wishlist, 500);
+  const exploration = ["low", "medium", "high"].includes(payload.exploration) ? payload.exploration : "medium";
   const messages = normalizeMessages(payload.messages);
   const minutesSinceReply = Number(payload.minutesSinceReply || 0);
 
@@ -76,6 +77,7 @@ async function nextTurn(payload) {
     "MINUTES SINCE USER'S LAST MESSAGE: " + minutesSinceReply + "\n" +
     "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +
     (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
+    "EXPLORATION LEVEL: " + exploration + " — " + explorationHint(exploration) + "\n" +
     "\n" +
     "Output JSON ONLY, no prose outside it, with this shape:\n" +
     '{"message": string,            // your next message to the user. REQUIRED and NON-EMPTY whenever decision is CONTINUE or NUDGE — this is the actual follow-up the user receives. May be empty ONLY for SUFFICIENT or PAUSE.\n' +
@@ -108,11 +110,17 @@ async function nextTurn(payload) {
   return { message: limit(text, 1200), decision: "CONTINUE", reason: "unparsed", report: "" };
 }
 
+function explorationHint(level) {
+  if (level === "low") return "stay close to the client's questions; don't chase tangents — protocol-tight.";
+  if (level === "high") return "actively chase interesting/off-brief threads and reframe; the client's questions are a starting point, not a fence (but every follow-up must still ladder to something useful).";
+  return "follow genuinely interesting threads when they surface, but keep returning to the client's questions.";
+}
+
 function channelHint(channel) {
   if (channel === "telegram") {
     return "CHANNEL: telegram — texting cadence. Ask ONE question at a time, short and chatty; wait for the reply before the next.";
   }
-  return "CHANNEL: email — an ongoing thread, warm and human. For the OPENING message: ONE short sentence establishing the goal of this batch (e.g. \"Got a few questions about your [product].\"), then the whole question set as a short numbered list, most important first — no long intro/onboarding. The person answers them all in one reply. Do NOT drip one at a time on email. On a LATER turn, after they reply, send a normal email follow-up (a targeted question) on whatever's still thin — follow-ups are expected, not optional.";
+  return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). FIRST email: a sentence or two of context — a quick catch-up on what this feedback program is and why they're hearing from the team — then 'we have a few questions about your [topic] experience,' then the whole set as a short NUMBERED list, most important first. The person answers them all in one reply; do NOT drip one at a time on email. FOLLOW-UP emails: put the recap/acknowledgement in its own short paragraph, then the NEW question in a separate paragraph, and BOLD the new question (wrap it in **double asterisks**). Follow-ups are expected, not optional.";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
