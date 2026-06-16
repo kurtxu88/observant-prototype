@@ -135,8 +135,8 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <h2>How it works</h2>
         <ol className="jn-steps">
           <li>
-            <b>Opt in once</b>
-            <p>Joining takes a minute. You can pause or leave anytime — one tap, no questions.</p>
+            <b>Opt in, then a quick hello</b>
+            <p>Joining takes a minute, then a short ~10-minute intro chat so the {product} team gets to know how you actually use it — that way everything they ask later is tailored to you. Pause or leave anytime.</p>
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
@@ -199,8 +199,11 @@ function JoinWelcome({ product, channel, contactEmail }) {
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're in</span>
-        <h1>Welcome to the program.</h1>
-        <p>{channel === "inproduct" ? "The first check-in will find you inside " + product + " — most take just a few minutes." : "Watch for the first check-in soon — most take just a few minutes."} Your minutes and rewards are tracked automatically from the very first reply.</p>
+        <h1>One quick thing to start.</h1>
+        <p>Before the {product} team checks in, take a short ~10-minute intro chat so they get to know how you actually use {product} — it makes everything they ask afterward tailored to you. Your minutes and rewards are tracked automatically from your very first reply.</p>
+        <div style={{ marginTop: 18 }}>
+          <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product)}>Start your 10-minute intro <Icon name="arrow" size={16} /></a>
+        </div>
       </section>
 
       <section className="jn-block jn-account">
