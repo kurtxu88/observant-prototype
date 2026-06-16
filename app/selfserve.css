@@ -2891,6 +2891,26 @@
 /* left-align the invitation-preview CTA in the review row */
 .ss-review-row .rv .ss-row-cta { align-self: flex-start; text-align: left; }
 
+/* join: step progress bar */
+.jn-progress { display: flex; align-items: center; justify-content: center; gap: 0; list-style: none; margin: 0 auto 8px; padding: 0; max-width: 460px; }
+.jn-progress-step { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .82rem; }
+.jn-progress-step:not(:last-child)::after { content: ""; width: 34px; height: 2px; background: var(--border,#e6e3dd); margin: 0 12px; }
+.jn-progress-step.done:not(:last-child)::after { background: var(--accent); }
+.jn-progress-dot { width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 600; border: 1.5px solid var(--border,#e6e3dd); background: #fff; color: var(--text-muted); }
+.jn-progress-step.on .jn-progress-dot { border-color: var(--accent); color: var(--accent); }
+.jn-progress-step.done .jn-progress-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.jn-progress-step.on .jn-progress-label, .jn-progress-step.done .jn-progress-label { color: var(--text); font-weight: 600; }
+@media (max-width: 560px) { .jn-progress-label { display: none; } .jn-progress-step:not(:last-child)::after { width: 22px; margin: 0 7px; } }
+
+/* join: optional intro framing */
+.jn-intro-why { list-style: none; padding: 0; margin: 18px 0 22px; display: flex; flex-direction: column; gap: 11px; }
+.jn-intro-why li { position: relative; padding-left: 24px; line-height: 1.5; color: var(--text-secondary,#4a463f); font-size: .95rem; }
+.jn-intro-why li::before { content: ""; position: absolute; left: 4px; top: 8px; width: 7px; height: 7px; border-radius: 999px; background: var(--accent); }
+.jn-intro-why b { color: var(--text,#24221e); }
+.jn-intro-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.jn-skip { background: none; border: none; color: var(--text-muted); font: inherit; font-size: .9rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.jn-skip:hover { color: var(--text); }
+
 /* join: channel picker (step 1 -> step 2) + combined rewards box */
 .jn-choice-pick { cursor: pointer; transition: border-color .15s; }
 .jn-choice-pick:hover { border-color: var(--accent); }

@@ -60,6 +60,8 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
+      <JoinProgress phase={phase} route={route} />
+
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} />}
@@ -68,6 +70,21 @@ function JoinApp() {
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
       </footer>
     </div>
+  );
+}
+
+function JoinProgress({ phase, route }) {
+  const steps = route === "inproduct" ? ["Join", "Get started"] : ["Join", "Choose channel", "Get started"];
+  const current = phase === "invite" ? 0 : (route === "inproduct" ? 1 : (phase === "choose" ? 1 : 2));
+  return (
+    <ol className="jn-progress" aria-label="Sign-up progress">
+      {steps.map((label, i) => (
+        <li key={label} className={"jn-progress-step" + (i < current ? " done" : i === current ? " on" : "")}>
+          <span className="jn-progress-dot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+          <span className="jn-progress-label">{label}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -208,17 +225,33 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
 function JoinWelcome({ product, channel, contactEmail }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
+  const [introSkipped, setIntroSkipped] = useStateJN(false);
+  const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
 
   return (
     <main className="jn-main">
-      <section className="jn-hero">
-        <span className="eyebrow">You're in</span>
-        <h1>One quick thing to start.</h1>
-        <p>Before the {product} team checks in, take a short ~10-minute intro chat so they get to know how you actually use {product} — it makes everything they ask afterward tailored to you. Your minutes and rewards are tracked automatically from your very first reply.</p>
-        <div style={{ marginTop: 18 }}>
-          <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product)}>Start your 10-minute intro <Icon name="arrow" size={16} /></a>
-        </div>
-      </section>
+      {!introSkipped ? (
+        <section className="jn-hero">
+          <span className="eyebrow">You're in</span>
+          <h1>Want to give the team a head start?</h1>
+          <p>It's optional — but a short ~10-minute intro chat helps the {product} team get to know how you actually use {product}. Here's why it's worth it:</p>
+          <ul className="jn-intro-why">
+            <li><b>Everything's tailored to you.</b> They learn your context once, so later questions fit how you really use {product}.</li>
+            <li><b>Fewer, better check-ins.</b> Knowing you up front means they ask less often and never repeat themselves — far less spammy.</li>
+            <li><b>You earn for it.</b> The intro counts like any other time — your minutes and rewards are tracked from your very first reply.</li>
+          </ul>
+          <div className="jn-intro-actions">
+            <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product)}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
+            <button type="button" className="jn-skip" onClick={() => setIntroSkipped(true)}>Skip for now</button>
+          </div>
+        </section>
+      ) : (
+        <section className="jn-hero">
+          <span className="eyebrow">You're all set</span>
+          <h1>You're in — no intro needed.</h1>
+          <p>The {product} team will reach out with their first question by {reachWord} when they have one. Your minutes and rewards are tracked automatically from your very first reply. Want to do the intro after all? <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>It's still here.</button></p>
+        </section>
+      )}
 
       <section className="jn-block jn-account">
         <h2>Track your {product} rewards</h2>
