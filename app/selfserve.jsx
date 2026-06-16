@@ -669,6 +669,8 @@ function HomeView({ state, patchState, navigate }) {
         </div>
       </section>
 
+      <QuestionHistory state={state} />
+
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
           <PanelTitle k="Next" title="Ask your panel a question" status="Ready" />
@@ -887,24 +889,29 @@ function LearningView({ state, patchState, navigate }) {
 
       <AskPanel product={product} />
 
-      <section className="ss-panel">
-        <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
-        {state.loops.length ? (
-          <div className="ss-question-history">
-            {state.loops.map((loop) => {
-              const run = ssActiveLoopRun(state, loop.id);
-              const collecting = run && run.status !== "running";
-              return (
-                <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
-                  <p>{loop.question}</p>
-                  <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
-                </div>
-              );
-            })}
-          </div>
-        ) : <EmptyState title="No questions yet" text="Ask your panel anything — every question your team asks lands here." />}
-      </section>
     </div>
+  );
+}
+
+function QuestionHistory({ state }) {
+  return (
+    <section className="ss-panel">
+      <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
+      {state.loops.length ? (
+        <div className="ss-question-history">
+          {state.loops.map((loop) => {
+            const run = ssActiveLoopRun(state, loop.id);
+            const collecting = run && run.status !== "running";
+            return (
+              <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
+                <p>{loop.question}</p>
+                <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
+              </div>
+            );
+          })}
+        </div>
+      ) : <EmptyState title="No questions yet" text="Ask your panel anything — every question your team asks lands here." />}
+    </section>
   );
 }
 
