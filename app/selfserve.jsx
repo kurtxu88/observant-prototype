@@ -445,16 +445,19 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <small>Industry guideline: $1 per minute.</small>
                   </article>
 
+                  <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
+                    onClick={() => patchSetup({ perks: !setup.perks })}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); patchSetup({ perks: !setup.perks }); } }}>
+                    <em className="ss-comp-tag rec">Recommended add-on</em>
+                    <b>Additional perks {setup.perks ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
+                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
+                    <small>{setup.perks ? "✓ Included — mention this in your invitation" : "Tap to include"}</small>
+                  </article>
+
                   <article className="ss-comp-card">
                     <em className="ss-comp-tag coming">Coming</em>
                     <b>Your product credits</b>
                     <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
-                  </article>
-
-                  <article className="ss-comp-card">
-                    <em className="ss-comp-tag rec">Recommended add-on</em>
-                    <b>Additional perks</b>
-                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
                   </article>
                 </div>
               </div>

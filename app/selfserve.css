@@ -2869,3 +2869,9 @@
 .ss-range::-moz-range-track { height: 6px; border-radius: 999px; background: transparent; }
 .ss-temp-ends { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; }
 .ss-temp-hint { font-size: 0.78rem; color: var(--text-muted); margin: 8px 0 0; }
+
+/* perks add-on — selectable */
+.ss-comp-pick { cursor: pointer; }
+.ss-comp-pick:hover { border-color: var(--accent); }
+/* left-align the invitation-preview CTA in the review row */
+.ss-review-row .rv .ss-row-cta { align-self: flex-start; text-align: left; }
