@@ -8,7 +8,7 @@
 const { useState: useStateTW, useRef: useRefTW, useEffect: useEffectTW } = React;
 
 function twPrefill() {
-  const out = { product: "Northwind", channel: "email", question: "", rate: 1 };
+  const out = { product: "Northwind", channel: "email", question: "", rate: 2 };
   try {
     const raw = localStorage.getItem("observant.selfserve.v1");
     if (raw) {
@@ -16,7 +16,7 @@ function twPrefill() {
       if (s.workspace && s.workspace.companyName) out.product = s.workspace.companyName;
       if (s.setup && s.setup.surfaces && !s.setup.surfaces.email && s.setup.surfaces.telegram) out.channel = "telegram";
       if (s.workspace && s.workspace.learningGoal) out.question = s.workspace.learningGoal;
-      if (s.setup && s.setup.rate) out.rate = Number(s.setup.rate) || 1;
+      if (s.setup && s.setup.rate) out.rate = Number(s.setup.rate) || 2;
     }
   } catch (e) { /* ignore */ }
   // Seeded from the dashboard's "Test run the email thread" link.

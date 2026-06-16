@@ -65,7 +65,7 @@ function AnswerApp() {
               <textarea className="input" value={answers[i] || ""} placeholder="Your answer…" onChange={(e) => setAnswers(Object.assign({}, answers, { [i]: e.target.value }))} />
             </div>
           ))}
-          <div className="an-reward">You earn about <b>$1 per minute</b> you spend answering — tracked automatically. You can track and redeem your rewards on Observant anytime.</div>
+          <div className="an-reward">You earn about <b>$2 per minute</b> you spend answering — tracked automatically. You can track and redeem your rewards on Observant anytime.</div>
           <Btn variant="primary" size="lg" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Send my answers"} <Icon name="arrow" size={16} /></Btn>
           {err && <p className="an-err">{err}</p>}
         </div>

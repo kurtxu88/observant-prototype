@@ -19,7 +19,7 @@ function jnContext() {
   if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {
     product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   }
-  let rate = 1;
+  let rate = 2;
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
   try {
@@ -27,7 +27,7 @@ function jnContext() {
     if (raw) {
       const state = JSON.parse(raw);
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
-      if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 1;
+      if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 2;
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "telegram"].filter((c) => state.setup.surfaces[c]);
       }
@@ -72,48 +72,63 @@ function JoinApp() {
 }
 
 function JoinChoose({ product, channels, onConnect }) {
+  const single = channels.length === 1;
+  const [picked, setPicked] = useStateJN(single ? channels[0] : "");
   const [email, setEmail] = useStateJN("");
   const emailValid = email.includes("@") && email.includes(".");
-  const single = channels.length === 1;
 
+  // Step 1 — pick the channel
+  if (!picked) {
+    return (
+      <main className="jn-main">
+        <section className="jn-hero">
+          <span className="eyebrow">One last choice</span>
+          <h1>Where should we reach you?</h1>
+          <p>Pick one — this is where your one-on-one with the {product} team will live. You can switch channels later, and opt out anytime.</p>
+        </section>
+        <div className="jn-choice-grid">
+          {channels.includes("email") && (
+            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("email")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("email"); } }}>
+              <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
+              <b>Email</b>
+              <p>Quiet and async — reply whenever you have five minutes.</p>
+              <span className="jn-choice-go">Choose email <Icon name="arrow" size={14} /></span>
+            </article>
+          )}
+          {channels.includes("telegram") && (
+            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("telegram")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("telegram"); } }}>
+              <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
+              <b>Telegram</b>
+              <p>A private chat with the Observant bot — replying feels like texting a friend.</p>
+              <span className="jn-choice-go">Choose Telegram <Icon name="arrow" size={14} /></span>
+            </article>
+          )}
+        </div>
+        <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands.</p>
+      </main>
+    );
+  }
+
+  // Step 2 — next step for the chosen channel
   return (
     <main className="jn-main">
       <section className="jn-hero">
-        <span className="eyebrow">One last choice</span>
-        <h1>{single ? (channels[0] === "email" ? "Join by email." : "Connect on Telegram.") : "Where should we reach you?"}</h1>
-        <p>{single ? "This is where your one-on-one with the " + product + " team will live." : "Pick one — this is where your one-on-one with the " + product + " team will live."} You can switch channels later, and opt out anytime.</p>
+        <span className="eyebrow">{picked === "email" ? "Email" : "Telegram"}</span>
+        <h1>{picked === "email" ? "Join by email." : "Connect on Telegram."}</h1>
+        <p>This is where your one-on-one with the {product} team will live.{!single && <> <button type="button" className="jn-back" onClick={() => setPicked("")}>← pick a different way</button></>}</p>
       </section>
-
-      <div className={"jn-choice-grid" + (single ? " single" : "")}>
-        {channels.includes("email") && (
-          <article className="jn-choice">
-            <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
-            <b>Email</b>
-            <p>Quiet and async — reply whenever you have five minutes. We'll only ever use this address for your 1:1.</p>
-            <input
-              className="input"
-              type="email"
-              value={email}
-              placeholder="you@example.com"
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email); }}
-            />
-            <Btn variant="primary" size="sm" disabled={!emailValid} onClick={() => onConnect("email", email)}>Join by email</Btn>
-          </article>
-        )}
-
-        {channels.includes("telegram") && (
-          <article className="jn-choice">
-            <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
-            <b>Telegram</b>
-            <p>A private chat with the Observant bot — one tap to connect, and replying feels like texting a friend.</p>
-            <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
-            <Btn variant="primary" size="sm" onClick={() => onConnect("telegram")}>Connect Telegram</Btn>
-          </article>
-        )}
-      </div>
-
-      <p className="jn-choice-note">{single ? "That's all we know you by — no other personal data changes hands." : "Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands."}</p>
+      {picked === "email" ? (
+        <div className="jn-next">
+          <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email); }} />
+          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email)}>Join by email</Btn>
+        </div>
+      ) : (
+        <div className="jn-next">
+          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
+          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram")}>Connect Telegram</Btn>
+        </div>
+      )}
+      <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>
     </main>
   );
 }
@@ -155,13 +170,12 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <div className="jn-rate-card">
           <b>${rate} per participated minute</b>
           <p>Every reply, voice chat, and call counts — tracked and audited automatically. 30 minutes ≈ ${Math.round(30 * rate)}, and your balance works like a gift card: claim small amounts often, or save it up.</p>
+          <p className="jn-rate-perks">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
         </div>
-        <p className="jn-perks-note">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
       </section>
 
       <section className="jn-cta">
         <Btn variant="primary" size="lg" onClick={onJoin}>Join as a feedback partner <Icon name="arrow" size={16} /></Btn>
-        <span>Takes about a minute. Opt out anytime.</span>
       </section>
 
       <section className="jn-block jn-faq">

@@ -87,7 +87,7 @@ function parseNumbered(text) {
   return { intro: lines.slice(0, first).join("\n").trim(), questions: questions, outro: lines.slice(last + 1).join("\n").trim() };
 }
 function estMinutes(text) { const w = String(text || "").trim().split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 22)); }
-function footer(answerUrl) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $1 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime."; }
+function footer(answerUrl) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime."; }
 function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 function decodeState(s) { try { return JSON.parse(Buffer.from(String(s || ""), "base64url").toString("utf8")); } catch (e) { return null; } }
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }

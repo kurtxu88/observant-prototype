@@ -79,5 +79,5 @@ function limit(v, n) { return String(v == null ? "" : v).replace(/\s+/g, " ").tr
 function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 function footer(answerUrl) {
   return "\n\n———\nAnswer these here → " + answerUrl +
-    "\n\nYou earn about $1 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime.";
+    "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime.";
 }

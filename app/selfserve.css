@@ -2885,3 +2885,11 @@
 .ss-comp-pick:hover { border-color: var(--accent); }
 /* left-align the invitation-preview CTA in the review row */
 .ss-review-row .rv .ss-row-cta { align-self: flex-start; text-align: left; }
+
+/* join: channel picker (step 1 -> step 2) + combined rewards box */
+.jn-choice-pick { cursor: pointer; transition: border-color .15s; }
+.jn-choice-pick:hover { border-color: var(--accent); }
+.jn-choice-go { color: var(--accent); font-size: .88rem; display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-weight: 600; }
+.jn-back { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0; }
+.jn-next { max-width: 440px; display: flex; flex-direction: column; gap: 12px; }
+.jn-rate-perks { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, #e6e3dd); font-size: .88rem; color: var(--text-secondary, #6b665d); }

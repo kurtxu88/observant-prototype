@@ -326,6 +326,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [sendPreviewOpen, setSendPreviewOpen] = useStateSS(false);
   const [previewEmail, setPreviewEmail] = useStateSS(state.workspace.email || "");
   const [previewSentTo, setPreviewSentTo] = useStateSS("");
+  const [previewSending, setPreviewSending] = useStateSS(false);
+  const [previewErr, setPreviewErr] = useStateSS("");
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -368,6 +370,17 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
   const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
   // Surface-route changes rewrite the invitation, so the copy always matches the setup.
   useEffectSS(() => { setInviteDraft(inviteText); }, [route, product]);
+  async function sendInvitePreview() {
+    if (!previewEmail.includes("@") || previewSending) return;
+    setPreviewSending(true); setPreviewErr("");
+    try {
+      const r = await ssPostJson("/api/selfserve/send-invite", { toEmail: previewEmail, product, body: inviteDraft, joinUrl: window.location.origin + "/join/" + productSlug + "?route=" + route });
+      if (r && r.ok) { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); }
+      else if (r && r.needKey) setPreviewErr("No email provider connected yet.");
+      else setPreviewErr((r && r.error) || "Couldn't send — try again.");
+    } catch (e) { setPreviewErr(String(e.message || e)); }
+    setPreviewSending(false);
+  }
   const copyInvite = () => {
     if (navigator.clipboard) navigator.clipboard.writeText(inviteDraft).catch(() => {});
     setInviteCopied(true);
@@ -436,10 +449,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                     <b>Cash</b>
                     <p>Set your rate — we handle payouts and redemption.</p>
                     <div className="ss-comp-rate">
-                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 1) })} /> / min</span>
-                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 1))}</b>
+                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 2) })} /> / min</span>
+                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 2))}</b>
                     </div>
-                    <small>Industry guideline: $1 per minute.</small>
+                    <small>Industry guideline: $2 per minute.</small>
                   </article>
 
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
@@ -480,7 +493,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
                   k="Compensation"
                   v="Cash — managed by Observant"
                   sub={<>
-                    <span className="ss-review-tier">${setup.rate || 1} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 1))} · redeem as you go</span>
+                    <span className="ss-review-tier">${setup.rate || 2} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 2))} · redeem as you go</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
@@ -496,9 +509,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
               {sendPreviewOpen && !previewSentTo && (
                 <div className="ss-sendpreview">
                   <Field label="What's your email address?">
-                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); } }} />
+                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) sendInvitePreview(); }} />
                   </Field>
-                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@")} onClick={() => { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); }}>Send me the preview</Btn>
+                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@") || previewSending} onClick={sendInvitePreview}>{previewSending ? "Sending…" : "Send me the preview"}</Btn>
+                  {previewErr && <p style={{ color: "#b4291f", fontSize: ".82rem", marginTop: 6 }}>{previewErr}</p>}
                 </div>
               )}
 

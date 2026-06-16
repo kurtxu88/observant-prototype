@@ -138,8 +138,8 @@ function ssCreateSetup(workspace) {
     batchLabel: "",
     // Cash is the day-one model, managed by Observant. Product credits: coming.
     compensation: "cash",
-    // Dollars per participated minute — $1/min is the industry guideline.
-    rate: 1,
+    // Dollars per participated minute — $2/min is the industry guideline.
+    rate: 2,
     tierRewards: { ...SS_DEFAULT_TIER_REWARDS },
     consentAck: true,
     usersSource: "invite",
