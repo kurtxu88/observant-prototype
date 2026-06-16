@@ -675,7 +675,6 @@ function HomeView({ state, patchState, navigate }) {
           <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
             <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Ask a question</Btn>
-            <Btn variant="ghost" onClick={() => { const p = encodeURIComponent(state.workspace.companyName || "Your product"); const q = encodeURIComponent((state.workspace.learningGoal || "").split("\n")[0] || ""); window.open("/app/Thread.html?product=" + p + "&question=" + q + "&channel=email", "_blank"); }}><Icon name="mail" size={15} /> Test run the email thread</Btn>
           </div>
         </section>
       )}
@@ -708,6 +707,89 @@ function HomeView({ state, patchState, navigate }) {
 
       {latestAnswer && <LatestAnswerCard answer={latestAnswer} onClick={() => navigate({ section: "insights", focusedTarget: "insight-export" })} />}
     </div>
+  );
+}
+
+// Redesigned ask experience — applies the conversation logic (C1) inline and
+// sends a REAL test email of the first batch. No simulated thread on the page.
+function AskPanel({ product }) {
+  const [question, setQuestion] = useStateSS("");
+  const [temp, setTemp] = useStateSS(0.5);
+  const [channel, setChannel] = useStateSS("email");
+  const [plan, setPlan] = useStateSS(null);
+  const [previewing, setPreviewing] = useStateSS(false);
+  const [testEmail, setTestEmail] = useStateSS("");
+  const [sending, setSending] = useStateSS(false);
+  const [result, setResult] = useStateSS(null);
+  const [err, setErr] = useStateSS("");
+
+  async function preview() {
+    if (!question.trim()) return;
+    setPreviewing(true); setErr(""); setResult(null);
+    try {
+      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question });
+      if (!t || !t.plan) throw new Error("couldn't compose the questions");
+      setPlan(t.plan);
+    } catch (e) { setErr(String(e.message || e)); }
+    setPreviewing(false);
+  }
+
+  async function sendTest() {
+    if (!testEmail.includes("@") || !question.trim()) return;
+    setSending(true); setErr(""); setResult(null);
+    try {
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel }));
+    } catch (e) { setErr(String(e.message || e)); }
+    setSending(false);
+  }
+
+  return (
+    <section className="ss-panel" id="create-loop">
+      <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
+      <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, batched into a real email, answers gathered for you.</p>
+      <Field label="Your question">
+        <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setPlan(null); }} />
+      </Field>
+      <Field label={"Exploration temperature — how far past your question Observant roams (" + temp.toFixed(1) + ")"}>
+        <input type="range" min="0" max="1" step="0.1" value={temp} onChange={(e) => setTemp(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--accent,#b4532a)" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".72rem", color: "#8a857c" }}><span>stick to the question</span><span>explore freely</span></div>
+      </Field>
+      <Field label="Channel">
+        <select className="input" value={channel} onChange={(e) => setChannel(e.target.value)}>
+          <option value="email">Email — one batched message</option>
+          <option value="telegram">Telegram / IM — one question at a time</option>
+        </select>
+      </Field>
+      <div className="ss-panel-actions">
+        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Composing…" : "Preview what Observant will ask"}</Btn>
+      </div>
+
+      {plan && (
+        <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>
+          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The essence</p>
+          <p style={{ margin: "0 0 12px" }}>{plan.essence}</p>
+          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Email subject</p>
+          <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
+          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The first batch Observant will send</p>
+          <ol style={{ margin: "0 0 18px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
+
+          {channel === "email" ? (
+            <Field label="Send a real test email to yourself">
+              <div style={{ display: "flex", gap: 8 }}>
+                <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+                <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
+              </div>
+            </Field>
+          ) : (
+            <p style={{ fontSize: ".85rem", color: "#8a857c" }}>Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
+          )}
+          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox, that's the real first email.</p>}
+          {result && !result.ok && result.needKey && <p style={{ fontSize: ".85rem", color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to the Vercel project to send for real.</p>}
+          {result && !result.ok && !result.needKey && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{result.error}</p>}
+        </div>
+      )}
+      {err && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{err}</p>}
+    </section>
   );
 }
 
@@ -797,21 +879,7 @@ function LearningView({ state, patchState, navigate }) {
           : <Btn variant="primary" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
       </section>
 
-      <section className={"ss-panel" + ssFocusClass(state, "create-loop")} id="create-loop">
-        <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
-        <p className="ss-step-lead">Everyone who opted in is on a continuous one-on-one line. Ask anything — Observant phrases it for each person and gathers the answers.</p>
-        <Field label="Your question">
-          <textarea className="textarea" value={question} placeholder={"e.g. What almost stopped you from sticking with " + product + "?"} onChange={(e) => setQuestion(e.target.value)} />
-        </Field>
-        {activeRun ? (
-          <div className="ss-asking"><span className="ss-spinner" /> {stageLabel}…</div>
-        ) : (
-          <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={submit} disabled={!question.trim()}><Icon name="spark" size={15} /> Ask the panel</Btn>
-            <Btn variant="ghost" onClick={() => window.open("/app/Thread.html?product=" + encodeURIComponent(product) + "&question=" + encodeURIComponent(question) + "&channel=email", "_blank")} disabled={!question.trim()}><Icon name="mail" size={15} /> Test run the email thread</Btn>
-          </div>
-        )}
-      </section>
+      <AskPanel product={product} />
 
       <section className="ss-panel">
         <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
@@ -824,7 +892,6 @@ function LearningView({ state, patchState, navigate }) {
                 <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
                   <p>{loop.question}</p>
                   <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
-                  <button type="button" onClick={() => window.open("/app/Thread.html?product=" + encodeURIComponent(product) + "&question=" + encodeURIComponent(loop.question) + "&channel=email", "_blank")} style={{ marginLeft: "auto", fontSize: ".8rem", color: "var(--accent,#b4532a)", background: "#fff", border: "1px solid var(--line,#e6e3dd)", borderRadius: "999px", padding: "4px 11px", cursor: "pointer", whiteSpace: "nowrap" }}>Test run →</button>
                 </div>
               );
             })}
