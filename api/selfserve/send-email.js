@@ -29,8 +29,12 @@ module.exports = async function handler(req, res) {
     const subject = plan.subject || ("A couple questions from the " + product + " team");
     const body = (turn && turn.message) || "";
 
+    const state = { product, question, exploration: isFinite(exploration) ? exploration : 0.5, channel, wishlist, toEmail, subject, messages: [{ role: "assistant", content: body }] };
+    const answerUrl = "https://" + req.headers.host + "/app/Answer.html?d=" + encodeState(state);
+    const emailText = body + footer(answerUrl);
+
     if (!process.env.RESEND_API_KEY) {
-      return res.status(200).json({ ok: false, needKey: true, subject, body, to: toEmail });
+      return res.status(200).json({ ok: false, needKey: true, subject, body: emailText, answerUrl, to: toEmail });
     }
 
     const send = await fetch("https://api.resend.com/emails", {
@@ -40,7 +44,7 @@ module.exports = async function handler(req, res) {
         from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
         to: [toEmail],
         subject: subject,
-        text: body,
+        text: emailText,
       }),
     });
     if (!send.ok) {
@@ -71,3 +75,8 @@ async function readJson(req) {
   return b ? JSON.parse(b) : {};
 }
 function limit(v, n) { return String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n); }
+function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
+function footer(answerUrl) {
+  return "\n\n———\nAnswer these here → " + answerUrl +
+    "\n\nYou earn about $1 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime.";
+}
