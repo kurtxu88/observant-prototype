@@ -5,10 +5,21 @@
    (individual memory) — that's queued. */
 const { useState: useIC, useRef: useICRef, useEffect: useICFx } = React;
 
+// Pull the CLIENT's intro questions (what they want to learn about each customer),
+// set in the workspace settings; fall back to a sensible default.
+function icIntroQuestions(product) {
+  try {
+    const s = JSON.parse(localStorage.getItem("observant.selfserve.v1") || "{}");
+    const list = String((s.workspace && s.workspace.introQuestions) || "").split("\n").map((q) => q.trim()).filter(Boolean);
+    if (list.length) return list;
+  } catch (e) { /* fall through */ }
+  return ["What got you using " + product + ", and how does it fit into your day right now?"];
+}
+
 function icPlan(product) {
   return {
-    essence: "Get to know this new feedback partner — who they are, how they use " + product + " in their day, the context around it, and what they care about — so future questions can be tailored to them.",
-    questions: ["To start — what got you using " + product + ", and how does it fit into your day right now?"],
+    essence: "Get to know this new feedback partner via the team's intro questions — who they are, how they use " + product + ", the context around it, and what they care about — so future questions can be tailored to them.",
+    questions: icIntroQuestions(product),
     subject: "",
   };
 }

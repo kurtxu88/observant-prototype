@@ -1133,10 +1133,21 @@ function LatestAnswerCard({ answer, onClick }) {
   );
 }
 
+function ssDefaultIntroText(product) {
+  return [
+    "What got you using " + product + ", and what do you mainly use it for?",
+    "What's your role, and the context you're using it in?",
+    "How does it fit into your day — when and how often do you reach for it?",
+    "What matters most to you about it, and what's felt frustrating lately?",
+  ].join("\n");
+}
+
 function SettingsViewSS({ state, patchState, resetWorkspace }) {
   const updateWorkspace = (field, value) => {
     patchState((current) => ({ ...current, workspace: { ...current.workspace, [field]: value } }));
   };
+  const product = SelfServeData.productName(state.workspace);
+  const introText = state.workspace.introQuestions != null ? state.workspace.introQuestions : ssDefaultIntroText(product);
 
   return (
     <section className={"ss-panel ss-settings-panel" + ssFocusClass(state, "settings-workspace")}>
@@ -1152,6 +1163,9 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
       </Field>
       <Field label="Product URL">
         <input className="input" value={state.workspace.productUrl} onChange={(e) => updateWorkspace("productUrl", e.target.value)} />
+      </Field>
+      <Field label="Intro conversation — what should we learn about each new customer?" wide>
+        <textarea className="textarea" value={introText} placeholder="One per line — the context the 10-minute intro gathers from each customer." onChange={(e) => updateWorkspace("introQuestions", e.target.value)} />
       </Field>
       <div className="ss-default-list">
         <div><b>Private lines</b><span>One-on-one with every person on the panel.</span></div>
