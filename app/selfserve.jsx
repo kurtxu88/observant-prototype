@@ -602,6 +602,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const section = SS_SECTIONS.some((item) => item.id === state.section) ? state.section : "home";
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
+  const [slackConnected, setSlackConnected] = useStateSS(false);
 
   const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget }) => {
     patchState((current) => ({
@@ -631,6 +632,16 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             </button>
           ))}
         </nav>
+        <div className={"ss-slack-side" + (slackConnected ? " on" : "")}>
+          {slackConnected ? (
+            <div className="ss-slack-side-done"><Icon name="check" size={15} sw={2.4} /> <div><b>Slack connected</b><span>Ask straight from your channel — replies pipe back here.</span></div></div>
+          ) : (
+            <>
+              <div className="ss-slack-side-copy"><b>Ask straight from Slack</b><span>Relay your team's questions from your channel — responses pipe back within the hour.</span></div>
+              <button type="button" className="ss-slack-side-btn" onClick={() => setSlackConnected(true)}><Icon name="spark" size={14} /> Connect Slack</button>
+            </>
+          )}
+        </div>
         <button type="button" className="ss-workspace-foot" onClick={() => navigate({ section: "settings", focusedTarget: "settings-workspace" })}>
           <span className="ws-logo">{SelfServeData.initials(product).slice(0, 1)}</span>
           <div>
@@ -686,8 +697,6 @@ function HomeView({ state, patchState, navigate }) {
         </div>
       </section>
 
-      <QuestionHistory state={state} />
-
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
           <PanelTitle k="Next" title="Ask your panel a question" status="Ready" />
@@ -698,10 +707,33 @@ function HomeView({ state, patchState, navigate }) {
         </section>
       )}
 
+      {/* 1 — New insights: what Observant has learned, most recent first */}
       <section className="ss-panel">
-        <PanelTitle k="Now" title="Active lines" status="Live" />
+        <PanelTitle k="Insights" title="New insights" status={state.insights.length ? state.insights.length + " fresh" : "Listening"} />
+        {state.insights.length ? (
+          <div className="ss-home-insights">
+            {state.insights.slice(0, 3).map((insight) => (
+              <button type="button" className="ss-home-insight" key={insight.id} onClick={() => navigate({ section: "insights", focusedTarget: "insight-" + insight.id })}>
+                <span className="ss-home-insight-metric">{insight.metric}</span>
+                <b>{insight.title}</b>
+                <span className="ss-home-insight-detail">{insight.detail}</span>
+              </button>
+            ))}
+            <button type="button" className="ss-home-seeall" onClick={() => navigate({ section: "insights" })}>See all insights <Icon name="arrow" size={14} /></button>
+          </div>
+        ) : latestAnswer ? (
+          <LatestAnswerCard answer={latestAnswer} onClick={() => navigate({ section: "insights", focusedTarget: "insight-export" })} />
+        ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
+      </section>
+
+      {/* 2 — Recently opened chats */}
+      <section className="ss-panel">
+        <PanelTitle k="Now" title="Recently opened chats" status={state.conversations.length ? "Live" : "Quiet"} />
         {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
       </section>
+
+      {/* 3 — Question activity history */}
+      <QuestionHistory state={state} />
 
       <div className="ss-dashboard-grid">
         <AskObservant state={state} patchState={patchState} />
@@ -723,8 +755,6 @@ function HomeView({ state, patchState, navigate }) {
           ) : <EmptyState title="No memory yet" text="Observant remembers each person's context as soon as the first conversations come in." />}
         </section>
       </div>
-
-      {latestAnswer && <LatestAnswerCard answer={latestAnswer} onClick={() => navigate({ section: "insights", focusedTarget: "insight-export" })} />}
     </div>
   );
 }
@@ -838,7 +868,6 @@ function LearningView({ state, patchState, navigate }) {
   const product = SelfServeData.productName(state.workspace);
   const custom = ssWorkspaceIsCustom(state);
   const [question, setQuestion] = useStateSS("");
-  const [slackConnected, setSlackConnected] = useStateSS(false);
   const activeRun = (state.loopRuns || []).find((run) => run.status === "generating" || run.status === "collecting");
   const stageLabel = activeRun
     ? (activeRun.status === "generating"
@@ -911,17 +940,6 @@ function LearningView({ state, patchState, navigate }) {
   return (
     <div className="ss-page-stack">
       <AskPanel product={product} />
-
-      <section className="ss-panel ss-slack-mini">
-        <div className="ss-slack-mini-copy">
-          <b>Ask straight from Slack</b>
-          <span>Connect Slack and your team's questions relay here automatically — ask in your channel, responses pipe back within the hour.</span>
-        </div>
-        {slackConnected
-          ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Slack connected</span>
-          : <Btn variant="ghost" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
-      </section>
-
     </div>
   );
 }
