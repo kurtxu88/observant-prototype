@@ -712,6 +712,11 @@ function HomeView({ state, patchState, navigate }) {
   );
 }
 
+// C4: read the per-person memory the intro chat stored (same-origin localStorage).
+function anMemory(product) {
+  try { return (JSON.parse(localStorage.getItem("observant.memory.v1") || "{}")[product] || {}).memory || ""; } catch (e) { return ""; }
+}
+
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
 function AskPanel({ product }) {
@@ -730,7 +735,7 @@ function AskPanel({ product }) {
     if (!question.trim()) return;
     setPreviewing(true); setErr(""); setResult(null);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question, wishlist });
+      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question, wishlist, memory: anMemory(product) });
       if (!t || !t.plan) throw new Error("couldn't compose the questions");
       setPlan(t.plan);
     } catch (e) { setErr(String(e.message || e)); }
@@ -741,7 +746,7 @@ function AskPanel({ product }) {
     if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel, wishlist }));
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel, wishlist, memory: anMemory(product) }));
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -753,6 +758,7 @@ function AskPanel({ product }) {
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setPlan(null); }} />
       </Field>
+      {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <Field label="Where should Observant dig deeper if it comes up? (optional)">
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>

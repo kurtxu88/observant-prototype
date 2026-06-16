@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const payload = await readJson(req);
-    const action = payload.action === "translate" ? "translate" : "turn";
+    const action = ["translate", "synthesize"].includes(payload.action) ? payload.action : "turn";
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(200).json(noKeyStub(action, payload));
@@ -27,6 +27,10 @@ module.exports = async function handler(req, res) {
     if (action === "translate") {
       const plan = await translate(payload);
       return res.status(200).json({ ok: true, plan });
+    }
+    if (action === "synthesize") {
+      const memory = await synthesize(payload);
+      return res.status(200).json({ ok: true, memory });
     }
     const turn = await nextTurn(payload);
     return res.status(200).json({ ok: true, ...turn });
@@ -41,10 +45,12 @@ async function translate(payload) {
   const product = limit(payload.product, 100) || "the product";
   const wishlist = limit(payload.wishlist, 500);
   const context = limit(payload.context, 600);
+  const memory = limit(payload.memory, 1200);
   const system = readPrompt("C1-question-translator.md");
   const user =
     "PRODUCT: " + product + "\n" +
     (context ? "CONTEXT: " + context + "\n" : "") +
+    (memory ? "WHAT WE ALREADY KNOW ABOUT THIS PERSON (from their intro — tailor to them, reference it naturally, don't ask what's already answered): " + memory + "\n" : "") +
     (wishlist ? "WISHLIST (where to dig deeper if it comes up): " + wishlist + "\n" : "") +
     'TEAM QUESTION: "' + question + '"\n\n' +
     'Return JSON only: {"essence": string, "questions": [string], "subject": string}. ' +
@@ -57,12 +63,26 @@ async function translate(payload) {
   });
 }
 
+/* ---------- C4: synthesize a per-person memory from the intro conversation ---------- */
+async function synthesize(payload) {
+  const product = limit(payload.product, 100) || "the product";
+  const messages = normalizeMessages(payload.messages);
+  const transcript = messages.map((m) => (m.role === "user" ? "User: " : "Observant: ") + m.content).join("\n");
+  const system =
+    "You build a compact MEMORY PROFILE of a product user from a short intro conversation, so the team's future questions can be tailored to them. " +
+    "Capture, in their own framing and only what's actually supported: who they are / their role, how they use " + product + " day to day, the context around it, and what they care about or struggle with. " +
+    "3–5 short factual lines (or a tight paragraph). No preamble, no fluff, no invention — output the profile text only.";
+  const text = await callClaude(system, [{ role: "user", content: "Conversation:\n" + transcript + "\n\nWrite the memory profile." }], 400);
+  return limit(text, 1200);
+}
+
 /* ---------- C2 + C3: next interviewer turn + stop decision ---------- */
 async function nextTurn(payload) {
   const product = limit(payload.product, 100) || "the product";
   const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
   const plan = payload.plan || {};
   const wishlist = limit(payload.wishlist, 500);
+  const memory = limit(payload.memory, 1200);
   let temp = Number(payload.exploration);
   if (!(temp >= 0 && temp <= 1)) temp = 0.5; // continuous 0..1 "temperature"
   const final = !!payload.final;
@@ -79,6 +99,7 @@ async function nextTurn(payload) {
     "MINUTES SINCE USER'S LAST MESSAGE: " + minutesSinceReply + "\n" +
     "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +
     (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
+    (memory ? "WHAT WE ALREADY KNOW ABOUT THIS PERSON (from their intro — tailor to them, reference it naturally, never re-ask what's known): " + memory + "\n" : "") +
     "EXPLORATION TEMPERATURE: " + temp.toFixed(2) + " on a 0-1 scale (0 = stick strictly to the client's questions, 1 = roam freely). " + explorationHint(temp) + "\n" +
     (final ? "FINAL FOLLOW-UP — this is the ONLY follow-up for this inquiry. Ask AT MOST 3 genuinely important questions their answers opened up; fewer is better. If nothing is genuinely worth asking, do NOT ask — decide SUFFICIENT with an empty message. Never manufacture questions to fill space.\n" : "") +
     "\n" +
@@ -188,6 +209,9 @@ function parseJson(text, fallback) {
 }
 
 function noKeyStub(action, payload) {
+  if (action === "synthesize") {
+    return { ok: true, stub: true, memory: "[ANTHROPIC_API_KEY not set] would summarize this person from their intro." };
+  }
   if (action === "translate") {
     return {
       ok: true,
