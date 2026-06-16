@@ -20,8 +20,9 @@ module.exports = async function handler(req, res) {
     const parsed = parseNumbered(last ? last.content : "");
 
     if (payload.action !== "submit") {
-      // load: hand the form the questions to render
-      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject });
+      // load: hand the form the questions to render (+ minutes already banked in earlier rounds)
+      const round = state.messages.filter((m) => m.role === "assistant").length;
+      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject, accruedMinutes: Number(state.accruedMinutes) || 0, round });
     }
 
     // submit: assemble the user's reply, run it through the engine
@@ -32,12 +33,14 @@ module.exports = async function handler(req, res) {
     if (!userText.trim()) return res.status(200).json({ ok: false, error: "no answers provided" });
 
     const messages = state.messages.concat([{ role: "user", content: userText }]);
-    const minutes = estMinutes(userText);
+    const answeredCount = answers.filter((a) => String(a || "").trim()).length;
+    const minutes = estMinutes(userText, answeredCount);
+    const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
     const priorEmails = state.messages.filter((m) => m.role === "assistant").length;
 
     // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
     if (priorEmails >= 2) {
-      return res.status(200).json({ ok: true, done: true, decision: "PAUSE", minutes, capped: true });
+      return res.status(200).json({ ok: true, done: true, decision: "PAUSE", minutes, totalMinutes, capped: true });
     }
 
     // This is the only follow-up we're allowed — tell the engine so it only asks if genuinely worth it.
@@ -50,12 +53,12 @@ module.exports = async function handler(req, res) {
     const decision = (turn && turn.decision) || "CONTINUE";
 
     if (decision === "SUFFICIENT" || decision === "PAUSE" || !next.trim()) {
-      return res.status(200).json({ ok: true, done: true, decision, message: next, minutes });
+      return res.status(200).json({ ok: true, done: true, decision, message: next, minutes, totalMinutes });
     }
 
     // continue: send the next email with a fresh answer link
     const newMessages = messages.concat([{ role: "assistant", content: next }]).slice(-8);
-    const newState = Object.assign({}, state, { messages: newMessages });
+    const newState = Object.assign({}, state, { messages: newMessages, accruedMinutes: totalMinutes });
     const answerUrl = base + "/app/Answer.html?d=" + encodeState(newState);
     const emailText = next + footer(answerUrl);
     let sent = false;
@@ -70,7 +73,7 @@ module.exports = async function handler(req, res) {
       });
       sent = r.ok;
     }
-    return res.status(200).json({ ok: true, done: false, sent, decision, minutes });
+    return res.status(200).json({ ok: true, done: false, sent, decision, minutes, totalMinutes });
   } catch (error) {
     return res.status(200).json({ ok: false, error: String(error && error.message || error) });
   }
@@ -80,13 +83,26 @@ async function callSelf(base, body) {
   const r = await fetch(base + "/api/selfserve/interview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
+function stripMd(s) { return String(s || "").replace(/\*\*/g, "").replace(/__/g, "").replace(/^#+\s*/gm, "").trim(); }
 function parseNumbered(text) {
   const str = String(text || ""); const lines = str.split("\n"); const questions = []; let first = -1, last = -1;
-  lines.forEach((raw, i) => { const m = raw.trim().match(/^(\d+)[.)]\s+(.*)/); if (m) { questions.push(m[2]); if (first < 0) first = i; last = i; } });
-  if (!questions.length) return { intro: str.trim(), questions: [], outro: "" };
-  return { intro: lines.slice(0, first).join("\n").trim(), questions: questions, outro: lines.slice(last + 1).join("\n").trim() };
+  lines.forEach((raw, i) => { const m = raw.trim().match(/^(\d+)[.)]\s+(.*)/); if (m) { questions.push(stripMd(m[2])); if (first < 0) first = i; last = i; } });
+  if (!questions.length) return { intro: stripMd(str), questions: [], outro: "" };
+  return { intro: stripMd(lines.slice(0, first).join("\n")), questions: questions, outro: stripMd(lines.slice(last + 1).join("\n")) };
 }
-function estMinutes(text) { const w = String(text || "").trim().split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 22)); }
+function estMinutes(text, answered) {
+  const str = String(text || "").trim();
+  const words = str.split(/\s+/).filter(Boolean).length;
+  const q = Math.max(1, answered || 1);
+  const overhead = 0.4 * q;                 // read + think time per question engaged
+  const writing = words / 18;               // considered-writing rate (slower than raw typing)
+  const perAnswer = words / q;              // depth proxy
+  const richness = perAnswer >= 35 ? 1.25 : perAnswer >= 18 ? 1.1 : 1.0;
+  const numbers = (str.match(/\d/g) || []).length;
+  const detailBonus = numbers >= 4 ? 0.5 : 0; // cited specifics / metrics
+  const raw = (overhead + writing) * richness + detailBonus;
+  return Math.max(1, Math.round(raw * 2) / 2); // nearest 0.5, floor 1
+}
 function footer(answerUrl) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime."; }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function htmlEmail(body, answerUrl) {

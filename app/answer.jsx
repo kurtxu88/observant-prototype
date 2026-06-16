@@ -55,8 +55,14 @@ function AnswerApp() {
 
       {phase === "form" && data && (
         <div>
+          {data.round > 0 && (
+            <div className="an-followup">
+              <span className="an-followup-tag">Follow-up · round {data.round + 1}</span>
+              <span>A couple of follow-ups based on what you shared earlier.{data.accruedMinutes > 0 ? <> You've banked about <b>{data.accruedMinutes} min</b> so far.</> : null}</span>
+            </div>
+          )}
           <div className="an-hero">
-            <h1>A few questions from the {product} team</h1>
+            <h1>{data.round > 0 ? "A couple more questions" : "A few questions from the " + product + " team"}</h1>
             {data.intro ? <p>{data.intro}</p> : <p>Answer in your own words — whatever comes to mind is useful.</p>}
           </div>
           {(data.questions || []).map((q, i) => (
@@ -65,7 +71,7 @@ function AnswerApp() {
               <textarea className="input" value={answers[i] || ""} placeholder="Your answer…" onChange={(e) => setAnswers(Object.assign({}, answers, { [i]: e.target.value }))} />
             </div>
           ))}
-          <div className="an-reward">You earn about <b>$2 per minute</b> you spend answering — tracked automatically. You can track and redeem your rewards on Observant anytime.</div>
+          <div className="an-reward">You earn about <b>$2 per minute</b> you spend answering — tracked automatically.{data.accruedMinutes > 0 ? <> You're at about <b>{data.accruedMinutes} min</b> so far this conversation.</> : null} You can track and redeem your rewards on Observant anytime.</div>
           <Btn variant="primary" size="lg" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Send my answers"} <Icon name="arrow" size={16} /></Btn>
           {err && <p className="an-err">{err}</p>}
         </div>
@@ -76,8 +82,8 @@ function AnswerApp() {
           <Icon name="check" size={34} sw={2} />
           <h1>Thank you!</h1>
           {result && result.sent
-            ? <p>Got it — that's about <b>{result.minutes} min</b> added to your rewards. {product} had a follow-up, so we've just emailed it to you. Reply whenever you have a moment.</p>
-            : <p>Got it — that's about <b>{result && result.minutes} min</b> added to your rewards. That's everything {product} needed for now; we'll be in touch when there's something new.</p>}
+            ? <p>Got it — that's about <b>{result.minutes} min</b> added{result.totalMinutes ? <>, for <b>{result.totalMinutes} min</b> total</> : null}. {product} had a follow-up, so we've just emailed it to you. Reply whenever you have a moment.</p>
+            : <p>Got it — that's about <b>{result && result.minutes} min</b> added{result && result.totalMinutes ? <>, for <b>{result.totalMinutes} min</b> total</> : null}. That's everything {product} needed for now; we'll be in touch when there's something new.</p>}
           <p className="an-muted" style={{ marginTop: 14 }}>Your minutes and rewards are tracked on Observant.</p>
         </div>
       )}

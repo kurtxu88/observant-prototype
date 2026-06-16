@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     const subject = plan.subject || ("A couple questions from the " + product + " team");
     const body = (turn && turn.message) || "";
 
-    const state = { product, question, exploration: isFinite(exploration) ? exploration : 0.5, channel, wishlist, memory, toEmail, subject, messages: [{ role: "assistant", content: body }] };
+    const state = { product, question, exploration: isFinite(exploration) ? exploration : 0.5, channel, wishlist, memory, toEmail, subject, accruedMinutes: 0, messages: [{ role: "assistant", content: body }] };
     const answerUrl = "https://" + req.headers.host + "/app/Answer.html?d=" + encodeState(state);
     const emailText = body + footer(answerUrl);
 
