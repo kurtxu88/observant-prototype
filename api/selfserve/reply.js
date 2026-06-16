@@ -32,14 +32,22 @@ module.exports = async function handler(req, res) {
     if (!userText.trim()) return res.status(200).json({ ok: false, error: "no answers provided" });
 
     const messages = state.messages.concat([{ role: "user", content: userText }]);
+    const minutes = estMinutes(userText);
+    const priorEmails = state.messages.filter((m) => m.role === "assistant").length;
+
+    // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
+    if (priorEmails >= 2) {
+      return res.status(200).json({ ok: true, done: true, decision: "PAUSE", minutes, capped: true });
+    }
+
+    // This is the only follow-up we're allowed — tell the engine so it only asks if genuinely worth it.
     const turn = await callSelf(base, {
       action: "turn", product: state.product, channel: state.channel || "email",
-      exploration: state.exploration, wishlist: state.wishlist,
+      exploration: state.exploration, wishlist: state.wishlist, final: true,
       plan: { essence: state.question, subject: state.subject }, messages,
     });
     const next = (turn && turn.message) || "";
     const decision = (turn && turn.decision) || "CONTINUE";
-    const minutes = estMinutes(userText);
 
     if (decision === "SUFFICIENT" || decision === "PAUSE" || !next.trim()) {
       return res.status(200).json({ ok: true, done: true, decision, message: next, minutes });

@@ -46,6 +46,9 @@ A setup dial sets how far the agent roams: **low** = protocol-tight (stick to th
 ### P13 — Reward visibility every batch (channel respect)
 Because the whole relationship lives in one thread, each batch must *give back*: show the person their **participated minutes + reward earned** and a **"track & redeem on Observant"** CTA, constantly. This motivates continued participation and keeps the channel from feeling like spam. *Encoded in: the test surface's reward strip; the real product surfaces it per message/batch.*
 
+### P14b — Restraint beats coverage (anti-spam, added 2026-06-16)
+Up to **3** questions per email, but **fewer is better and never pad** — if there isn't a genuinely interesting/important question, don't ask it. In the real email cadence, an inquiry gets the initial batch **+ at most ONE follow-up**, and the follow-up only fires if the answers opened something genuinely worth probing (else stop). The bar: would a thoughtful researcher actually need to know this? This is hard-capped in `reply.js`, not just a prompt nudge. *(Tempers P14 — the live test felt spammy because the cap wasn't enforced.)*
+
 ### P14 — Every email is a batch (~3 questions), never one-then-wait
 On email, *every* message — first and follow-ups — carries a small batch of ~3 questions, so we extract as much as possible per reply. Follow-up batches mix one or two deeper probes (on what was thin/interesting) with one new question advancing the essence. Relying on people to keep returning for one-question-at-a-time exchanges is impractical and disrespectful of their time. (Telegram stays one-at-a-time — its cadence makes round-trips cheap.) *Encoded in: C2, channelHint.*
 

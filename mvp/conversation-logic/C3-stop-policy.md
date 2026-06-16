@@ -23,7 +23,7 @@ The four decisions below map onto this: **CONTINUE** = the marginal-value test p
 
 Choose exactly one:
 
-- **CONTINUE** — the answer is on the right track but not yet meaningful (still thin, still hypothetical, story not yet concrete). Ask one more probe now.
+- **CONTINUE** — the answer is on the right track but not yet meaningful (still thin, still hypothetical, story not yet concrete). Ask one more probe now. **Use sparingly:** in the real email cadence this fires another message, and you get only **ONE** follow-up per inquiry — so only CONTINUE if there's a genuinely important, *specific* thing their answers opened up, never "more detail would be nice." When unsure, prefer SUFFICIENT/PAUSE.
 - **SUFFICIENT** — the success criteria from the interview plan (C1) are met. Stop probing this question, report it up to the team, and rest the thread (the relationship stays open for future questions).
 - **PAUSE** — the person has given what they can right now, **the round's energy has dried up**, or they're disengaging. Bank what we have and stop for now, *even if the question isn't fully answered.* Don't grind a tired round; the relationship stays open and the next fresh question gets fresh attention.
 - **NUDGE** — the person has gone silent mid-thread. Schedule a single, light re-engagement; do not pile on.

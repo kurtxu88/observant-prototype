@@ -65,6 +65,7 @@ async function nextTurn(payload) {
   const wishlist = limit(payload.wishlist, 500);
   let temp = Number(payload.exploration);
   if (!(temp >= 0 && temp <= 1)) temp = 0.5; // continuous 0..1 "temperature"
+  const final = !!payload.final;
   const messages = normalizeMessages(payload.messages);
   const minutesSinceReply = Number(payload.minutesSinceReply || 0);
 
@@ -79,6 +80,7 @@ async function nextTurn(payload) {
     "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +
     (wishlist ? "WISHLIST / dig deeper here if the conversation opens it up: " + wishlist + "\n" : "") +
     "EXPLORATION TEMPERATURE: " + temp.toFixed(2) + " on a 0-1 scale (0 = stick strictly to the client's questions, 1 = roam freely). " + explorationHint(temp) + "\n" +
+    (final ? "FINAL FOLLOW-UP — this is the ONLY follow-up for this inquiry. Ask AT MOST 3 genuinely important questions their answers opened up; fewer is better. If nothing is genuinely worth asking, do NOT ask — decide SUFFICIENT with an empty message. Never manufacture questions to fill space.\n" : "") +
     "\n" +
     "FORMAT — write your next message to the user in PLAIN TEXT (it may be multiple lines or a numbered list — do NOT JSON-encode it, do NOT use code fences). Then on its own line write exactly:\n" +
     "---META---\n" +
@@ -132,7 +134,7 @@ function channelHint(channel) {
   return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). " +
     "FIRST email — they have ALREADY opted in via the invitation, so do NOT re-pitch the program or repeat the rewards spiel. Just a short professional note that briefly recaps and sets how this thread works: (a) this is the [product] feedback program; (b) we'll have a back-and-forth right here in this email thread, and you can email us anytime with any new insight or anything you want to share; (c) we'll also periodically reach out with questions; (d) every response is logged and converted into rewards on the [product] platform. THEN 'To start, we have a few questions about your [topic] experience:' and the whole set as a short NUMBERED list, most important first. Tight and professional, not a re-pitch. " +
     "RULE — EVERY email carries a small BATCH of ~3 questions; never one-question-then-wait (too costly — people won't keep returning to the thread). Extract as much as possible per reply and relate it to the client's questions/context. " +
-    "FOLLOW-UP emails: a short recap/acknowledgement paragraph, then a short NUMBERED batch of ~3 — typically one or two FOLLOW-UPS that go deeper on what was thin or interesting, plus one NEW question that advances the essence (bold the brand-new one with **double asterisks**). Maximize context per exchange.";
+    "FOLLOW-UP email — you get ONLY ONE per inquiry: a short recap paragraph, then UP TO 3 genuinely-worth-asking questions (fewer is better; bold a brand-new-topic one with **double asterisks**). If nothing is genuinely worth a follow-up, send none — decide SUFFICIENT. Never pad to three, never ask for asking's sake.";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
