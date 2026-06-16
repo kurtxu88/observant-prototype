@@ -780,10 +780,19 @@ function AskPanel({ product }) {
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>
       <div className="ss-temp">
-        <div className="ss-temp-head"><span className="ss-temp-label">Exploration temperature</span><span className="ss-temp-val">{temp.toFixed(1)}</span></div>
-        <input type="range" className="ss-range" min="0" max="1" step="0.1" value={temp} onChange={(e) => setTemp(Number(e.target.value))} style={{ background: "linear-gradient(to right, var(--accent) " + (temp * 100) + "%, #e6e3dd " + (temp * 100) + "%)" }} />
-        <div className="ss-temp-ends"><span>stick to the question</span><span>explore freely</span></div>
-        <p className="ss-temp-hint">How far past your question Observant roams when something interesting comes up.</p>
+        <div className="ss-temp-head"><span className="ss-temp-label">How far should Observant explore?</span></div>
+        <div className="ss-temp-3">
+          {[
+            { v: 0.15, t: "Stick to the script", d: "Asks only your questions — no wandering, even if something interesting comes up." },
+            { v: 0.5, t: "Balanced", d: "Follows a genuinely interesting thread when it surfaces, then returns to your questions." },
+            { v: 0.85, t: "Explore freely", d: "Chases interesting tangents and reframes — your questions are a starting point, not a fence." },
+          ].map((o) => (
+            <button key={o.v} type="button" className={"ss-temp-opt" + (Math.abs(temp - o.v) < 0.2 ? " on" : "")} onClick={() => setTemp(o.v)}>
+              <b>{o.t}</b>
+              <span>{o.d}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <Field label="Channel">
         <select className="input" value={channel} onChange={(e) => setChannel(e.target.value)}>
@@ -802,7 +811,8 @@ function AskPanel({ product }) {
           <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Email subject</p>
           <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
           <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The first batch Observant will send</p>
-          <ol style={{ margin: "0 0 18px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
+          <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
+          <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy.</p>
 
           {channel === "email" ? (
             <Field label="Send a real test email to yourself">
@@ -814,7 +824,7 @@ function AskPanel({ product }) {
           ) : (
             <p style={{ fontSize: ".85rem", color: "#8a857c" }}>Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
           )}
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox, that's the real first email.</p>}
+          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox to see exactly what your users receive.</p>}
           {result && !result.ok && result.needKey && <p style={{ fontSize: ".85rem", color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to the Vercel project to send for real.</p>}
           {result && !result.ok && !result.needKey && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{result.error}</p>}
         </div>

@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
         headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
           from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
-          to: [state.toEmail], subject: "Re: " + (state.subject || "your feedback"), text: emailText,
+          to: [state.toEmail], subject: "Re: " + (state.subject || "your feedback"), html: htmlEmail(next, answerUrl), text: emailText,
         }),
       });
       sent = r.ok;
@@ -88,6 +88,13 @@ function parseNumbered(text) {
 }
 function estMinutes(text) { const w = String(text || "").trim().split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 22)); }
 function footer(answerUrl) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime."; }
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function htmlEmail(body, answerUrl) {
+  const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
+  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
+    '<div style="margin:22px 0"><a href="' + esc(answerUrl) + '" style="display:inline-block;background:#b4532a;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Answer these questions →</a></div>' +
+    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p></div>';
+}
 function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 function decodeState(s) { try { return JSON.parse(Buffer.from(String(s || ""), "base64url").toString("utf8")); } catch (e) { return null; } }
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }

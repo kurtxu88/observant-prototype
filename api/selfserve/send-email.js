@@ -45,6 +45,7 @@ module.exports = async function handler(req, res) {
         from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
         to: [toEmail],
         subject: subject,
+        html: htmlEmail(body, answerUrl),
         text: emailText,
       }),
     });
@@ -80,4 +81,12 @@ function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("ba
 function footer(answerUrl) {
   return "\n\n———\nAnswer these here → " + answerUrl +
     "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime.";
+}
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function htmlEmail(body, answerUrl) {
+  const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
+  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' +
+    bodyHtml +
+    '<div style="margin:22px 0"><a href="' + esc(answerUrl) + '" style="display:inline-block;background:#b4532a;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Answer these questions →</a></div>' +
+    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p></div>';
 }

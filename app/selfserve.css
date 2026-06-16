@@ -2893,3 +2893,16 @@
 .jn-back { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0; }
 .jn-next { max-width: 440px; display: flex; flex-direction: column; gap: 12px; }
 .jn-rate-perks { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border, #e6e3dd); font-size: .88rem; color: var(--text-secondary, #6b665d); }
+
+/* 3-point exploration scale */
+.ss-temp-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ss-temp-opt { text-align: left; border: 1px solid var(--border,#e6e3dd); background: #fff; border-radius: 10px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+.ss-temp-opt b { font-size: .9rem; }
+.ss-temp-opt span { font-size: .78rem; color: var(--text-muted); line-height: 1.4; }
+.ss-temp-opt.on { border-color: var(--accent); background: #fbf3ee; box-shadow: 0 0 0 1px var(--accent) inset; }
+@media (max-width: 720px) { .ss-temp-3 { grid-template-columns: 1fr; } }
+
+/* Slack connect — sidebar card (separated + obvious) */
+.ss-slack-side { margin: 8px 0 4px; padding: 12px; border: 1px solid var(--accent); background: #fbf3ee; border-radius: 10px; }
+.ss-slack-side b { font-size: .84rem; display: block; }
+.ss-slack-side p { font-size: .75rem; color: var(--text-muted); margin: 4px 0 9px; line-height: 1.4; }
