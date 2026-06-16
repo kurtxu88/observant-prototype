@@ -5,7 +5,7 @@ const { useState: useStateSS, useEffect: useEffectSS } = React;
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "learning", label: "Questions", icon: "chat" },
+  { id: "learning", label: "Activity", icon: "chat" },
   { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
@@ -607,6 +607,9 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       <aside className="ss-sidebar">
         <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "home" })} aria-label="Go to Home">
           <Wordmark size="1.45rem" />
+        </button>
+        <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>
+          <Icon name="spark" size={16} /> Ask a question
         </button>
         <nav className="ss-nav">
           {SS_SECTIONS.map((item) => (

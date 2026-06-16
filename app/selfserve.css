@@ -2870,6 +2870,10 @@
 .ss-temp-ends { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; }
 .ss-temp-hint { font-size: 0.78rem; color: var(--text-muted); margin: 8px 0 0; }
 
+/* primary "Ask a question" action at the top of the sidebar */
+.ss-ask-cta { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin: 6px 0 16px; padding: 11px 14px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+.ss-ask-cta:hover { filter: brightness(1.07); }
+
 /* slack upsell — compact box at the bottom of the Questions page */
 .ss-slack-mini { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; }
 .ss-slack-mini-copy { display: flex; flex-direction: column; gap: 2px; }
