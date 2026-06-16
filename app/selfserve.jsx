@@ -886,17 +886,17 @@ function LearningView({ state, patchState, navigate }) {
 
   return (
     <div className="ss-page-stack">
-      <section className="ss-panel ss-slack-banner">
-        <div>
-          <PanelTitle k="Integrate" title="Ask straight from Slack" status="Recommended" />
-          <p className="ss-step-lead">Connect Slack and your team's questions relay here automatically — ask in your channel, your panel hears it, and responses start piping back within the hour.</p>
+      <AskPanel product={product} />
+
+      <section className="ss-panel ss-slack-mini">
+        <div className="ss-slack-mini-copy">
+          <b>Ask straight from Slack</b>
+          <span>Connect Slack and your team's questions relay here automatically — ask in your channel, responses pipe back within the hour.</span>
         </div>
         {slackConnected
-          ? <p className="ss-sent-note"><Icon name="check" size={15} sw={2.4} /> Slack connected — questions your team asks there will appear below.</p>
-          : <Btn variant="primary" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
+          ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Slack connected</span>
+          : <Btn variant="ghost" size="sm" onClick={() => setSlackConnected(true)}>Connect Slack</Btn>}
       </section>
-
-      <AskPanel product={product} />
 
     </div>
   );
