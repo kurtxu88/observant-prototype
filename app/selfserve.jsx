@@ -123,7 +123,8 @@ const SS_VIEW = (() => {
 // --- demo login gate: lets you log out and walk someone through setup again ---
 const SS_AUTH_KEY = "observant.auth";
 function ssIsAuthed() { try { return !!localStorage.getItem(SS_AUTH_KEY); } catch (e) { return false; } }
-function ssSetAuth(email) { try { localStorage.setItem(SS_AUTH_KEY, JSON.stringify({ email: email || "", at: Date.now() })); } catch (e) {} }
+function ssSetAuth(info) { try { const v = typeof info === "string" ? { email: info } : (info || {}); localStorage.setItem(SS_AUTH_KEY, JSON.stringify({ name: v.name || "", email: v.email || "", at: Date.now() })); } catch (e) {} }
+function ssAuth() { try { return JSON.parse(localStorage.getItem(SS_AUTH_KEY) || "{}"); } catch (e) { return {}; } }
 function ssLogout() { try { localStorage.removeItem(SS_AUTH_KEY); ssRemoveState(); } catch (e) {} window.location.href = "/"; }
 
 function LoginGate({ onLogin }) {
@@ -144,10 +145,10 @@ function LoginGate({ onLogin }) {
         <div className="ss-card-head"><span className="eyebrow gray">Sign in</span><h2>Continue to your workspace.</h2></div>
         <div className="ss-form-grid">
           <Field label="Your name"><input className="input" value={name} placeholder="Your name" onChange={(e) => setName(e.target.value)} /></Field>
-          <Field label="Work email"><input className="input" value={email} placeholder="you@company.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && ok) onLogin(email); }} /></Field>
+          <Field label="Work email"><input className="input" value={email} placeholder="you@company.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && ok) onLogin({ name, email }); }} /></Field>
         </div>
         <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" disabled={!ok} onClick={() => onLogin(email)}>Log in <Icon name="arrow" size={16} /></Btn>
+          <Btn variant="primary" size="lg" disabled={!ok} onClick={() => onLogin({ name, email })}>Log in <Icon name="arrow" size={16} /></Btn>
         </div>
         <p className="ss-fineprint">Demo login — no password. It just gates the flow so you can log out and show the setup again.</p>
       </main>
@@ -190,7 +191,9 @@ function SelfServeApp() {
   }, [state]);
 
   const createWorkspace = (form, mode) => {
-    setState(mode === "sample" ? SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE) : SelfServeData.createCustomState(form));
+    if (mode === "sample") { setState(SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE)); return; }
+    const auth = ssAuth();
+    setState(SelfServeData.createCustomState({ ...form, founderName: form.founderName || auth.name || "", email: form.email || auth.email || "" }));
   };
 
   const resetWorkspace = () => {
@@ -213,7 +216,7 @@ function SelfServeApp() {
   };
 
   if (!authed) {
-    return <LoginGate onLogin={(email) => { ssSetAuth(email); setAuthed(true); }} />;
+    return <LoginGate onLogin={(info) => { ssSetAuth(info); setAuthed(true); }} />;
   }
 
   if (!state) {
@@ -276,12 +279,6 @@ function EntryScreen({ onCreate }) {
           <h2>Start with the basics.</h2>
         </div>
         <div className="ss-form-grid">
-          <Field label="Your name">
-            <input className="input" value={form.founderName} placeholder="Your name" onChange={(e) => update("founderName", e.target.value)} />
-          </Field>
-          <Field label="Work email">
-            <input className="input" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} />
-          </Field>
           <Field label="Company or product name">
             <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
           </Field>
