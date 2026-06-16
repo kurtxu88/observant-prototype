@@ -808,6 +808,7 @@ function LearningView({ state, patchState, navigate }) {
         ) : (
           <div className="ss-panel-actions">
             <Btn variant="primary" onClick={submit} disabled={!question.trim()}><Icon name="spark" size={15} /> Ask the panel</Btn>
+            <Btn variant="ghost" onClick={() => window.open("/app/Thread.html?product=" + encodeURIComponent(product) + "&question=" + encodeURIComponent(question) + "&channel=email", "_blank")} disabled={!question.trim()}><Icon name="mail" size={15} /> Test run the email thread</Btn>
           </div>
         )}
       </section>
@@ -823,6 +824,7 @@ function LearningView({ state, patchState, navigate }) {
                 <div className={"ss-question-row" + ssFocusClass(state, loop.id)} key={loop.id}>
                   <p>{loop.question}</p>
                   <em>{collecting ? "collecting…" : (loop.people ? loop.people + " people · " + loop.memory + " replies" : "sent to your panel")}</em>
+                  <button type="button" onClick={() => window.open("/app/Thread.html?product=" + encodeURIComponent(product) + "&question=" + encodeURIComponent(loop.question) + "&channel=email", "_blank")} style={{ marginLeft: "auto", fontSize: ".8rem", color: "var(--accent,#b4532a)", background: "#fff", border: "1px solid var(--line,#e6e3dd)", borderRadius: "999px", padding: "4px 11px", cursor: "pointer", whiteSpace: "nowrap" }}>Test run →</button>
                 </div>
               );
             })}
