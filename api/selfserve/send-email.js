@@ -16,15 +16,16 @@ module.exports = async function handler(req, res) {
     const toEmail = limit(payload.toEmail, 160);
     const exploration = Number(payload.exploration);
     const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
+    const wishlist = limit(payload.wishlist, 500);
     if (!question) return res.status(200).json({ ok: false, error: "question is required" });
     if (!/.+@.+\..+/.test(toEmail)) return res.status(200).json({ ok: false, error: "a valid test email is required" });
 
     const base = "https://" + req.headers.host;
     // 1) C1 — translate the raw question into essence + the question set + subject
-    const t = await callSelf(base, { action: "translate", product, question });
+    const t = await callSelf(base, { action: "translate", product, question, wishlist });
     const plan = (t && t.plan) || { essence: question, questions: [question], subject: "A couple questions from the " + product + " team" };
     // 2) C2 — compose the actual opening email (batched, professional)
-    const turn = await callSelf(base, { action: "turn", product, channel: channel, exploration: isFinite(exploration) ? exploration : 0.5, plan, messages: [] });
+    const turn = await callSelf(base, { action: "turn", product, channel: channel, exploration: isFinite(exploration) ? exploration : 0.5, plan, wishlist, messages: [] });
     const subject = plan.subject || ("A couple questions from the " + product + " team");
     const body = (turn && turn.message) || "";
 

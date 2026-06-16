@@ -716,6 +716,7 @@ function AskPanel({ product }) {
   const [question, setQuestion] = useStateSS("");
   const [temp, setTemp] = useStateSS(0.5);
   const [channel, setChannel] = useStateSS("email");
+  const [wishlist, setWishlist] = useStateSS("");
   const [plan, setPlan] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
   const [testEmail, setTestEmail] = useStateSS("");
@@ -727,7 +728,7 @@ function AskPanel({ product }) {
     if (!question.trim()) return;
     setPreviewing(true); setErr(""); setResult(null);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question });
+      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question, wishlist });
       if (!t || !t.plan) throw new Error("couldn't compose the questions");
       setPlan(t.plan);
     } catch (e) { setErr(String(e.message || e)); }
@@ -738,7 +739,7 @@ function AskPanel({ product }) {
     if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel }));
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel, wishlist }));
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -750,10 +751,15 @@ function AskPanel({ product }) {
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setPlan(null); }} />
       </Field>
-      <Field label={"Exploration temperature — how far past your question Observant roams (" + temp.toFixed(1) + ")"}>
-        <input type="range" min="0" max="1" step="0.1" value={temp} onChange={(e) => setTemp(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--accent,#b4532a)" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".72rem", color: "#8a857c" }}><span>stick to the question</span><span>explore freely</span></div>
+      <Field label="Where should Observant dig deeper if it comes up? (optional)">
+        <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>
+      <div className="ss-temp">
+        <div className="ss-temp-head"><span className="ss-temp-label">Exploration temperature</span><span className="ss-temp-val">{temp.toFixed(1)}</span></div>
+        <input type="range" className="ss-range" min="0" max="1" step="0.1" value={temp} onChange={(e) => setTemp(Number(e.target.value))} style={{ background: "linear-gradient(to right, var(--accent) " + (temp * 100) + "%, #e6e3dd " + (temp * 100) + "%)" }} />
+        <div className="ss-temp-ends"><span>stick to the question</span><span>explore freely</span></div>
+        <p className="ss-temp-hint">How far past your question Observant roams when something interesting comes up.</p>
+      </div>
       <Field label="Channel">
         <select className="input" value={channel} onChange={(e) => setChannel(e.target.value)}>
           <option value="email">Email — one batched message</option>
