@@ -22,15 +22,25 @@ Tactical = bounded, about one specific behavior, feature, or moment ("did people
 One clean variable you could almost put a number on, vs. several things whose *interaction* is the point — a mental model, a tradeoff, a journey across steps. → *Multiple / interacting leans DEEP.*
 
 **3. Answer readiness — recallable vs. must-be-unfolded.**
-Is the answer something the person already has ready and can just state (a fact, a rating, a quick recent action), or is it a "why" / a story / a motivation that only surfaces by probing past the first thin answer ("it's fine") from several angles? → *Must-be-unfolded leans DEEP.*
+A **stated feeling, opinion, rating, or recent action is RECALLABLE** — they can just say it (light). *Must-be-unfolded* is ONLY for journey narratives and mental models, where the first answer is genuinely incomplete and must be reconstructed across several angles. **A feeling plus "why you feel that way" does NOT count as unfolds** — it's the normal light one-two punch. → *Must-be-unfolded leans DEEP.*
 
 **4. Context load — self-contained vs. needs setup.**
-Can it be asked cold and answered cleanly, or does it need back-and-forth first — to establish shared context, clarify what we mean, or understand the person's situation before the real question even lands? → *Needs-setup leans DEEP.*
+Can it be asked cold, or does the **question itself** need back-and-forth to even be understood? Only mark *needs-setup* when the QUESTION is unclear without clarification. **Do NOT infer needs-setup from the product being new/early-stage** — that's not about the question. → *Needs-setup leans DEEP.*
 
-## Integrating into a call
-- **Lean LIGHT** when the question is tactical, single-construct, recallable, and self-contained — you can clearly picture the 1–3 questions and a satisfying answer arriving in a reply or two.
-- **Lean DEEP** when two or more dimensions point deep, **or** when the *core* of the question is a single strongly-deep thing (e.g. it's fundamentally a "why does this happen" that no rating can answer).
-- **When genuinely on the fence, choose LIGHT.** Deep mode asks more of the user (a real 10 minutes), so don't impose it unless the question truly won't yield in two text rounds. Light can always escalate later; a needless deep ask burns goodwill. (Respect-attention, same as C3's energy rule.)
+## The decision — deep is the EXCEPTION, reserved for THREE archetypes
+Default is **LIGHT**. Go **DEEP only** when the question is fundamentally one of these three:
+1. **Strategic / generative discovery** — open, direction-shaping: "what's the real job they hire us for," "what should we build next," "what's missing here." Not a bounded question about a known thing.
+2. **Decision / journey narrative** — a multi-step sequence to reconstruct: "walk me through how you decided to cancel," "how did you end up choosing us over X."
+3. **Mental model** — how they categorize / make sense of a space, inferred through probing: "how do they think about where we fit in their stack."
+
+**Everything else is LIGHT — including things that *sound* deep but aren't:**
+- **Sentiment / opinion / feelings** — "how do they feel about X," "what do they think of X," *even "why do they feel that way."* This is the standard light one-two punch — *how do you feel → what do you think → why do you think so* — and light already gets one follow-up round, which covers the "why." Always light.
+- **"Why" behind a single specific behavior** — "why do they export to a spreadsheet," "why don't they invite teammates." Ask it behaviorally ("when you did X, what made you go that way?") + one follow-up. **A plain "why" is NOT a deep trigger.**
+- **Satisfaction, usage frequency, did-they-notice, recall of a recent action, ratings.**
+
+**The anti-inflation rule (the main thing to get right):** judge the question *as asked, at its natural scope.* Almost any question has deeper motivations underneath if you chase them — that is NOT a reason to go deep. Never escalate a feeling / opinion / single-behavior question to deep by imagining its deepest possible version. Deep = one of the three archetypes, full stop.
+
+**On the fence → LIGHT.** Deep asks 10 real minutes; reserve it. Light escalates later if answers come back thin.
 
 ---
 
@@ -67,8 +77,14 @@ Return JSON only:
 
 ## Calibration examples
 
-**Tactical → LIGHT.** *"Did people notice the new one-tap export, and are they using it?"* — single behavior, recallable, self-contained. High confidence two text questions get it. `mode: light`.
+**Sentiment about a feature → LIGHT.** *"How do they feel about the community feature?"* — a recallable reaction; the one-two punch (feel → think → why you think so) lands in text with one follow-up. `mode: light`. (Do NOT inflate "community" into motivations/social dynamics — judge as asked.)
 
-**Strategic / why → DEEP.** *"Why do power users still export to a spreadsheet instead of using our dashboards?"* — strategic, a motivation that must be unfolded (the first answer will be "habit, I guess"), multiple interacting constructs (trust, workflow, what the dashboard lacks). Two rounds won't reach the real reason. `mode: deep`, with a light fallback ("When you needed those numbers today, where did you actually go to get them — and why there?").
+**Satisfaction / opinion → LIGHT.** *"What do people think of the new pricing page?"*, *"How satisfied are people with onboarding?"* — recallable, single-construct. `mode: light`.
 
-**Borderline → LIGHT (default).** *"How do people feel about the new pricing page?"* — leans strategic and feeling-based, but it's a single construct and a recent, recallable reaction; a good open question plus one probe can land it in text. On the fence → `mode: light` (escalate later if answers come back thin).
+**"Why" behind one behavior → LIGHT.** *"Why do power users export to a spreadsheet instead of using dashboards?"* — ask it behaviorally ("when you needed those numbers, where'd you go, and what made you choose that?") + one follow-up. A plain "why" is not a deep trigger. `mode: light`.
+
+**Strategic / generative → DEEP.** *"What's the real job people hire us for?"*, *"What should we build next for power users?"* — open, direction-shaping, no bounded answer. `mode: deep`.
+
+**Decision / journey → DEEP.** *"Walk me through how you decided to cancel."*, *"How did you end up choosing us over a spreadsheet?"* — a multi-step sequence to reconstruct. `mode: deep`.
+
+**Mental model → DEEP.** *"How do builders think about where we fit alongside their other tools?"* — inferred through probing, not stated. `mode: deep`.

@@ -1,0 +1,28 @@
+{
+  "_note": "Ground-truth labels for the deep/light triage (C0). Light is the default; deep is reserved for 3 archetypes: strategic/generative discovery, decision/journey narrative, mental model. Edit `expect` to correct a label, then re-run scripts/eval-triage.mjs.",
+  "product": "AlphaCommons",
+  "cases": [
+    { "q": "how do they feel about the community feature", "expect": "light", "why": "sentiment about a feature" },
+    { "q": "what do people think of our pricing page", "expect": "light", "why": "opinion, recallable" },
+    { "q": "how satisfied are people with onboarding", "expect": "light", "why": "satisfaction" },
+    { "q": "do they like the new dashboard design", "expect": "light", "why": "opinion/sentiment" },
+    { "q": "how was their experience with support last time", "expect": "light", "why": "recent recall" },
+    { "q": "would they recommend us to a friend", "expect": "light", "why": "opinion/commitment" },
+    { "q": "how often do people use boards", "expect": "light", "why": "usage frequency" },
+    { "q": "what do they use boards for", "expect": "light", "why": "usage" },
+    { "q": "did people notice the new export button", "expect": "light", "why": "did-they-notice" },
+    { "q": "rate your satisfaction with exports", "expect": "light", "why": "rating" },
+    { "q": "what's confusing about the signup flow", "expect": "light", "why": "recallable reaction to a specific flow" },
+    { "q": "why do power users export to a spreadsheet instead of dashboards", "expect": "light", "why": "why behind a single behavior" },
+    { "q": "why don't they invite teammates", "expect": "light", "why": "why behind a single behavior" },
+    { "q": "why did they churn", "expect": "light", "why": "reason behind a behavior (vs the journey, which would be deep)" },
+    { "q": "how do they feel about the price, and would they pay more", "expect": "light", "why": "sentiment + willingness opinion" },
+    { "q": "what's the real job people hire us for", "expect": "deep", "why": "strategic/generative discovery" },
+    { "q": "what should we build next for power users", "expect": "deep", "why": "strategic/generative discovery" },
+    { "q": "what's missing in the builder-tools space", "expect": "deep", "why": "strategic/generative discovery" },
+    { "q": "walk me through how you decided to cancel", "expect": "deep", "why": "decision/journey narrative" },
+    { "q": "how did you end up choosing us over a spreadsheet", "expect": "deep", "why": "decision/journey narrative" },
+    { "q": "how do builders think about where we fit alongside their other tools", "expect": "deep", "why": "mental model" },
+    { "q": "how do people mentally categorize our product", "expect": "deep", "why": "mental model" }
+  ]
+}
