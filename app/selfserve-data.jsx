@@ -15,7 +15,6 @@ const SS_DEFAULT_WORKSPACE = {
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
   context: {
     goal3mo: "Get 30% of power users onto live dashboards (off spreadsheet exports) before the Series A raise.",
-    terms: "“Boards” = saved dashboards. “Pulls” = manual CSV exports. “Ops cadence” = the weekly metrics review most teams run.",
     priorLearning: "Support tickets suggest people don't trust auto-refreshed numbers; a few power users said boards 'can't be cut the way I need.' Unverified.",
     docs: [
       { id: "doc-prd", name: "Dashboards v2 PRD.pdf", note: "The redesign meant to replace spreadsheet exports." },
@@ -32,7 +31,7 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
   productDescription: "What your product helps people do.",
   userBase: "The people who use your product today.",
   learningGoal: "",
-  context: { goal3mo: "", terms: "", priorLearning: "", docs: [] },
+  context: { goal3mo: "", priorLearning: "", docs: [] },
 };
 
 const SS_GROUP_OPTIONS = [
@@ -145,13 +144,12 @@ function ssNormalizeContext(input, base) {
   const c = input || base || {};
   return {
     goal3mo: ssTrim(c.goal3mo, ""),
-    terms: ssTrim(c.terms, ""),
     priorLearning: ssTrim(c.priorLearning, ""),
-    docs: Array.isArray(c.docs) ? c.docs.filter(Boolean).map((d, i) => ({ id: d.id || "doc-" + i, name: ssTrim(d.name, "Untitled"), note: ssTrim(d.note, "") })) : [],
+    docs: Array.isArray(c.docs) ? c.docs.filter(Boolean).map((d, i) => ({ id: d.id || "doc-" + i, name: ssTrim(d.name, "Untitled"), note: ssTrim(d.note, ""), uploaded: !!d.uploaded })) : [],
   };
 }
 
-/* Completeness across the seven context areas the agent uses to tailor questions. */
+/* Completeness across the six context areas the agent uses to tailor questions. */
 function ssContextCompleteness(workspace) {
   const w = workspace || {};
   const c = w.context || {};
@@ -160,7 +158,6 @@ function ssContextCompleteness(workspace) {
     !!ssTrim(w.userBase, ""),
     !!ssTrim(w.productUrl, ""),
     !!ssTrim(c.goal3mo, ""),
-    !!ssTrim(c.terms, ""),
     !!ssTrim(c.priorLearning, ""),
     (c.docs || []).length > 0,
   ];
@@ -176,7 +173,6 @@ function ssContextSummary(workspace) {
   if (ssTrim(w.productDescription, "")) parts.push("PRODUCT: " + w.productDescription);
   if (ssTrim(w.userBase, "")) parts.push("USERS: " + w.userBase);
   if (ssTrim(c.goal3mo, "")) parts.push("3-MONTH GOAL: " + c.goal3mo);
-  if (ssTrim(c.terms, "")) parts.push("KEY TERMS: " + c.terms);
   if (ssTrim(c.priorLearning, "")) parts.push("ALREADY LEARNED / HYPOTHESES: " + c.priorLearning);
   if ((c.docs || []).length) parts.push("DOCS ON FILE: " + c.docs.map((d) => d.name + (d.note ? " (" + d.note + ")" : "")).join("; "));
   return parts.join("\n");

@@ -23,7 +23,7 @@ const SS_EMPTY_WORKSPACE_FORM = {
   productDescription: "",
   userBase: "",
   learningGoal: "",
-  context: { goal3mo: "", terms: "", priorLearning: "", docs: [] },
+  context: { goal3mo: "", priorLearning: "", docs: [] },
 };
 
 function ssLoadState() {
@@ -691,8 +691,14 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
+  const [navStack, setNavStack] = useStateSS([]);
 
   const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget }) => {
+    // remember where we are so any in-app jump is reversible
+    setNavStack((st) => st.concat([{
+      section: state.section, selectedConversationId: state.selectedConversationId,
+      selectedLoopId: state.selectedLoopId, focusedTarget: state.focusedTarget,
+    }]).slice(-25));
     patchState((current) => ({
       ...current,
       section: nextSection || current.section || "home",
@@ -700,6 +706,21 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       selectedLoopId: loopId || current.selectedLoopId,
       focusedTarget: focusedTarget || "",
     }));
+  };
+
+  const goBack = () => {
+    setNavStack((st) => {
+      if (!st.length) return st;
+      const prev = st[st.length - 1];
+      patchState((current) => ({
+        ...current,
+        section: prev.section || "home",
+        selectedConversationId: prev.selectedConversationId,
+        selectedLoopId: prev.selectedLoopId,
+        focusedTarget: prev.focusedTarget || "",
+      }));
+      return st.slice(0, -1);
+    });
   };
 
   return (
@@ -741,9 +762,12 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
 
       <div className="ss-app-main">
         <header className="ss-topbar">
-          <div>
-            <span className="ss-breadcrumb">{product}</span>
-            <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
+          <div className="ss-topbar-lead">
+            {navStack.length > 0 && <button type="button" className="ss-back-btn" onClick={goBack}><Icon name="back" size={15} /> Back</button>}
+            <div>
+              <span className="ss-breadcrumb">{product}</span>
+              <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
+            </div>
           </div>
           <div className="ss-topbar-actions">
             {ssWorkspaceIsCustom(state) && <span className="ss-sim-pill" title="The people and replies below are simulated — your real panel fills in after you send invites.">Simulated preview</span>}
@@ -856,33 +880,40 @@ function anMemory(product) {
 // The richer context fields (goal / terms / prior learning / docs) — reused in
 // onboarding and in the Ask-page "what Observant knows" panel.
 function ContextExtraFields({ value, onChange }) {
-  const c = value || { goal3mo: "", terms: "", priorLearning: "", docs: [] };
+  const c = value || { goal3mo: "", priorLearning: "", docs: [] };
   const set = (k, v) => onChange({ ...c, [k]: v });
   const docs = c.docs || [];
-  const addDoc = () => onChange({ ...c, docs: [...docs, { id: "doc-" + docs.length + "-" + Date.now(), name: "", note: "" }] });
   const setDoc = (i, k, v) => onChange({ ...c, docs: docs.map((d, j) => (j === i ? { ...d, [k]: v } : d)) });
   const rmDoc = (i) => onChange({ ...c, docs: docs.filter((_, j) => j !== i) });
+  const onUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const added = files.map((f, k) => ({ id: "doc-" + docs.length + k + "-" + (f.name.length), name: f.name, note: "", uploaded: true }));
+    onChange({ ...c, docs: [...docs, ...added] });
+    e.target.value = "";
+  };
   return (
     <>
       <Field label="Your 3-month business goal — the decision this learning serves" wide>
         <textarea className="textarea" value={c.goal3mo} placeholder="e.g. Get 30% of power users onto live dashboards before the raise." onChange={(e) => set("goal3mo", e.target.value)} />
       </Field>
-      <Field label="Key terms & jargon Observant should know" wide>
-        <textarea className="textarea" value={c.terms} placeholder="e.g. “Boards” = saved dashboards. “Pulls” = manual CSV exports." onChange={(e) => set("terms", e.target.value)} />
-      </Field>
       <Field label="What you've already learned / current hypotheses" wide>
         <textarea className="textarea" value={c.priorLearning} placeholder="e.g. We suspect people don't trust auto-refreshed numbers — unverified." onChange={(e) => set("priorLearning", e.target.value)} />
       </Field>
-      <Field label="Documents (PRDs, decks, research, support themes)" wide>
+      <Field label="Documents" wide>
+        <p className="ss-ctx-doc-hint">Anything that helps Observant understand your product and users — PRDs, pitch decks, past user research, support-ticket themes, onboarding docs, roadmaps. The more it has, the sharper its questions.</p>
         <div className="ss-ctx-docs">
           {docs.map((d, i) => (
             <div className="ss-ctx-doc" key={d.id || i}>
-              <input className="input" value={d.name} placeholder="Document name" onChange={(e) => setDoc(i, "name", e.target.value)} />
+              <span className="ss-ctx-doc-name">{d.uploaded && <Icon name="check" size={13} sw={2.4} />} {d.name || "Untitled"}</span>
               <input className="input" value={d.note} placeholder="One line on what it is (optional)" onChange={(e) => setDoc(i, "note", e.target.value)} />
               <button type="button" className="ss-ctx-doc-rm" onClick={() => rmDoc(i)} aria-label="Remove document">×</button>
             </div>
           ))}
-          <button type="button" className="ss-ctx-doc-add" onClick={addDoc}><Icon name="plus" size={14} /> Add a document</button>
+          <label className="ss-ctx-doc-upload">
+            <input type="file" multiple onChange={onUpload} style={{ display: "none" }} />
+            <Icon name="plus" size={14} /> Upload documents
+          </label>
         </div>
       </Field>
     </>
