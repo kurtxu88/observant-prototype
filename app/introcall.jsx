@@ -46,10 +46,22 @@ async function icPost(body) {
   return r.json();
 }
 
+// A deep-mode invitation link carries the deep plan (essence + threads) in ?d=
+function icDecodeState(s) {
+  try {
+    const b = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b + "===".slice((b.length + 3) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(pad))));
+  } catch (e) { return null; }
+}
+
 function IntroCall() {
   const params = new URLSearchParams(window.location.search);
   const product = (params.get("product") || "the product").trim();
-  const plan = icPlan(product);
+  const deep = (() => { const o = icDecodeState(params.get("d")); return (o && o.mode === "deep") ? o : null; })();
+  const plan = deep
+    ? { essence: deep.essence || ("A deeper conversation for the " + product + " team."), questions: (deep.threads && deep.threads.length ? deep.threads : icIntroQuestions(product)), subject: "" }
+    : icPlan(product);
 
   const [messages, setMessages] = useIC([]);
   const [draft, setDraft] = useIC("");
