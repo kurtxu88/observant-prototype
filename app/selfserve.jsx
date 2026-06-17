@@ -175,6 +175,7 @@ function SelfServeApp() {
   const [copied, setCopied] = useStateSS("");
   const [authed, setAuthed] = useStateSS(() => ssIsAuthed());
   const [showLogin, setShowLogin] = useStateSS(false);
+  const [editingProduct, setEditingProduct] = useStateSS(false);
 
   useEffectSS(() => {
     if (state) ssSaveState(state);
@@ -223,24 +224,39 @@ function SelfServeApp() {
     return <LoginGate onLogin={(info) => { ssSetAuth(info); setAuthed(true); setShowLogin(false); }} onBack={() => setShowLogin(false)} />;
   }
 
-  // Onboarding (steps 1-3) until there's a workspace.
+  // Step 1 (Product + account) until there's a workspace.
   if (!state) {
     return (
       <OnboardingWizard
-        authed={authed}
+        initial={null}
         onLogin={() => setShowLogin(true)}
         onSample={() => { if (!authed) { ssSetAuth({ name: "Demo workspace", email: "demo@observant.dev" }); setAuthed(true); } createWorkspace(SS_DEFAULT_WORKSPACE, "sample"); }}
-        onComplete={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } createWorkspace(form, "custom"); }}
+        onSubmit={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } createWorkspace(form, "custom"); }}
       />
     );
   }
 
-  // Steps 4-6 (program/surface/review) — ActivationScreen renders the shared bar.
+  // Editing product context (Back from the Program step).
+  if (!state.launched && editingProduct) {
+    return (
+      <OnboardingWizard
+        initial={state.workspace}
+        onBack={() => setEditingProduct(false)}
+        onSubmit={(form) => {
+          patchState((current) => ({ ...current, workspace: { ...current.workspace, founderName: form.founderName, email: form.email, companyName: form.companyName, productUrl: form.productUrl, productDescription: form.productDescription, userBase: form.userBase, learningGoal: form.learningGoal } }));
+          setEditingProduct(false);
+        }}
+      />
+    );
+  }
+
+  // Steps 2-4 (program/surface/review) — ActivationScreen renders the shared bar.
   if (!state.launched) {
     return (
       <ActivationScreen
         state={state}
         patchState={patchState}
+        onBackToProduct={() => setEditingProduct(true)}
         onLaunch={() => patchState((current) => ({
           ...current,
           launched: true,
@@ -265,13 +281,12 @@ function SelfServeApp() {
   );
 }
 
-// The whole onboarding, as one progress bar: pre-account steps (Product, Context,
-// Account) live in OnboardingWizard; the last three (Program, Surface, Review)
-// are ActivationScreen — both render the SAME bar so it's one continuous flow.
+// The whole onboarding, as one progress bar. Step 1 (Product — with account at the
+// top) lives in OnboardingWizard; the last three (Program, Surface, Review) are
+// ActivationScreen. Both render the SAME bar so it's one continuous flow. Richer
+// context (goal/learned/docs) is NOT a step — it lives on the dashboard Context page.
 const SS_ONBOARD_FLOW = [
   { id: "product", label: "Product" },
-  { id: "context", label: "Context" },
-  { id: "account", label: "Account" },
   { id: "program", label: "Program" },
   { id: "surface", label: "Surface" },
   { id: "review", label: "Review" },
@@ -290,16 +305,17 @@ function OnboardingBar({ current }) {
   );
 }
 
-// Steps 1-3 of onboarding: Product basics, (skippable) richer Context, then Account.
-function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
-  const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
-  const [step, setStep] = useStateSS(0); // 0 product, 1 context, 2 account
+// Step 1 of onboarding: your account (name + work email) up top, then product
+// context. No separate account/context steps. Richer context lives on the dashboard.
+// `initial` set => editing an existing draft (Back returns to Activation).
+function OnboardingWizard({ initial, onSubmit, onBack, onSample, onLogin }) {
+  const editing = !!initial;
+  const [form, setForm] = useStateSS(() => editing ? { ...SS_EMPTY_WORKSPACE_FORM, ...initial } : { ...SS_EMPTY_WORKSPACE_FORM });
   const [drafting, setDrafting] = useStateSS(false);
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const canProduct = form.companyName.trim();
   const acctOk = (form.email || "").includes("@") && (form.email || "").includes(".");
+  const ready = form.companyName.trim() && acctOk;
 
-  // Read the product's site and draft "what does it do" from it.
   async function draftFromSite() {
     if (!form.productUrl.trim() || drafting) return;
     setDrafting(true);
@@ -310,8 +326,7 @@ function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
     setDrafting(false);
   }
 
-  // Leaving context: signed-in users skip the account step.
-  const leaveContext = () => (authed ? onComplete(form, null) : setStep(2));
+  const submit = () => onSubmit(form, editing ? null : { name: form.founderName, email: form.email });
 
   return (
     <div className="ss-entry">
@@ -330,70 +345,44 @@ function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
       </div>
 
       <main className="ss-entry-card">
-        <OnboardingBar current={step} />
-
-        {step === 0 && (
-          <>
-            <div className="ss-card-head"><span className="eyebrow gray">About your product</span><h2>Start with the basics.</h2></div>
-            <div className="ss-form-grid">
-              <Field label="Company or product name">
-                <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
-              </Field>
-              <Field label="Product URL">
-                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} onBlur={() => { if (form.productUrl.trim() && !form.productDescription.trim()) draftFromSite(); }} />
-              </Field>
-              <Field label="What does it do?" wide>
-                <textarea className="textarea" value={form.productDescription} placeholder={drafting ? "Reading your site and drafting this…" : "Drop your URL above and Observant drafts this from your site — or write a sentence yourself."} onChange={(e) => update("productDescription", e.target.value)} />
-                {form.productUrl.trim() && (
-                  <button type="button" className="ss-linklike ss-draft-btn" onClick={draftFromSite} disabled={drafting}>
-                    <Icon name="spark" size={13} /> {drafting ? "Drafting from your site…" : (form.productDescription.trim() ? "Re-draft from site" : "Draft from site")}
-                  </button>
-                )}
-              </Field>
-              <Field label="Who uses it today?" wide>
-                <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
-              </Field>
-              <Field label="Top-of-mind questions you'd like to learn from users? (optional)" wide>
-                <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you can feed Observant questions anytime. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
-              </Field>
-            </div>
-            <div className="ss-entry-actions">
-              <Btn variant="primary" size="lg" disabled={!canProduct} onClick={() => setStep(1)}>Continue <Icon name="arrow" size={16} /></Btn>
-              <Btn variant="ghost" size="lg" onClick={onSample}>Use the sample workspace</Btn>
-            </div>
-            <p className="ss-fineprint">Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>.</p>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <div className="ss-card-head"><span className="eyebrow gray">Context · optional</span><h2>Give Observant more to work with.</h2></div>
-            <p className="ss-step-lead">The more Observant knows — your goal, your jargon, what you've already learned — the sharper every future question. You can skip this and add it anytime later.</p>
-            <div className="ss-form-grid">
-              <ContextExtraFields value={form.context} onChange={(ctx) => update("context", ctx)} />
-            </div>
-            <div className="ss-entry-actions">
-              <Btn variant="primary" size="lg" onClick={leaveContext}>Continue <Icon name="arrow" size={16} /></Btn>
-              <Btn variant="ghost" size="lg" onClick={leaveContext}>Skip for now</Btn>
-            </div>
-            <p className="ss-fineprint"><button type="button" className="ss-linklike" onClick={() => setStep(0)}>← Back</button></p>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div className="ss-card-head"><span className="eyebrow gray">Create your account</span><h2>Save this and continue.</h2></div>
-            <p className="ss-step-lead">Create your Observant account to keep your workspace and pick up where you left off.</p>
-            <div className="ss-form-grid">
-              <Field label="Your name"><input className="input" value={form.founderName} placeholder="Your name" onChange={(e) => update("founderName", e.target.value)} /></Field>
-              <Field label="Work email"><input className="input" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && acctOk) onComplete(form, { name: form.founderName, email: form.email }); }} /></Field>
-            </div>
-            <div className="ss-entry-actions">
-              <Btn variant="primary" size="lg" disabled={!acctOk} onClick={() => onComplete(form, { name: form.founderName, email: form.email })}>Create account <Icon name="arrow" size={16} /></Btn>
-            </div>
-            <p className="ss-fineprint"><button type="button" className="ss-linklike" onClick={() => setStep(1)}>← Back</button> · Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>. Demo — no password.</p>
-          </>
-        )}
+        <OnboardingBar current={0} />
+        <div className="ss-card-head"><span className="eyebrow gray">You &amp; your product</span><h2>Start with the basics.</h2></div>
+        <div className="ss-form-grid">
+          <Field label="Your name">
+            <input className="input" value={form.founderName} placeholder="Your name" onChange={(e) => update("founderName", e.target.value)} />
+          </Field>
+          <Field label="Work email">
+            <input className="input" type="email" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} />
+          </Field>
+          <Field label="Company or product name">
+            <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
+          </Field>
+          <Field label="Product URL">
+            <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} onBlur={() => { if (form.productUrl.trim() && !form.productDescription.trim()) draftFromSite(); }} />
+          </Field>
+          <Field label="What does it do?" wide>
+            <textarea className="textarea" value={form.productDescription} placeholder={drafting ? "Reading your site and drafting this…" : "Drop your URL above and Observant drafts this from your site — or write a sentence yourself."} onChange={(e) => update("productDescription", e.target.value)} />
+            {form.productUrl.trim() && (
+              <button type="button" className="ss-linklike ss-draft-btn" onClick={draftFromSite} disabled={drafting}>
+                <Icon name="spark" size={13} /> {drafting ? "Drafting from your site…" : (form.productDescription.trim() ? "Re-draft from site" : "Draft from site")}
+              </button>
+            )}
+          </Field>
+          <Field label="Who uses it today?" wide>
+            <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
+          </Field>
+          <Field label="Top-of-mind questions you'd like to learn from users? (optional)" wide>
+            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you can feed Observant questions anytime. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
+          </Field>
+        </div>
+        <p className="ss-fineprint">Want to add your 3-month goal, prior learning, or docs? You can do that anytime from the <b>Context</b> page on your dashboard — it makes every question sharper.</p>
+        <div className="ss-entry-actions">
+          <Btn variant="primary" size="lg" disabled={!ready} onClick={submit}>{editing ? "Save & continue" : "Continue"} <Icon name="arrow" size={16} /></Btn>
+          {editing
+            ? <Btn variant="ghost" size="lg" onClick={onBack}><Icon name="back" size={16} /> Back</Btn>
+            : <Btn variant="ghost" size="lg" onClick={onSample}>Use the sample workspace</Btn>}
+        </div>
+        {!editing && <p className="ss-fineprint">Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>. Demo — no password.</p>}
       </main>
     </div>
   );
@@ -410,7 +399,7 @@ const SS_CONNECT_OPTIONS = [
   { id: "inproduct", icon: "globe", title: "Connect inside your product", text: "Observant loads with a hashed user ID you pass it, so it always knows who it's talking to — without ever holding your real user data.", tag: "One-time setup" },
 ];
 
-function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
+function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const [step, setStep] = useStateSS(0);
@@ -494,7 +483,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         </div>
       </header>
 
-      <div className="ss-activation-bar"><OnboardingBar current={3 + step} /></div>
+      <div className="ss-activation-bar"><OnboardingBar current={1 + step} /></div>
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
@@ -644,8 +633,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
           )}
 
           <div className="ss-onboard-nav">
-            {step > 0 ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn> : <span />}
-            <span className="count">{(step + 1) + " / " + SS_ONBOARD_STEPS.length}</span>
+            {step > 0
+              ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
+              : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
+            <span className="count">{"Step " + (step + 2) + " of " + SS_ONBOARD_FLOW.length}</span>
             {step < SS_ONBOARD_STEPS.length - 1
               ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
               : <span />}
