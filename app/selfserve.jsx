@@ -129,7 +129,7 @@ function ssSetAuth(info) { try { const v = typeof info === "string" ? { email: i
 function ssAuth() { try { return JSON.parse(localStorage.getItem(SS_AUTH_KEY) || "{}"); } catch (e) { return {}; } }
 function ssLogout() { try { localStorage.removeItem(SS_AUTH_KEY); ssRemoveState(); } catch (e) {} window.location.href = "/"; }
 
-function LoginGate({ onLogin }) {
+function LoginGate({ onLogin, onBack }) {
   const [name, setName] = useStateSS("");
   const [email, setEmail] = useStateSS("");
   const ok = email.includes("@") && email.includes(".");
@@ -138,9 +138,9 @@ function LoginGate({ onLogin }) {
       <div className="ss-entry-left">
         <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
         <div className="ss-entry-copy">
-          <span className="eyebrow">Welcome</span>
+          <span className="eyebrow">Welcome back</span>
           <h1>Log in to Observant.</h1>
-          <p>Set up your program, see your dashboard, and test-run the experience. Log out anytime to walk someone else through it from the top.</p>
+          <p>Pick up your workspace where you left off. New here? Head back to set up your product first.</p>
         </div>
       </div>
       <main className="ss-entry-card">
@@ -152,7 +152,7 @@ function LoginGate({ onLogin }) {
         <div className="ss-entry-actions">
           <Btn variant="primary" size="lg" disabled={!ok} onClick={() => onLogin({ name, email })}>Log in <Icon name="arrow" size={16} /></Btn>
         </div>
-        <p className="ss-fineprint">Demo login — no password. It just gates the flow so you can log out and show the setup again.</p>
+        <p className="ss-fineprint">{onBack && <><button type="button" className="ss-linklike" onClick={onBack}>← Back to setup</button> · </>}Demo login — no password.</p>
       </main>
     </div>
   );
@@ -174,6 +174,7 @@ function SelfServeApp() {
   });
   const [copied, setCopied] = useStateSS("");
   const [authed, setAuthed] = useStateSS(() => ssIsAuthed());
+  const [showLogin, setShowLogin] = useStateSS(false);
 
   useEffectSS(() => {
     if (state) ssSaveState(state);
@@ -217,14 +218,24 @@ function SelfServeApp() {
     setTimeout(() => setCopied(""), 1400);
   };
 
-  if (!authed) {
-    return <LoginGate onLogin={(info) => { ssSetAuth(info); setAuthed(true); }} />;
+  // Returning users can reach login; it's a side door, not the front door.
+  if (showLogin && !authed && !(state && state.launched)) {
+    return <LoginGate onLogin={(info) => { ssSetAuth(info); setAuthed(true); setShowLogin(false); }} onBack={() => setShowLogin(false)} />;
   }
 
+  // Onboarding (steps 1-3) until there's a workspace.
   if (!state) {
-    return <EntryScreen onCreate={createWorkspace} />;
+    return (
+      <OnboardingWizard
+        authed={authed}
+        onLogin={() => setShowLogin(true)}
+        onSample={() => { if (!authed) { ssSetAuth({ name: "Demo workspace", email: "demo@observant.dev" }); setAuthed(true); } createWorkspace(SS_DEFAULT_WORKSPACE, "sample"); }}
+        onComplete={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } createWorkspace(form, "custom"); }}
+      />
+    );
   }
 
+  // Steps 4-6 (program/surface/review) — ActivationScreen renders the shared bar.
   if (!state.launched) {
     return (
       <ActivationScreen
@@ -254,20 +265,50 @@ function SelfServeApp() {
   );
 }
 
-function EntryScreen({ onCreate }) {
+// The whole onboarding, as one progress bar: pre-account steps (Product, Context,
+// Account) live in OnboardingWizard; the last three (Program, Surface, Review)
+// are ActivationScreen — both render the SAME bar so it's one continuous flow.
+const SS_ONBOARD_FLOW = [
+  { id: "product", label: "Product" },
+  { id: "context", label: "Context" },
+  { id: "account", label: "Account" },
+  { id: "program", label: "Program" },
+  { id: "surface", label: "Surface" },
+  { id: "review", label: "Review" },
+];
+
+function OnboardingBar({ current }) {
+  return (
+    <ol className="ss-onboard-bar" aria-label="Setup progress">
+      {SS_ONBOARD_FLOW.map((s, i) => (
+        <li key={s.id} className={"ss-onboard-bstep" + (i < current ? " done" : i === current ? " on" : "")}>
+          <span className="ss-onboard-bdot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+          <span className="ss-onboard-blabel">{s.label}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// Steps 1-3 of onboarding: Product basics, (skippable) richer Context, then Account.
+function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
   const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
-  const [more, setMore] = useStateSS(false);
+  const [step, setStep] = useStateSS(0); // 0 product, 1 context, 2 account
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const canCreate = form.companyName.trim();
+  const canProduct = form.companyName.trim();
+  const acctOk = (form.email || "").includes("@") && (form.email || "").includes(".");
+
+  // Leaving context: signed-in users skip the account step.
+  const leaveContext = () => (authed ? onComplete(form, null) : setStep(2));
 
   return (
     <div className="ss-entry">
       <div className="ss-entry-left">
         <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
         <div className="ss-entry-copy">
-          <span className="eyebrow">Step 1 · Product context</span>
-          <h1>Tell Observant about your product.</h1>
-          <p>This is all Observant needs to start — enough to know <b>who to talk to</b> and how to run <b>continuous, one-on-one learning</b> for you.</p>
+          <span className="eyebrow">Get started</span>
+          <h1>Set up Observant.</h1>
+          <p>A few steps and Observant starts learning from your users one-on-one — continuously, on their own time.</p>
         </div>
         <div className="ss-proof-grid" aria-label="Product signals">
           <div><b>1:1</b><span>with every user</span></div>
@@ -277,42 +318,65 @@ function EntryScreen({ onCreate }) {
       </div>
 
       <main className="ss-entry-card">
-        <div className="ss-card-head">
-          <span className="eyebrow gray">About your product</span>
-          <h2>Start with the basics.</h2>
-        </div>
-        <div className="ss-form-grid">
-          <Field label="Company or product name">
-            <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
-          </Field>
-          <Field label="Product URL">
-            <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
-          </Field>
-          <Field label="What does it do?" wide>
-            <textarea className="textarea" value={form.productDescription} placeholder="A reporting tool for ops teams. / A habit app for runners. — a sentence is plenty." onChange={(e) => update("productDescription", e.target.value)} />
-          </Field>
-          <Field label="Who uses it today?" wide>
-            <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
-          </Field>
-          <Field label="What are some top-of-mind questions you'd like to learn from users? (optional)" wide>
-            <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other channels. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
-          </Field>
-        </div>
+        <OnboardingBar current={step} />
 
-        <button type="button" className="ss-entry-more" onClick={() => setMore((m) => !m)}>
-          <Icon name={more ? "x" : "plus"} size={15} /> Add richer context — your goal, jargon, and docs <em>(optional, makes every future question sharper)</em>
-        </button>
-        {more && (
-          <div className="ss-form-grid ss-entry-more-grid">
-            <ContextExtraFields value={form.context} onChange={(ctx) => update("context", ctx)} />
-          </div>
+        {step === 0 && (
+          <>
+            <div className="ss-card-head"><span className="eyebrow gray">About your product</span><h2>Start with the basics.</h2></div>
+            <div className="ss-form-grid">
+              <Field label="Company or product name">
+                <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
+              </Field>
+              <Field label="Product URL">
+                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
+              </Field>
+              <Field label="What does it do?" wide>
+                <textarea className="textarea" value={form.productDescription} placeholder="A reporting tool for ops teams. / A habit app for runners. — a sentence is plenty." onChange={(e) => update("productDescription", e.target.value)} />
+              </Field>
+              <Field label="Who uses it today?" wide>
+                <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
+              </Field>
+              <Field label="Top-of-mind questions you'd like to learn from users? (optional)" wide>
+                <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you can feed Observant questions anytime. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
+              </Field>
+            </div>
+            <div className="ss-entry-actions">
+              <Btn variant="primary" size="lg" disabled={!canProduct} onClick={() => setStep(1)}>Continue <Icon name="arrow" size={16} /></Btn>
+              <Btn variant="ghost" size="lg" onClick={onSample}>Use the sample workspace</Btn>
+            </div>
+            <p className="ss-fineprint">Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>.</p>
+          </>
         )}
 
-        <div className="ss-entry-actions">
-          <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Continue <Icon name="arrow" size={16} /></Btn>
-          <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Use the sample workspace</Btn>
-        </div>
-        <p className="ss-fineprint">Set up your program in a couple of minutes — you can change any of this later.</p>
+        {step === 1 && (
+          <>
+            <div className="ss-card-head"><span className="eyebrow gray">Context · optional</span><h2>Give Observant more to work with.</h2></div>
+            <p className="ss-step-lead">The more Observant knows — your goal, your jargon, what you've already learned — the sharper every future question. You can skip this and add it anytime later.</p>
+            <div className="ss-form-grid">
+              <ContextExtraFields value={form.context} onChange={(ctx) => update("context", ctx)} />
+            </div>
+            <div className="ss-entry-actions">
+              <Btn variant="primary" size="lg" onClick={leaveContext}>Continue <Icon name="arrow" size={16} /></Btn>
+              <Btn variant="ghost" size="lg" onClick={leaveContext}>Skip for now</Btn>
+            </div>
+            <p className="ss-fineprint"><button type="button" className="ss-linklike" onClick={() => setStep(0)}>← Back</button></p>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <div className="ss-card-head"><span className="eyebrow gray">Create your account</span><h2>Save this and continue.</h2></div>
+            <p className="ss-step-lead">Create your Observant account to keep your workspace and pick up where you left off.</p>
+            <div className="ss-form-grid">
+              <Field label="Your name"><input className="input" value={form.founderName} placeholder="Your name" onChange={(e) => update("founderName", e.target.value)} /></Field>
+              <Field label="Work email"><input className="input" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && acctOk) onComplete(form, { name: form.founderName, email: form.email }); }} /></Field>
+            </div>
+            <div className="ss-entry-actions">
+              <Btn variant="primary" size="lg" disabled={!acctOk} onClick={() => onComplete(form, { name: form.founderName, email: form.email })}>Create account <Icon name="arrow" size={16} /></Btn>
+            </div>
+            <p className="ss-fineprint"><button type="button" className="ss-linklike" onClick={() => setStep(1)}>← Back</button> · Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>. Demo — no password.</p>
+          </>
+        )}
       </main>
     </div>
   );
@@ -413,19 +477,13 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace }) {
         </div>
       </header>
 
+      <div className="ss-activation-bar"><OnboardingBar current={3 + step} /></div>
+
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
           <span className="eyebrow">Getting started</span>
-          <h1>Set up Observant.</h1>
-          <p>A few choices and Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
-          <ol className="ss-checks ss-onboard-rail">
-            {SS_ONBOARD_STEPS.map((s, i) => (
-              <li key={s.id} className={i === step ? "active" : i < step ? "done" : ""}>
-                <span>{i < step ? <Icon name="check" size={13} sw={2.4} /> : i + 1}</span>
-                <div className="ss-check-label"><b>{s.t}</b><em>{s.d}</em></div>
-              </li>
-            ))}
-          </ol>
+          <h1>{SS_ONBOARD_STEPS[step] ? SS_ONBOARD_STEPS[step].t : "Set up Observant."}</h1>
+          <p>{SS_ONBOARD_STEPS[step] ? SS_ONBOARD_STEPS[step].d : ""} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
         </aside>
 
         <main className="ss-activation-main">
