@@ -2919,6 +2919,16 @@
 .ss-entry-more em { font-style: normal; color: var(--text-muted); font-weight: 400; }
 .ss-entry-more-grid { margin-top: 12px; }
 
+/* Ask — one-question-per-box intake with + */
+.ss-ask-qs { display: flex; flex-direction: column; gap: 8px; }
+.ss-ask-q { position: relative; display: flex; align-items: flex-start; gap: 6px; }
+.ss-ask-q .textarea { flex: 1; min-height: 52px; }
+.ss-ask-q-rm { flex: none; width: 28px; height: 28px; border: none; background: #f0ece4; color: #8a857c; border-radius: 7px; font-size: 1.1rem; line-height: 1; cursor: pointer; margin-top: 4px; }
+.ss-ask-q-rm:hover { background: #e7ddd2; color: #b4291f; }
+.ss-ask-add { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px dashed var(--border,#cfc8bd); border-radius: 8px; padding: 6px 11px; font: inherit; font-size: .82rem; color: var(--accent); cursor: pointer; }
+.ss-ask-add:hover { border-color: var(--accent); }
+.ss-ask-hint { font-size: .78rem; color: var(--text-muted); margin: 8px 0 0; }
+
 /* Ask — instant skeleton while the preview composes */
 .ss-skel-card { background: #f4efe6; border: 1px solid #ece5d8; }
 .ss-skel-line { height: 12px; border-radius: 6px; margin: 9px 0; background: linear-gradient(90deg, #ece7de 25%, #f6f2ea 37%, #ece7de 63%); background-size: 400% 100%; animation: ss-shimmer 1.3s ease-in-out infinite; }

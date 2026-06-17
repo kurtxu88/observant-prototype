@@ -16,15 +16,19 @@ const EV_DEFAULT = {
     { q: "did people notice the new export button", expect: "light" },
     { q: "what's confusing about the signup flow", expect: "light" },
     { q: "why do power users export to a spreadsheet instead of dashboards", expect: "light" },
-    { q: "why did they churn", expect: "light" },
-    { q: "what's the real job people hire us for", expect: "deep" },
+    { q: "what's the real job people hire us for", expect: "light" },
+    { q: "how important is the community board vs recruiting privately", expect: "light" },
+    { q: "what are people's complaints and struggles", expect: "light" },
+    { q: "why did they churn", expect: "deep" },
+    { q: "what do people think of our pricing", expect: "deep" },
+    { q: "how do people use competitors", expect: "deep" },
     { q: "what should we build next for power users", expect: "deep" },
-    { q: "walk me through how you decided to cancel", expect: "deep" },
-    { q: "how did you end up choosing us over a spreadsheet", expect: "deep" },
     { q: "how do builders think about where we fit alongside their other tools", expect: "deep" },
+    { q: "how do people mentally categorize our product", expect: "deep" },
   ],
 };
-function evLoad() { try { const s = JSON.parse(localStorage.getItem(EV_KEY) || "null"); if (s && Array.isArray(s.cases)) return s; } catch (e) {} return EV_DEFAULT; }
+const EV_VERSION = 2; // bump to push a fresh default over a stale localStorage set
+function evLoad() { try { const s = JSON.parse(localStorage.getItem(EV_KEY) || "null"); if (s && Array.isArray(s.cases) && s.v === EV_VERSION) return s; } catch (e) {} return EV_DEFAULT; }
 
 function EvalApp() {
   const init = evLoad();
@@ -33,7 +37,7 @@ function EvalApp() {
   const [results, setResults] = useEV({}); // index -> {got, why}
   const [running, setRunning] = useEV(false);
   const [copied, setCopied] = useEV(false);
-  useEVfx(() => { try { localStorage.setItem(EV_KEY, JSON.stringify({ product, cases })); } catch (e) {} }, [product, cases]);
+  useEVfx(() => { try { localStorage.setItem(EV_KEY, JSON.stringify({ v: EV_VERSION, product, cases })); } catch (e) {} }, [product, cases]);
 
   const setCase = (i, patch) => setCases((cs) => cs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   const addCase = () => setCases((cs) => [...cs, { q: "", expect: "light" }]);

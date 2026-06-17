@@ -111,16 +111,17 @@ function stripHtml(html) {
 
 /* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
 async function classifyDepth(payload) {
-  const question = limit(payload.question, 500);
+  const question = limit(payload.question, 800);
   const product = limit(payload.product, 100) || "the product";
   const context = limit(payload.context, 2000);
   const memory = limit(payload.memory, 1200);
+  const questionCount = Math.max(1, Number(payload.questionCount) || 1);
   const system = readPrompt("C0-triage.md");
   const user =
     "PRODUCT: " + product + "\n" +
     (context ? "CONTEXT: " + context + "\n" : "") +
     (memory ? "WHAT WE ALREADY KNOW ABOUT THIS PERSON: " + memory + "\n" : "") +
-    'TEAM QUESTION: "' + question + '"\n\n' +
+    "TEAM QUESTION" + (questionCount > 1 ? "S (" + questionCount + " distinct asks — apply the volume rule: 2-3+ leans DEEP)" : "") + ":\n" + question + "\n\n" +
     'Make the depth call. Return JSON only in the schema from your instructions ' +
     '({mode, rationale, dimensions:{scope,constructs,answerReadiness,contextLoad}, deepPlan}). ' +
     "deepPlan must be null when mode is light.";

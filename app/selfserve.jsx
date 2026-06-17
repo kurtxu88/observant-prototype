@@ -978,8 +978,13 @@ function ContextPanel({ state, patchState, bare }) {
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
 function AskPanel({ product, state, patchState, navigate }) {
-  const [question, setQuestion] = useStateSS("");
+  const [questions, setQuestions] = useStateSS([""]);
   const [wishlist, setWishlist] = useStateSS("");
+  const setQ = (i, v) => { setQuestions((qs) => qs.map((q, j) => (j === i ? v : q))); setTri(null); };
+  const addQ = () => setQuestions((qs) => qs.concat([""]));
+  const rmQ = (i) => { setQuestions((qs) => qs.length > 1 ? qs.filter((_, j) => j !== i) : qs); setTri(null); };
+  const askList = questions.map((q) => q.trim()).filter(Boolean);
+  const askJoined = askList.map((q, i) => (askList.length > 1 ? (i + 1) + ". " : "") + q).join("\n");
   const [tri, setTri] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
   const [testEmail, setTestEmail] = useStateSS("");
@@ -993,11 +998,11 @@ function AskPanel({ product, state, patchState, navigate }) {
   const comp = SelfServeData.contextCompleteness(state.workspace);
 
   async function preview() {
-    if (!question.trim()) return;
+    if (!askList.length) return;
     setTri(null); setPreviewing(true); setErr(""); setResult(null);
     setTimeout(() => { const el = document.getElementById("ss-preview-out"); if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
+      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question: askJoined, questionCount: askList.length, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
       if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
       setTri(t);
     } catch (e) { setErr(String(e.message || e)); }
@@ -1005,10 +1010,10 @@ function AskPanel({ product, state, patchState, navigate }) {
   }
 
   async function sendTest() {
-    if (!testEmail.includes("@") || !question.trim()) return;
+    if (!testEmail.includes("@") || !askList.length) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null }));
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question: askJoined, questionCount: askList.length, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null }));
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -1023,15 +1028,24 @@ function AskPanel({ product, state, patchState, navigate }) {
         <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
       </button>
 
-      <Field label="Your question">
-        <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
+      <Field label={questions.length > 1 ? "Your questions" : "Your question"}>
+        <div className="ss-ask-qs">
+          {questions.map((q, i) => (
+            <div className="ss-ask-q" key={i}>
+              <textarea className="textarea" value={q} placeholder={i === 0 ? "One question — e.g. How do people use " + product + " day-to-day?" : "Another question…"} onChange={(e) => setQ(i, e.target.value)} />
+              {questions.length > 1 && <button type="button" className="ss-ask-q-rm" onClick={() => rmQ(i)} aria-label="Remove question">×</button>}
+            </div>
+          ))}
+        </div>
+        <button type="button" className="ss-ask-add" onClick={addQ}><Icon name="plus" size={13} /> Add another question</button>
+        <p className="ss-ask-hint">One question per box. More questions → a heavier, likely 10-minute conversation.</p>
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <Field label="Where should Observant dig deeper if it comes up? (optional)">
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>
       <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
+        <Btn variant="primary" onClick={preview} disabled={!askList.length || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
       </div>
 
       <div id="ss-preview-out" />
