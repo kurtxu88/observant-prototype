@@ -2894,6 +2894,7 @@
 .ss-ctx-doc-name svg { color: #2e7d46; }
 .ss-ctx-doc-upload { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px dashed var(--border,#cfc8bd); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
 .ss-ctx-doc-upload:hover { border-color: var(--accent); }
+.ss-advice-tag { display: inline-block; margin-left: 8px; font-style: normal; font-size: .68rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--accent); background: #fbf3ee; border: 1px solid #e7c9b8; border-radius: 999px; padding: 2px 8px; vertical-align: middle; }
 .ss-draft-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; font-size: .82rem; text-decoration: none; }
 .ss-draft-btn[disabled] { opacity: .6; cursor: default; }
 @media (max-width: 600px) { .ss-onboard-blabel { display: none; } .ss-onboard-bstep:not(:last-child)::after { width: 16px; margin: 0 6px; } }

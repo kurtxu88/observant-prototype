@@ -56,7 +56,7 @@ const SS_FAST_CHANNELS = ["email", "telegram"];
 
 // People-first: how the always-on panel is built. Ranked — reach everyone leads.
 const SS_AUDIENCE_OPTIONS = [
-  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in.", tag: "Recommended" },
+  { id: "everyone", label: "Reach everyone", text: "Invite all your users and let anyone who's interested opt in.", tag: "Best for builders" },
   { id: "power", label: "Power users first", text: "Start with your most engaged users — they're the most likely to opt in.", tag: "Most engaged" },
   { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Full picture" },
 ];
