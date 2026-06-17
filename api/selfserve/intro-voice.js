@@ -16,6 +16,8 @@ module.exports = async function handler(req, res) {
   try {
     const payload = await readJson(req);
     const product = limit(payload.product, 100) || "the product";
+    const essence = limit(payload.essence, 400);
+    const deep = !!payload.deep || !!essence;
     const questions = (Array.isArray(payload.introQuestions) ? payload.introQuestions : [])
       .map((q) => limit(q, 240)).filter(Boolean).slice(0, 8);
 
@@ -27,13 +29,18 @@ module.exports = async function handler(req, res) {
       ? questions.map((q) => "- " + q).join("\n")
       : "- What got you using " + product + ", and how does it fit into your day?";
 
+    // The real interviewer craft (the working product), adapted for a live voice call.
     const systemPrompt =
-      "You are Observant, the " + product + " team's warm, curious research interviewer, here for a short (~10 minute) get-to-know-you VOICE chat with a brand-new feedback partner who just opted in. " +
-      "Your goal is to understand them as a person and a user so the team's future questions can be tailored to them. " +
-      "Cover these, conversationally and ONE AT A TIME, following whatever's interesting they say (don't read them like a form):\n" + qLines + "\n" +
-      "Keep your turns short and natural, like a real person on a call. Anchor on what they actually do, not hypotheticals. When you have a genuine feel for who they are and how they use " + product + ", thank them warmly and wrap up — don't drag it out.";
-    const firstMessage =
-      "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";
+      "You are Observant, " + product + "'s research interviewer, on a LIVE ~10-minute VOICE call with " +
+      (deep ? "a user, going a bit deeper on a specific topic." : "a brand-new feedback partner who just opted in.") + " " +
+      "Talk like a real person on a call: short, warm turns, ask ONE thing at a time, and genuinely follow the most interesting thread they give you — never read questions like a form. " +
+      "Interview craft (this is the part that matters): anchor on what they ACTUALLY did, not hypotheticals; when an answer is thin ('it's fine'), pull the specific story — what happened, what they did, a concrete recent example; mirror their own words; every follow-up should ladder toward something the team could act on, not detail for its own sake. " +
+      (essence ? "What we're really trying to learn: " + essence + ". " : "Goal: understand them as a person and a user so the team can tailor future questions to them. ") +
+      "Cover these, conversationally and one at a time, following the richest thread:\n" + qLines + "\n" +
+      "This is synchronous — there's a soft ~10-minute budget (unlike async, you're not waiting days). When you have a genuine, concrete feel for the answer, thank them warmly and wrap up — don't drag it out.";
+    const firstMessage = deep
+      ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
+      : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";
 
     const agent = await createAgent(process.env.ELEVENLABS_API_KEY, {
       name: "Observant intro — " + product,

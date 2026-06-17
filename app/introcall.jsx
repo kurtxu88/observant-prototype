@@ -63,6 +63,7 @@ function IntroCall() {
     ? { essence: deep.essence || ("A deeper conversation for the " + product + " team."), questions: (deep.threads && deep.threads.length ? deep.threads : icIntroQuestions(product)), subject: "" }
     : icPlan(product);
 
+  const sessionTag = deep ? "conversation" : "intro";
   const [messages, setMessages] = useIC([]);
   const [draft, setDraft] = useIC("");
   const [busy, setBusy] = useIC(false);
@@ -83,7 +84,7 @@ function IntroCall() {
   // Prefer a real ElevenLabs voice agent; fall back to the text/Web-Speech chat.
   useICFx(() => { (async () => {
     try {
-      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, introQuestions: plan.questions }) }).then((r) => r.json());
+      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, introQuestions: plan.questions, essence: deep ? plan.essence : "", deep: !!deep }) }).then((r) => r.json());
       if (v && v.ok && v.agentId) { setAgentId(v.agentId); setMode("voice"); return; }
     } catch (e) { /* fall through to chat */ }
     setMode("chat");
@@ -158,7 +159,7 @@ function IntroCall() {
   if (mode === "loading") {
     return (
       <div className="ic-wrap">
-        <div className="ic-top"><span className="ic-brand">{product} <em>· intro</em></span><span className="ic-muted">run by <Wordmark size="1rem" /></span></div>
+        <div className="ic-top"><span className="ic-brand">{product} <em>· {sessionTag}</em></span><span className="ic-muted">run by <Wordmark size="1rem" /></span></div>
         <p className="ic-muted">Setting up your intro…</p>
       </div>
     );
@@ -167,7 +168,7 @@ function IntroCall() {
   if (mode === "voice") {
     return (
       <div className="ic-wrap">
-        <div className="ic-top"><span className="ic-brand">{product} <em>· intro</em></span><span className="ic-muted">run by <Wordmark size="1rem" /></span></div>
+        <div className="ic-top"><span className="ic-brand">{product} <em>· {sessionTag}</em></span><span className="ic-muted">run by <Wordmark size="1rem" /></span></div>
         <p className="ic-sub">A quick ~10-minute voice hello so the {product} team can tailor what they ask you. Tap the mic to start talking — or <button type="button" className="ss-doc-link" style={{ background: "none", border: "none", color: "var(--accent,#b4532a)", cursor: "pointer", padding: 0 }} onClick={() => setMode("chat")}>type instead</button>.</p>
         <div style={{ display: "flex", justifyContent: "center", padding: "34px 0" }}>
           {React.createElement("elevenlabs-convai", { "agent-id": agentId })}
@@ -180,7 +181,7 @@ function IntroCall() {
   return (
     <div className="ic-wrap">
       <div className="ic-top">
-        <span className="ic-brand">{product} <em>· intro</em></span>
+        <span className="ic-brand">{product} <em>· {sessionTag}</em></span>
         <span className="ic-muted">run by <Wordmark size="1rem" /></span>
       </div>
       <p className="ic-sub">A quick ~10-minute hello so the {product} team can tailor what they ask you. {IC_VOICE_OK ? "Type, or tap Voice to talk." : "No wrong answers — just chat."}</p>
