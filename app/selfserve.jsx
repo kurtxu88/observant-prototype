@@ -994,7 +994,8 @@ function AskPanel({ product, state, patchState, navigate }) {
 
   async function preview() {
     if (!question.trim()) return;
-    setPreviewing(true); setErr(""); setResult(null);
+    setTri(null); setPreviewing(true); setErr(""); setResult(null);
+    setTimeout(() => { const el = document.getElementById("ss-preview-out"); if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
     try {
       const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
       if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
@@ -1030,8 +1031,24 @@ function AskPanel({ product, state, patchState, navigate }) {
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>
       <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Composing…" : "Preview what Observant will ask"}</Btn>
+        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
       </div>
+
+      <div id="ss-preview-out" />
+
+      {previewing && !tri && (
+        <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>
+          <div className="ss-depth-card ss-skel-card">
+            <div className="ss-skel-line w40" />
+            <div className="ss-skel-line w70" />
+            <div className="ss-skel-line w90" />
+          </div>
+          <div className="ss-skel-line w30" style={{ marginTop: 16 }} />
+          <div className="ss-skel-line w80" />
+          <div className="ss-skel-line w60" />
+          <p className="ss-muted-note">Observant is reading your question and composing what to ask…</p>
+        </div>
+      )}
 
       {tri && (
         <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>

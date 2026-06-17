@@ -2919,6 +2919,13 @@
 .ss-entry-more em { font-style: normal; color: var(--text-muted); font-weight: 400; }
 .ss-entry-more-grid { margin-top: 12px; }
 
+/* Ask — instant skeleton while the preview composes */
+.ss-skel-card { background: #f4efe6; border: 1px solid #ece5d8; }
+.ss-skel-line { height: 12px; border-radius: 6px; margin: 9px 0; background: linear-gradient(90deg, #ece7de 25%, #f6f2ea 37%, #ece7de 63%); background-size: 400% 100%; animation: ss-shimmer 1.3s ease-in-out infinite; }
+.ss-skel-line.w30 { width: 30%; } .ss-skel-line.w40 { width: 40%; } .ss-skel-line.w60 { width: 60%; } .ss-skel-line.w70 { width: 70%; } .ss-skel-line.w80 { width: 80%; } .ss-skel-line.w90 { width: 90%; }
+.ss-muted-note { font-size: .82rem; color: var(--text-muted); margin: 12px 0 0; }
+@keyframes ss-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
 /* Ask — the depth bifurcation decision card */
 .ss-depth-card { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border,#e6e3dd); }
 .ss-depth-card.light { background: #f1f6f1; border-color: #cfe3cf; }
