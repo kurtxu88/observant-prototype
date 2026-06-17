@@ -1024,25 +1024,20 @@ function AskPanel({ product, state, patchState, navigate }) {
           {/* The bifurcation decision — light vs deep */}
           <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
             <div className="ss-depth-head">
-              <span className="ss-depth-badge">{isDeep ? "Deep — ~10-min conversation" : "Light — a couple of quick questions"}</span>
+              <span className="ss-depth-badge">{isDeep ? "Deep — 10-minute AI-guided conversation" : "Light — a couple of quick questions"}</span>
               <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a short voice/text session." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
             {tri.rationale && <p className="ss-depth-why">{tri.rationale}</p>}
-            {tri.dimensions && (
-              <div className="ss-depth-dims">
-                {[["scope","Scope"],["constructs","Constructs"],["answerReadiness","Answer"],["contextLoad","Context"]].map(([k, lbl]) => (
-                  tri.dimensions[k] ? <span key={k} className="ss-depth-dim"><em>{lbl}</em> {tri.dimensions[k]}</span> : null
-                ))}
-              </div>
-            )}
+            <details className="ss-depth-learn">
+              <summary>What's deep vs light?</summary>
+              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided conversation (voice or text) for questions that need real back-and-forth to unfold. If someone doesn't have time, they're offered the light version instead.</p>
+            </details>
           </div>
 
           {isDeep && tri.deepPlan ? (
             <div style={{ marginTop: 14 }}>
               <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>What we're really after</p>
               <p style={{ margin: "0 0 12px" }}>{tri.deepPlan.essence}</p>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>How the session opens</p>
-              <p style={{ margin: "0 0 12px", fontStyle: "italic", color: "#4a463f" }}>"{tri.deepPlan.opening}"</p>
               <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Threads it will explore live</p>
               <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(tri.deepPlan.threads || []).map((t, i) => <li key={i} style={{ margin: "5px 0" }}>{t}</li>)}</ol>
               <details className="ss-fallback">
@@ -1063,7 +1058,7 @@ function AskPanel({ product, state, patchState, navigate }) {
           )}
 
           {channel === "email" ? (
-            <Field label={isDeep ? "Send the real invitation to yourself" : "Send a real test email to yourself"}>
+            <Field label="Send a test email to see the end-user experience">
               <div style={{ display: "flex", gap: 8 }}>
                 <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
                 <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>

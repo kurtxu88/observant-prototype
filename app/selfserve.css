@@ -2931,6 +2931,9 @@
 .ss-depth-dim em { font-style: normal; color: #8a857c; text-transform: uppercase; letter-spacing: .03em; font-size: .68rem; margin-right: 4px; }
 .ss-fallback { font-size: .85rem; color: #6b665d; background: #f7f5f0; border-radius: 8px; padding: 9px 12px; margin: 0 0 16px; }
 .ss-fallback summary { cursor: pointer; font-weight: 500; }
+.ss-depth-learn { margin-top: 4px; }
+.ss-depth-learn summary { cursor: pointer; font-size: .82rem; color: var(--accent); font-weight: 600; }
+.ss-depth-learn p { font-size: .85rem; color: #6b665d; line-height: 1.55; margin: 8px 0 0; }
 
 /* Home — new insights highlight row */
 .ss-home-insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
