@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
     // LIGHT — compose the professional opening (C2), answered by replying inline.
     const turn = await callSelf(base, { action: "turn", product, channel, exploration: exp, plan, wishlist, memory, context, messages: [] });
     subject = plan.subject || ("A couple questions from the " + product + " team");
-    body = (turn && turn.message) || lightMessageFromPlan(product, plan);
+    body = stripSubjectLine((turn && turn.message) || lightMessageFromPlan(product, plan));
     emailText = body + lightFooterText();
     html = lightInlineHtml(body);
     if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true, mode, subject, body: emailText, to: toEmail });
@@ -81,6 +81,11 @@ async function callSelf(base, body) {
   return r.json();
 }
 
+// C2 sometimes echoes a literal "Subject: ..." line into the body — the email
+// already has a subject header, so strip any leading one.
+function stripSubjectLine(s) {
+  return String(s || "").replace(/^\s*subject:.*(\r?\n)+/i, "").trim();
+}
 function lightMessageFromPlan(product, plan) {
   const qs = (plan.questions || []).map((q, i) => (i + 1) + ". " + q).join("\n");
   return "A couple of quick questions from the " + product + " team:\n\n" + qs;

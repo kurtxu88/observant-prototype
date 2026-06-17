@@ -252,7 +252,8 @@ function channelHint(channel) {
   return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). " +
     "FIRST email — they have ALREADY opted in via the invitation, so do NOT re-pitch the program or repeat the rewards spiel. Just a short professional note that briefly recaps and sets how this thread works: (a) this is the [product] feedback program; (b) we'll have a back-and-forth right here in this email thread, and you can email us anytime with any new insight or anything you want to share; (c) we'll also periodically reach out with questions; (d) every response is logged and converted into rewards on the [product] platform. THEN 'To start, we have a few questions about your [topic] experience:' and the whole set as a short NUMBERED list, most important first. Tight and professional, not a re-pitch. " +
     "RULE — EVERY email carries a small BATCH of ~3 questions; never one-question-then-wait (too costly — people won't keep returning to the thread). Extract as much as possible per reply and relate it to the client's questions/context. " +
-    "FOLLOW-UP email — you get ONLY ONE per inquiry: a short recap paragraph, then UP TO 3 genuinely-worth-asking questions (fewer is better; bold a brand-new-topic one with **double asterisks**). If nothing is genuinely worth a follow-up, send none — decide SUFFICIENT. Never pad to three, never ask for asking's sake.";
+    "FOLLOW-UP email — you get ONLY ONE per inquiry: a short recap paragraph, then UP TO 3 genuinely-worth-asking questions (fewer is better; bold a brand-new-topic one with **double asterisks**). If nothing is genuinely worth a follow-up, send none — decide SUFFICIENT. Never pad to three, never ask for asking's sake. " +
+    "Do NOT write a 'Subject:' line in the body — the subject is set separately; start the message with the greeting.";
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
