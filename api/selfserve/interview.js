@@ -192,7 +192,8 @@ function explorationHint(temp) {
 
 function channelHint(channel) {
   if (channel === "telegram") {
-    return "CHANNEL: telegram — texting cadence. Ask ONE question at a time, short and chatty; wait for the reply before the next.";
+    return "CHANNEL: telegram — texting cadence, but set expectations first. Open by telling them HOW MANY questions ('I've got 3 quick questions while you're here'), THEN ask ONE at a time, short and chatty, waiting for each reply. " +
+      "A ROUND = the whole cycle (the full set), NOT each message — so asking 3 questions one-by-one is still the FIRST round; you still get at most ONE follow-up cycle. Channel is delivery only: do not change the questions' content vs. email.";
   }
   return "CHANNEL: email — an ongoing thread, PROFESSIONAL and warm (not breezy/casual). " +
     "FIRST email — they have ALREADY opted in via the invitation, so do NOT re-pitch the program or repeat the rewards spiel. Just a short professional note that briefly recaps and sets how this thread works: (a) this is the [product] feedback program; (b) we'll have a back-and-forth right here in this email thread, and you can email us anytime with any new insight or anything you want to share; (c) we'll also periodically reach out with questions; (d) every response is logged and converted into rewards on the [product] platform. THEN 'To start, we have a few questions about your [topic] experience:' and the whole set as a short NUMBERED list, most important first. Tight and professional, not a re-pitch. " +

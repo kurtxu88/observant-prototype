@@ -4,6 +4,8 @@
 
 No study type, no study ceremony — just the team's question (and an optional wishlist), turned into something testable.
 
+> **Where C1 sits now:** the depth gate (**C0**) runs first and decides *light vs. deep*. C1 produces the **light** question set — which is both the light-mode delivery **and** the pre-generated fallback if a deep invitation is declined. (Deep mode's live interview guide comes from C0's `deepPlan`, run through C2.) So C1's job is unchanged: distill the question into a small, ordered, behavioral set.
+
 ---
 
 ## System prompt
