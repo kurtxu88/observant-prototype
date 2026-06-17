@@ -6,7 +6,7 @@
    Needs ELEVENLABS_API_KEY (and optionally ELEVENLABS_VOICE_ID).
    ============================================================ */
 const BASE = "https://api.elevenlabs.io/v1/convai";
-const DEFAULT_VOICE = "aEO01A4wXwd1O8GPgGlF";
+const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM"; // Rachel — a standard premade voice present on most accounts
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -42,10 +42,10 @@ module.exports = async function handler(req, res) {
       ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
       : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";
 
+    const voiceId = await resolveVoiceId(process.env.ELEVENLABS_API_KEY, process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE);
     const agent = await createAgent(process.env.ELEVENLABS_API_KEY, {
       name: "Observant intro — " + product,
-      systemPrompt, firstMessage,
-      voiceId: process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE,
+      systemPrompt, firstMessage, voiceId,
     });
     let signedUrl = "";
     try { signedUrl = await getSignedUrl(process.env.ELEVENLABS_API_KEY, agent.agent_id); } catch (e) { /* widget can use agent_id directly */ }
@@ -68,6 +68,19 @@ async function createAgent(apiKey, opts) {
   const res = await fetch(BASE + "/agents/create", { method: "POST", headers: { "xi-api-key": apiKey, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   if (!res.ok) throw new Error("ElevenLabs " + res.status + ": " + (await res.text()).slice(0, 240));
   return res.json();
+}
+// Use a voice that actually exists in THIS account: keep the preferred one if present,
+// else a premade voice, else whatever the account has.
+async function resolveVoiceId(apiKey, preferred) {
+  try {
+    const r = await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": apiKey } });
+    if (!r.ok) return preferred;
+    const voices = ((await r.json()) || {}).voices || [];
+    if (!voices.length) return preferred;
+    if (preferred && voices.some((v) => v.voice_id === preferred)) return preferred;
+    const premade = voices.find((v) => v.category === "premade");
+    return (premade && premade.voice_id) || voices[0].voice_id || preferred;
+  } catch (e) { return preferred; }
 }
 async function getSignedUrl(apiKey, agentId) {
   const res = await fetch(BASE + "/conversation/get-signed-url?agent_id=" + agentId, { headers: { "xi-api-key": apiKey } });
