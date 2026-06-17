@@ -294,9 +294,21 @@ function OnboardingBar({ current }) {
 function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
   const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
   const [step, setStep] = useStateSS(0); // 0 product, 1 context, 2 account
+  const [drafting, setDrafting] = useStateSS(false);
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
   const canProduct = form.companyName.trim();
   const acctOk = (form.email || "").includes("@") && (form.email || "").includes(".");
+
+  // Read the product's site and draft "what does it do" from it.
+  async function draftFromSite() {
+    if (!form.productUrl.trim() || drafting) return;
+    setDrafting(true);
+    try {
+      const r = await ssPostJson("/api/selfserve/interview", { action: "describe", product: form.companyName, url: form.productUrl });
+      if (r && r.description) setForm((f) => ({ ...f, productDescription: r.description }));
+    } catch (e) { /* leave the field for manual entry */ }
+    setDrafting(false);
+  }
 
   // Leaving context: signed-in users skip the account step.
   const leaveContext = () => (authed ? onComplete(form, null) : setStep(2));
@@ -328,10 +340,15 @@ function OnboardingWizard({ authed, onComplete, onSample, onLogin }) {
                 <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
               </Field>
               <Field label="Product URL">
-                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} />
+                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} onBlur={() => { if (form.productUrl.trim() && !form.productDescription.trim()) draftFromSite(); }} />
               </Field>
               <Field label="What does it do?" wide>
-                <textarea className="textarea" value={form.productDescription} placeholder="A reporting tool for ops teams. / A habit app for runners. — a sentence is plenty." onChange={(e) => update("productDescription", e.target.value)} />
+                <textarea className="textarea" value={form.productDescription} placeholder={drafting ? "Reading your site and drafting this…" : "Drop your URL above and Observant drafts this from your site — or write a sentence yourself."} onChange={(e) => update("productDescription", e.target.value)} />
+                {form.productUrl.trim() && (
+                  <button type="button" className="ss-linklike ss-draft-btn" onClick={draftFromSite} disabled={drafting}>
+                    <Icon name="spark" size={13} /> {drafting ? "Drafting from your site…" : (form.productDescription.trim() ? "Re-draft from site" : "Draft from site")}
+                  </button>
+                )}
               </Field>
               <Field label="Who uses it today?" wide>
                 <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />

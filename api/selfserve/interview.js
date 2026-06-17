@@ -18,12 +18,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const payload = await readJson(req);
-    const action = ["translate", "triage", "synthesize"].includes(payload.action) ? payload.action : "turn";
+    const action = ["translate", "triage", "synthesize", "describe"].includes(payload.action) ? payload.action : "turn";
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(200).json(noKeyStub(action, payload));
     }
 
+    if (action === "describe") {
+      const description = await describeProduct(payload);
+      return res.status(200).json({ ok: true, description });
+    }
     if (action === "triage") {
       const result = await triage(payload);
       return res.status(200).json({ ok: true, ...result });
@@ -70,6 +74,39 @@ function exploreFromDimensions(dims, mode) {
   let temp = 0.2 + 0.15 * score;             // 0 dims deep -> 0.20 ... 4 -> 0.80
   if (mode === "deep") temp = Math.max(temp, 0.6); // deep mode roams by nature
   return Math.min(0.85, Math.max(0.15, Math.round(temp * 100) / 100));
+}
+
+/* ---------- Auto-describe: read the product's site, write one plain sentence ---------- */
+async function describeProduct(payload) {
+  const product = limit(payload.product, 100) || "the product";
+  let url = limit(payload.url, 300);
+  if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+  let pageText = "";
+  if (url) {
+    try {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 4500);
+      const r = await fetch(url, { signal: ctrl.signal, headers: { "user-agent": "Mozilla/5.0 (compatible; ObservantBot/1.0)" } });
+      clearTimeout(to);
+      if (r.ok) pageText = stripHtml((await r.text()).slice(0, 120000)).slice(0, 3000);
+    } catch (e) { /* unreachable site — infer from name + url */ }
+  }
+  const system = "You write ONE plain, accurate sentence describing what a product does for its users — no marketing fluff, no 'we', just what it is and who it helps. Output only the sentence.";
+  const user = "PRODUCT NAME: " + product + "\nURL: " + (url || "(none)") + "\n" +
+    (pageText ? "HOMEPAGE TEXT (may be noisy):\n" + pageText : "(could not read the site — infer a sensible description from the name and URL.)") +
+    "\n\nWrite the one-sentence description.";
+  const text = await callClaude(system, [{ role: "user", content: user }], 120);
+  return limit(text, 280);
+}
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z#0-9]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
@@ -269,6 +306,9 @@ function parseJson(text, fallback) {
 }
 
 function noKeyStub(action, payload) {
+  if (action === "describe") {
+    return { ok: true, stub: true, description: "" };
+  }
   if (action === "synthesize") {
     return { ok: true, stub: true, memory: "[ANTHROPIC_API_KEY not set] would summarize this person from their intro." };
   }
