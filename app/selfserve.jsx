@@ -375,7 +375,6 @@ function OnboardingWizard({ initial, onSubmit, onBack, onSample, onLogin }) {
             <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you can feed Observant questions anytime. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
-        <p className="ss-fineprint">Want to add your 3-month goal, prior learning, or docs? You can do that anytime from the <b>Context</b> page on your dashboard — it makes every question sharper.</p>
         <div className="ss-entry-actions">
           <Btn variant="primary" size="lg" disabled={!ready} onClick={submit}>{editing ? "Save & continue" : "Continue"} <Icon name="arrow" size={16} /></Btn>
           {editing
