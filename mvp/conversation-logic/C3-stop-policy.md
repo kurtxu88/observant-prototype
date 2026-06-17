@@ -30,6 +30,15 @@ Choose exactly one:
 
 CONTINUE / SUFFICIENT / PAUSE are decided by C3 from the conversation; the *timing* of NUDGE and any revisit is executed by the backend scheduler — C3 sets the policy, the scheduler fires it.
 
+## Decide from the gap (shared vocabulary with C2)
+C2 classifies every reply into a **gap type**; C3 maps that gap onto the decision so the two never disagree:
+- **Concrete AND actionable** (a real account that resolves the essence *and* informs a decision) → **SUFFICIENT.** Don't squeeze another probe out of a satisfied answer.
+- **Thin / evaluative, hypothetical, or concrete-but-not-actionable** → a gap remains; **CONTINUE** is justified *only if* the one allowed follow-up would close the single most decision-relevant gap. If the gap is minor or "more detail would be nice," prefer SUFFICIENT/PAUSE.
+- **Energy spent** (shorter replies, "it's fine," winding down) → **PAUSE**, regardless of gap — a tired round is not worth the one follow-up.
+- **Silence mid-thread** → **NUDGE** once, then PAUSE.
+
+The rule of thumb: CONTINUE spends your one follow-up; only spend it on a gap whose answer would actually change what the team does.
+
 ## What "meaningful / sufficient" means
 A question is sufficiently answered when we have **a concrete behavioral account that resolves the plan's goal** — actions, sequence, specifics — such that you could describe what this person actually did, in order. Equivalently sufficient:
 - A **clearly-probed absence** ("they never noticed the feature at all" / "they never read the pricing page") — a real answer, worth one probe to confirm it's genuine and not avoidance.

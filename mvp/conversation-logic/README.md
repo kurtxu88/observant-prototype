@@ -21,8 +21,8 @@ The probing *craft* (anchor on past behavior, unfold thin answers, behavioral tr
 | ID | File | What it does | Status |
 |----|------|--------------|--------|
 | **C1** | `C1-question-translator.md` | Turns a raw team/PM question into an interview plan (behavioral anchors + probe strategy + success criteria) | draft v1 |
-| **C2** | `C2-continuous-interviewer.md` | The async, continuous interviewer system prompt (probing craft + re-entry + memory framing, no timer) | draft v1 |
-| **C3** | `C3-stop-policy.md` | The saturation policy that replaces the clock — continue / pause / nudge / sufficient, and what to report up | draft v1 |
+| **C2** | `C2-continuous-interviewer.md` | The async, continuous interviewer system prompt (probing craft + methodical follow-up toolkit + re-entry + memory framing, no timer) | draft v2 (#15 follow-up method) |
+| **C3** | `C3-stop-policy.md` | The saturation policy that replaces the clock — continue / pause / nudge / sufficient, decide-from-the-gap, and what to report up | draft v2 (#15) |
 | C4 | _(later)_ | Per-person memory logic (what to remember, how to carry it forward) | not started |
 | C5 | _(later)_ | Proactive / off-guide user input handler (capture as signal, not redirect) | not started |
 | C6 | _(later)_ | Multi-question weaver (one relationship, not a queue of surveys) | not started |
