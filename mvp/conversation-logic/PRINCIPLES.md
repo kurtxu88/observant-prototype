@@ -40,8 +40,8 @@ The difference between a researcher and a transcriptionist. When a pain surfaces
 ### P11 — Respect the round's energy (precious attention)
 Go deep *while the opening is live*, but when a round's energy is spent (shorter replies, "it's fine", wind-down), PAUSE and wait for the next fresh question — don't grind. A new question next time gets fresh attention; over-asking trains the person to ignore you. *Encoded in: C3, C2.*
 
-### P12 — Exploration dial (per-program control)
-A setup dial sets how far the agent roams: **low** = protocol-tight (stick to the client's questions); **high** = explore freely (chase interesting tangents, reframe). It governs *roaming breadth* — never the ladder-to-useful rule (P10), which always holds. *Encoded in: interview.js (explorationHint) → C2; UI dial in the team seat.*
+### P12 — Exploration (how far the agent roams) — now DERIVED, not a team dial (updated 2026-06-17)
+Exploration governs *roaming breadth*: **low** = protocol-tight (stick to the client's questions); **high** = chase interesting tangents and reframe (never overriding the ladder-to-useful rule P10, which always holds). **The team-facing slider was removed for day one** — same philosophy as the depth gate (P17): the AI decides. Exploration is now **derived from C0's dimensions** (strategic / multi-construct / unfolds / needs-setup → roam more; tactical & tidy → stay tight; deep mode roams by nature). The lever stays in the engine (`explorationHint`) and is re-exposed later as a team override alongside the depth override, if teams want it. *Encoded in: interview.js `exploreFromDimensions` → C2; no UI dial.*
 
 ### P13 — Reward visibility every batch (channel respect)
 Because the whole relationship lives in one thread, each batch must *give back*: show the person their **participated minutes + reward earned** and a **"track & redeem on Observant"** CTA, constantly. This motivates continued participation and keeps the channel from feeling like spam. *Encoded in: the test surface's reward strip; the real product surfaces it per message/batch.*

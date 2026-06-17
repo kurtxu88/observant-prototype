@@ -768,7 +768,6 @@ function anMemory(product) {
 // sends a REAL test email of the first batch. No simulated thread on the page.
 function AskPanel({ product }) {
   const [question, setQuestion] = useStateSS("");
-  const [temp, setTemp] = useStateSS(0.5);
   const [channel, setChannel] = useStateSS("email");
   const [wishlist, setWishlist] = useStateSS("");
   const [tri, setTri] = useStateSS(null);
@@ -796,7 +795,7 @@ function AskPanel({ product }) {
     if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: temp, channel, wishlist, memory: anMemory(product) }));
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, memory: anMemory(product) }));
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -812,21 +811,6 @@ function AskPanel({ product }) {
       <Field label="Where should Observant dig deeper if it comes up? (optional)">
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
       </Field>
-      <div className="ss-temp">
-        <div className="ss-temp-head"><span className="ss-temp-label">How far should Observant explore?</span></div>
-        <div className="ss-temp-3">
-          {[
-            { v: 0.15, t: "Stick to the script", d: "Asks only your questions — no wandering, even if something interesting comes up." },
-            { v: 0.5, t: "Balanced", d: "Follows a genuinely interesting thread when it surfaces, then returns to your questions." },
-            { v: 0.85, t: "Explore freely", d: "Chases interesting tangents and reframes — your questions are a starting point, not a fence." },
-          ].map((o) => (
-            <button key={o.v} type="button" className={"ss-temp-opt" + (Math.abs(temp - o.v) < 0.2 ? " on" : "")} onClick={() => setTemp(o.v)}>
-              <b>{o.t}</b>
-              <span>{o.d}</span>
-            </button>
-          ))}
-        </div>
-      </div>
       <Field label="Channel">
         <select className="input" value={channel} onChange={(e) => setChannel(e.target.value)}>
           <option value="email">Email — one batched message</option>

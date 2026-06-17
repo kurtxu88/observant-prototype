@@ -52,9 +52,24 @@ async function triage(payload) {
     mode: depth.mode === "deep" ? "deep" : "light",
     rationale: depth.rationale || "",
     dimensions: depth.dimensions || {},
+    exploration: exploreFromDimensions(depth.dimensions, depth.mode),
     deepPlan: depth.mode === "deep" ? (depth.deepPlan || null) : null,
     lightPlan: lightPlan,
   };
+}
+
+/* Exploration is no longer a team dial — it's DERIVED from the depth dimensions (P12/P17):
+   strategic / multi-construct / unfolds / needs-setup → roam more; tactical & tidy → stay tight. */
+function exploreFromDimensions(dims, mode) {
+  const d = dims || {};
+  let score = 0;
+  if (d.scope === "strategic") score++;
+  if (d.constructs === "multiple") score++;
+  if (d.answerReadiness === "unfolds") score++;
+  if (d.contextLoad === "needs-setup") score++;
+  let temp = 0.2 + 0.15 * score;             // 0 dims deep -> 0.20 ... 4 -> 0.80
+  if (mode === "deep") temp = Math.max(temp, 0.6); // deep mode roams by nature
+  return Math.min(0.85, Math.max(0.15, Math.round(temp * 100) / 100));
 }
 
 /* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
@@ -260,6 +275,7 @@ function noKeyStub(action, payload) {
       ok: true, stub: true, mode: "light",
       rationale: "[ANTHROPIC_API_KEY not set] — set it to run the live depth triage.",
       dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
+      exploration: 0.2,
       deepPlan: null,
       lightPlan: { essence: "[no key] " + limit(payload.question, 160), questions: ["Set ANTHROPIC_API_KEY to run triage."], subject: "(set ANTHROPIC_API_KEY)" },
     };
