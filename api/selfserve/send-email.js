@@ -18,19 +18,20 @@ module.exports = async function handler(req, res) {
     const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
     const wishlist = limit(payload.wishlist, 500);
     const memory = limit(payload.memory, 1200);
+    const context = limit(payload.context, 2000);
     if (!question) return res.status(200).json({ ok: false, error: "question is required" });
     if (!/.+@.+\..+/.test(toEmail)) return res.status(200).json({ ok: false, error: "a valid test email is required" });
 
     const base = "https://" + req.headers.host;
     // 1) C1 — translate the raw question into essence + the question set + subject
-    const t = await callSelf(base, { action: "translate", product, question, wishlist, memory });
+    const t = await callSelf(base, { action: "translate", product, question, wishlist, memory, context });
     const plan = (t && t.plan) || { essence: question, questions: [question], subject: "A couple questions from the " + product + " team" };
     // 2) C2 — compose the actual opening email (batched, professional)
-    const turn = await callSelf(base, { action: "turn", product, channel: channel, exploration: isFinite(exploration) ? exploration : 0.5, plan, wishlist, memory, messages: [] });
+    const turn = await callSelf(base, { action: "turn", product, channel: channel, exploration: isFinite(exploration) ? exploration : 0.5, plan, wishlist, memory, context, messages: [] });
     const subject = plan.subject || ("A couple questions from the " + product + " team");
     const body = (turn && turn.message) || "";
 
-    const state = { product, question, exploration: isFinite(exploration) ? exploration : 0.5, channel, wishlist, memory, toEmail, subject, accruedMinutes: 0, messages: [{ role: "assistant", content: body }] };
+    const state = { product, question, exploration: isFinite(exploration) ? exploration : 0.5, channel, wishlist, memory, context, toEmail, subject, accruedMinutes: 0, messages: [{ role: "assistant", content: body }] };
     const answerUrl = "https://" + req.headers.host + "/app/Answer.html?d=" + encodeState(state);
     const emailText = body + footer(answerUrl);
 

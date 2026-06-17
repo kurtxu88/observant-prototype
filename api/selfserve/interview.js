@@ -76,7 +76,7 @@ function exploreFromDimensions(dims, mode) {
 async function classifyDepth(payload) {
   const question = limit(payload.question, 500);
   const product = limit(payload.product, 100) || "the product";
-  const context = limit(payload.context, 600);
+  const context = limit(payload.context, 2000);
   const memory = limit(payload.memory, 1200);
   const system = readPrompt("C0-triage.md");
   const user =
@@ -101,7 +101,7 @@ async function translate(payload) {
   const question = limit(payload.question, 500);
   const product = limit(payload.product, 100) || "the product";
   const wishlist = limit(payload.wishlist, 500);
-  const context = limit(payload.context, 600);
+  const context = limit(payload.context, 2000);
   const memory = limit(payload.memory, 1200);
   const system = readPrompt("C1-question-translator.md");
   const user =
@@ -140,6 +140,7 @@ async function nextTurn(payload) {
   const plan = payload.plan || {};
   const wishlist = limit(payload.wishlist, 500);
   const memory = limit(payload.memory, 1200);
+  const context = limit(payload.context, 2000);
   let temp = Number(payload.exploration);
   if (!(temp >= 0 && temp <= 1)) temp = 0.5; // continuous 0..1 "temperature"
   const final = !!payload.final;
@@ -152,6 +153,7 @@ async function nextTurn(payload) {
     readPrompt("C3-stop-policy.md") +
     "\n\n========================\nRUNTIME\n========================\n" +
     "PRODUCT: " + product + "\n" +
+    (context ? "COMPANY / PRODUCT CONTEXT (what the team has told us — use it to ask sharper, better-informed questions; never parrot it back): " + context + "\n" : "") +
     channelHint(channel) + "\n" +
     "MINUTES SINCE USER'S LAST MESSAGE: " + minutesSinceReply + "\n" +
     "WHAT WE'RE LEARNING (essence + question set, most important first, from C1): " + JSON.stringify(plan) + "\n" +

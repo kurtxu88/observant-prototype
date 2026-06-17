@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     // This is the only follow-up we're allowed — tell the engine so it only asks if genuinely worth it.
     const turn = await callSelf(base, {
       action: "turn", product: state.product, channel: state.channel || "email",
-      exploration: state.exploration, wishlist: state.wishlist, memory: state.memory, final: true,
+      exploration: state.exploration, wishlist: state.wishlist, memory: state.memory, context: state.context, final: true,
       plan: { essence: state.question, subject: state.subject }, messages,
     });
     const next = (turn && turn.message) || "";

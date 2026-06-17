@@ -13,6 +13,15 @@ const SS_DEFAULT_WORKSPACE = {
   productDescription: "A reporting and analytics tool for ops and data teams.",
   userBase: "Ops leads and analysts at 50–500 person B2B companies.",
   learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
+  context: {
+    goal3mo: "Get 30% of power users onto live dashboards (off spreadsheet exports) before the Series A raise.",
+    terms: "“Boards” = saved dashboards. “Pulls” = manual CSV exports. “Ops cadence” = the weekly metrics review most teams run.",
+    priorLearning: "Support tickets suggest people don't trust auto-refreshed numbers; a few power users said boards 'can't be cut the way I need.' Unverified.",
+    docs: [
+      { id: "doc-prd", name: "Dashboards v2 PRD.pdf", note: "The redesign meant to replace spreadsheet exports." },
+      { id: "doc-icp", name: "ICP & segments.doc", note: "Power users, new analysts, admin/buyers." },
+    ],
+  },
 };
 
 const SS_CUSTOM_WORKSPACE_FALLBACK = {
@@ -23,6 +32,7 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
   productDescription: "What your product helps people do.",
   userBase: "The people who use your product today.",
   learningGoal: "",
+  context: { goal3mo: "", terms: "", priorLearning: "", docs: [] },
 };
 
 const SS_GROUP_OPTIONS = [
@@ -125,8 +135,51 @@ function ssCreateWorkspace(input, fallback) {
     productDescription: ssTrim(merged.productDescription, base.productDescription),
     userBase: ssTrim(merged.userBase, base.userBase),
     learningGoal: ssTrim(merged.learningGoal, base.learningGoal === undefined ? "" : base.learningGoal),
+    context: ssNormalizeContext(merged.context, base.context),
     createdAt: merged.createdAt || new Date().toISOString(),
   };
+}
+
+/* The persistent "what Observant knows about you" profile. */
+function ssNormalizeContext(input, base) {
+  const c = input || base || {};
+  return {
+    goal3mo: ssTrim(c.goal3mo, ""),
+    terms: ssTrim(c.terms, ""),
+    priorLearning: ssTrim(c.priorLearning, ""),
+    docs: Array.isArray(c.docs) ? c.docs.filter(Boolean).map((d, i) => ({ id: d.id || "doc-" + i, name: ssTrim(d.name, "Untitled"), note: ssTrim(d.note, "") })) : [],
+  };
+}
+
+/* Completeness across the seven context areas the agent uses to tailor questions. */
+function ssContextCompleteness(workspace) {
+  const w = workspace || {};
+  const c = w.context || {};
+  const areas = [
+    !!ssTrim(w.productDescription, ""),
+    !!ssTrim(w.userBase, ""),
+    !!ssTrim(w.productUrl, ""),
+    !!ssTrim(c.goal3mo, ""),
+    !!ssTrim(c.terms, ""),
+    !!ssTrim(c.priorLearning, ""),
+    (c.docs || []).length > 0,
+  ];
+  const filled = areas.filter(Boolean).length;
+  return { filled, total: areas.length };
+}
+
+/* Serialize the profile into the `context` string the engine (C0/C1/C2) reads. */
+function ssContextSummary(workspace) {
+  const w = workspace || {};
+  const c = w.context || {};
+  const parts = [];
+  if (ssTrim(w.productDescription, "")) parts.push("PRODUCT: " + w.productDescription);
+  if (ssTrim(w.userBase, "")) parts.push("USERS: " + w.userBase);
+  if (ssTrim(c.goal3mo, "")) parts.push("3-MONTH GOAL: " + c.goal3mo);
+  if (ssTrim(c.terms, "")) parts.push("KEY TERMS: " + c.terms);
+  if (ssTrim(c.priorLearning, "")) parts.push("ALREADY LEARNED / HYPOTHESES: " + c.priorLearning);
+  if ((c.docs || []).length) parts.push("DOCS ON FILE: " + c.docs.map((d) => d.name + (d.note ? " (" + d.note + ")" : "")).join("; "));
+  return parts.join("\n");
 }
 
 function ssCreateSetup(workspace) {
@@ -823,5 +876,7 @@ Object.assign(window, {
     cannedAnswer: ssCannedAnswer,
     productName: ssProductName,
     initials: ssInitials,
+    contextCompleteness: ssContextCompleteness,
+    contextSummary: ssContextSummary,
   },
 });

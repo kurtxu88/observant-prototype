@@ -22,6 +22,7 @@ const SS_EMPTY_WORKSPACE_FORM = {
   productDescription: "",
   userBase: "",
   learningGoal: "",
+  context: { goal3mo: "", terms: "", priorLearning: "", docs: [] },
 };
 
 function ssLoadState() {
@@ -254,6 +255,7 @@ function SelfServeApp() {
 
 function EntryScreen({ onCreate }) {
   const [form, setForm] = useStateSS({ ...SS_EMPTY_WORKSPACE_FORM });
+  const [more, setMore] = useStateSS(false);
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
   const canCreate = form.companyName.trim();
 
@@ -295,6 +297,16 @@ function EntryScreen({ onCreate }) {
             <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you and your team can keep feeding Observant questions anytime, right from Slack and your other channels. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
           </Field>
         </div>
+
+        <button type="button" className="ss-entry-more" onClick={() => setMore((m) => !m)}>
+          <Icon name={more ? "x" : "plus"} size={15} /> Add richer context — your goal, jargon, and docs <em>(optional, makes every future question sharper)</em>
+        </button>
+        {more && (
+          <div className="ss-form-grid ss-entry-more-grid">
+            <ContextExtraFields value={form.context} onChange={(ctx) => update("context", ctx)} />
+          </div>
+        )}
+
         <div className="ss-entry-actions">
           <Btn variant="primary" size="lg" disabled={!canCreate} onClick={() => onCreate(form, "custom")}>Continue <Icon name="arrow" size={16} /></Btn>
           <Btn variant="ghost" size="lg" onClick={() => onCreate(SS_DEFAULT_WORKSPACE, "sample")}>Use the sample workspace</Btn>
@@ -764,11 +776,71 @@ function anMemory(product) {
   try { return (JSON.parse(localStorage.getItem("observant.memory.v1") || "{}")[product] || {}).memory || ""; } catch (e) { return ""; }
 }
 
+// The richer context fields (goal / terms / prior learning / docs) — reused in
+// onboarding and in the Ask-page "what Observant knows" panel.
+function ContextExtraFields({ value, onChange }) {
+  const c = value || { goal3mo: "", terms: "", priorLearning: "", docs: [] };
+  const set = (k, v) => onChange({ ...c, [k]: v });
+  const docs = c.docs || [];
+  const addDoc = () => onChange({ ...c, docs: [...docs, { id: "doc-" + docs.length + "-" + Date.now(), name: "", note: "" }] });
+  const setDoc = (i, k, v) => onChange({ ...c, docs: docs.map((d, j) => (j === i ? { ...d, [k]: v } : d)) });
+  const rmDoc = (i) => onChange({ ...c, docs: docs.filter((_, j) => j !== i) });
+  return (
+    <>
+      <Field label="Your 3-month business goal — the decision this learning serves" wide>
+        <textarea className="textarea" value={c.goal3mo} placeholder="e.g. Get 30% of power users onto live dashboards before the raise." onChange={(e) => set("goal3mo", e.target.value)} />
+      </Field>
+      <Field label="Key terms & jargon Observant should know" wide>
+        <textarea className="textarea" value={c.terms} placeholder="e.g. “Boards” = saved dashboards. “Pulls” = manual CSV exports." onChange={(e) => set("terms", e.target.value)} />
+      </Field>
+      <Field label="What you've already learned / current hypotheses" wide>
+        <textarea className="textarea" value={c.priorLearning} placeholder="e.g. We suspect people don't trust auto-refreshed numbers — unverified." onChange={(e) => set("priorLearning", e.target.value)} />
+      </Field>
+      <Field label="Documents (PRDs, decks, research, support themes)" wide>
+        <div className="ss-ctx-docs">
+          {docs.map((d, i) => (
+            <div className="ss-ctx-doc" key={d.id || i}>
+              <input className="input" value={d.name} placeholder="Document name" onChange={(e) => setDoc(i, "name", e.target.value)} />
+              <input className="input" value={d.note} placeholder="One line on what it is (optional)" onChange={(e) => setDoc(i, "note", e.target.value)} />
+              <button type="button" className="ss-ctx-doc-rm" onClick={() => rmDoc(i)} aria-label="Remove document">×</button>
+            </div>
+          ))}
+          <button type="button" className="ss-ctx-doc-add" onClick={addDoc}><Icon name="plus" size={14} /> Add a document</button>
+        </div>
+      </Field>
+    </>
+  );
+}
+
+// The Ask-page "what Observant knows about you" panel — the full living profile,
+// editable inline so the team can level-set / top up before asking.
+function ContextPanel({ state, patchState }) {
+  const w = state.workspace;
+  const patchWs = (partial) => patchState((cur) => ({ ...cur, workspace: { ...cur.workspace, ...partial } }));
+  const patchCtx = (ctx) => patchState((cur) => ({ ...cur, workspace: { ...cur.workspace, context: ctx } }));
+  return (
+    <div className="ss-ctx-panel">
+      <p className="ss-ctx-lead">This is everything Observant uses to tailor questions. The more it knows, the sharper every question lands — fill it out once, refine anytime.</p>
+      <div className="ss-form-grid">
+        <Field label="What your product does" wide>
+          <textarea className="textarea" value={w.productDescription} onChange={(e) => patchWs({ productDescription: e.target.value })} />
+        </Field>
+        <Field label="Who uses it today" wide>
+          <textarea className="textarea" value={w.userBase} onChange={(e) => patchWs({ userBase: e.target.value })} />
+        </Field>
+        <Field label="Product URL">
+          <input className="input" value={w.productUrl} onChange={(e) => patchWs({ productUrl: e.target.value })} />
+        </Field>
+        <ContextExtraFields value={w.context} onChange={patchCtx} />
+      </div>
+    </div>
+  );
+}
+
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
-function AskPanel({ product }) {
+function AskPanel({ product, state, patchState }) {
   const [question, setQuestion] = useStateSS("");
-  const [channel, setChannel] = useStateSS("email");
   const [wishlist, setWishlist] = useStateSS("");
   const [tri, setTri] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
@@ -776,15 +848,18 @@ function AskPanel({ product }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
+  const [showContext, setShowContext] = useStateSS(false);
 
+  const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
+  const comp = SelfServeData.contextCompleteness(state.workspace);
 
   async function preview() {
     if (!question.trim()) return;
     setPreviewing(true); setErr(""); setResult(null);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, memory: anMemory(product) });
+      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
       if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
       setTri(t);
     } catch (e) { setErr(String(e.message || e)); }
@@ -795,7 +870,7 @@ function AskPanel({ product }) {
     if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, memory: anMemory(product) }));
+      setResult(await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) }));
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -803,19 +878,20 @@ function AskPanel({ product }) {
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
-      <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, batched into a real email, answers gathered for you.</p>
+      <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, gathered for you. It draws on everything it knows about your product to tailor each one.</p>
+
+      <button type="button" className="ss-ctx-strip" onClick={() => setShowContext((s) => !s)}>
+        <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
+        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · {showContext ? "hide" : "review / add more"}</span>
+      </button>
+      {showContext && <ContextPanel state={state} patchState={patchState} />}
+
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <Field label="Where should Observant dig deeper if it comes up? (optional)">
         <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
-      </Field>
-      <Field label="Channel">
-        <select className="input" value={channel} onChange={(e) => setChannel(e.target.value)}>
-          <option value="email">Email — one batched message</option>
-          <option value="telegram">Telegram / IM — one question at a time</option>
-        </select>
       </Field>
       <div className="ss-panel-actions">
         <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Composing…" : "Preview what Observant will ask"}</Btn>
@@ -860,7 +936,7 @@ function AskPanel({ product }) {
               <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
               <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>{channel === "email" ? "The batch Observant will send" : "Asked one at a time, after a heads-up"}</p>
               <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
-              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy.</p>
+              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy. <span style={{ color: "#8a857c" }}>Delivery adapts to each user's chosen channel — email gets the set at once, Telegram one at a time after a heads-up. This preview shows the email version.</span></p>
             </div>
           )}
 
@@ -959,7 +1035,7 @@ function LearningView({ state, patchState, navigate }) {
 
   return (
     <div className="ss-page-stack">
-      <AskPanel product={product} />
+      <AskPanel product={product} state={state} patchState={patchState} />
     </div>
   );
 }

@@ -2875,6 +2875,26 @@
 .ss-ask-cta:hover { filter: brightness(1.07); }
 
 /* slack upsell — compact box at the bottom of the Questions page */
+/* Context — "what Observant knows" strip + panel on the Ask page */
+.ss-ctx-strip { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: #f7f5f0; border: 1px solid var(--border,#e6e3dd); border-radius: 10px; padding: 11px 14px; cursor: pointer; font: inherit; margin: 0 0 16px; text-align: left; }
+.ss-ctx-strip:hover { border-color: var(--accent); }
+.ss-ctx-strip-main { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; color: #24221e; }
+.ss-ctx-strip-meta { font-size: .82rem; color: var(--text-muted); }
+.ss-ctx-panel { border: 1px solid var(--border,#e6e3dd); border-radius: 12px; padding: 16px; margin: -6px 0 18px; background: #fff; }
+.ss-ctx-lead { font-size: .85rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 14px; }
+.ss-ctx-docs { display: flex; flex-direction: column; gap: 8px; }
+.ss-ctx-doc { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 8px; align-items: center; }
+.ss-ctx-doc-rm { border: none; background: #f0ece4; color: #8a857c; border-radius: 7px; width: 30px; height: 30px; font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.ss-ctx-doc-rm:hover { background: #e7ddd2; color: #b4291f; }
+.ss-ctx-doc-add { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px dashed var(--border,#cfc8bd); border-radius: 8px; padding: 7px 12px; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
+.ss-ctx-doc-add:hover { border-color: var(--accent); }
+@media (max-width: 640px) { .ss-ctx-doc { grid-template-columns: 1fr auto; } }
+
+/* Onboarding — richer-context expander */
+.ss-entry-more { display: inline-flex; align-items: center; gap: 7px; background: none; border: none; color: var(--accent); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; padding: 4px 0; margin: 6px 0 2px; }
+.ss-entry-more em { font-style: normal; color: var(--text-muted); font-weight: 400; }
+.ss-entry-more-grid { margin-top: 12px; }
+
 /* Ask — the depth bifurcation decision card */
 .ss-depth-card { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border,#e6e3dd); }
 .ss-depth-card.light { background: #f1f6f1; border-color: #cfe3cf; }
