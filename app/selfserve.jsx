@@ -8,6 +8,7 @@ const SS_SECTIONS = [
   { id: "learning", label: "Activity", icon: "chat" },
   { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
+  { id: "context", label: "Context", icon: "globe" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
@@ -679,6 +680,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
       </div>
@@ -812,15 +814,31 @@ function ContextExtraFields({ value, onChange }) {
   );
 }
 
-// The Ask-page "what Observant knows about you" panel — the full living profile,
-// editable inline so the team can level-set / top up before asking.
-function ContextPanel({ state, patchState }) {
+// The dedicated Context page — the full living profile on its own surface,
+// always inviting more. Reached from the nav and the Ask-page strip.
+function ContextView({ state, patchState }) {
+  const product = SelfServeData.productName(state.workspace);
+  const comp = SelfServeData.contextCompleteness(state.workspace);
+  return (
+    <div className="ss-page-stack">
+      <section className="ss-panel">
+        <PanelTitle k="Context" title={"What Observant knows about " + product} status={comp.filled + " of " + comp.total + " filled"} />
+        <p className="ss-step-lead">This is the shared memory behind every question Observant asks your users. The more it knows, the sharper and more tailored each conversation — and you can keep adding to it anytime, forever. <b>New context is always welcome.</b></p>
+        <ContextPanel state={state} patchState={patchState} bare />
+      </section>
+    </div>
+  );
+}
+
+// The "what Observant knows about you" profile body — the full living profile,
+// editable. Used on the Context page (and anywhere the profile is edited).
+function ContextPanel({ state, patchState, bare }) {
   const w = state.workspace;
   const patchWs = (partial) => patchState((cur) => ({ ...cur, workspace: { ...cur.workspace, ...partial } }));
   const patchCtx = (ctx) => patchState((cur) => ({ ...cur, workspace: { ...cur.workspace, context: ctx } }));
   return (
-    <div className="ss-ctx-panel">
-      <p className="ss-ctx-lead">This is everything Observant uses to tailor questions. The more it knows, the sharper every question lands — fill it out once, refine anytime.</p>
+    <div className={bare ? "" : "ss-ctx-panel"}>
+      {!bare && <p className="ss-ctx-lead">This is everything Observant uses to tailor questions. The more it knows, the sharper every question lands — fill it out once, refine anytime.</p>}
       <div className="ss-form-grid">
         <Field label="What your product does" wide>
           <textarea className="textarea" value={w.productDescription} onChange={(e) => patchWs({ productDescription: e.target.value })} />
@@ -839,7 +857,7 @@ function ContextPanel({ state, patchState }) {
 
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
-function AskPanel({ product, state, patchState }) {
+function AskPanel({ product, state, patchState, navigate }) {
   const [question, setQuestion] = useStateSS("");
   const [wishlist, setWishlist] = useStateSS("");
   const [tri, setTri] = useStateSS(null);
@@ -848,7 +866,6 @@ function AskPanel({ product, state, patchState }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
-  const [showContext, setShowContext] = useStateSS(false);
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
@@ -880,11 +897,10 @@ function AskPanel({ product, state, patchState }) {
       <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
       <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, gathered for you. It draws on everything it knows about your product to tailor each one.</p>
 
-      <button type="button" className="ss-ctx-strip" onClick={() => setShowContext((s) => !s)}>
+      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
-        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · {showContext ? "hide" : "review / add more"}</span>
+        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
       </button>
-      {showContext && <ContextPanel state={state} patchState={patchState} />}
 
       <Field label="Your question">
         <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
@@ -1035,7 +1051,7 @@ function LearningView({ state, patchState, navigate }) {
 
   return (
     <div className="ss-page-stack">
-      <AskPanel product={product} state={state} patchState={patchState} />
+      <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
     </div>
   );
 }
