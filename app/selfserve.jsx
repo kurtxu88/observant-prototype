@@ -854,7 +854,7 @@ function AskPanel({ product }) {
           ) : (
             <p style={{ fontSize: ".85rem", color: "#8a857c" }}>Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
           )}
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox to see exactly what your users receive.</p>}
+          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox to see exactly what your users receive. In a live program, their replies flow back here to your dashboard.</p>}
           {result && !result.ok && result.needKey && <p style={{ fontSize: ".85rem", color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to the Vercel project to send for real.</p>}
           {result && !result.ok && !result.needKey && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{result.error}</p>}
         </div>
