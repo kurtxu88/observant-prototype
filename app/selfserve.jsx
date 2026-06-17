@@ -1041,9 +1041,6 @@ function AskPanel({ product, state, patchState, navigate }) {
         <p className="ss-ask-hint">One question per box. More questions → a heavier, likely 10-minute conversation.</p>
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
-      <Field label="Where should Observant dig deeper if it comes up? (optional)">
-        <textarea className="textarea" value={wishlist} placeholder="e.g. If they mention notifications, find out whether they turned any off." onChange={(e) => setWishlist(e.target.value)} />
-      </Field>
       <div className="ss-panel-actions">
         <Btn variant="primary" onClick={preview} disabled={!askList.length || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
       </div>
@@ -1069,12 +1066,12 @@ function AskPanel({ product, state, patchState, navigate }) {
           {/* The bifurcation decision — light vs deep */}
           <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
             <div className="ss-depth-head">
-              <span className="ss-depth-badge">{isDeep ? "Deep — 10-minute AI-guided conversation" : "Light — a couple of quick questions"}</span>
+              <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
               <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a short voice/text session." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
             {tri.rationale && <p className="ss-depth-why">{tri.rationale}</p>}
             <details className="ss-depth-learn">
-              <summary>What's deep vs light?</summary>
+              <summary>What's light mode vs deep mode?</summary>
               <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided conversation (voice or text) for questions that need real back-and-forth to unfold. If someone doesn't have time, they're offered the light version instead.</p>
             </details>
           </div>
