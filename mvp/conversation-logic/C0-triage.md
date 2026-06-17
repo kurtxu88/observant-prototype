@@ -30,7 +30,7 @@ Can it be asked cold, or does the **question itself** need back-and-forth to eve
 ## The decision — deep is the EXCEPTION, reserved for THREE archetypes
 Default is **LIGHT**. Go **DEEP only** when the question is fundamentally one of these three:
 1. **Strategic / generative discovery** — open, direction-shaping: "what's the real job they hire us for," "what should we build next," "what's missing here." Not a bounded question about a known thing.
-2. **Decision / journey narrative** — a multi-step sequence to reconstruct: "walk me through how you decided to cancel," "how did you end up choosing us over X."
+2. **Decision / journey narrative** — a multi-step sequence to reconstruct, with **explicit walk-through / sequence framing**: "walk me through how you decided to cancel," "how did you end up choosing us over X." NOTE: a bare **"why did they churn / why did they cancel"** is just the *reason behind a behavior* → **LIGHT**. It only becomes deep when the ask is explicitly to reconstruct the decision step by step.
 3. **Mental model** — how they categorize / make sense of a space, inferred through probing: "how do they think about where we fit in their stack."
 
 **Everything else is LIGHT — including things that *sound* deep but aren't:**
