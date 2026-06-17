@@ -84,7 +84,10 @@ async function callSelf(base, body) {
 // C2 sometimes echoes a literal "Subject: ..." line into the body — the email
 // already has a subject header, so strip any leading one.
 function stripSubjectLine(s) {
-  return String(s || "").replace(/^\s*subject:.*(\r?\n)+/i, "").trim();
+  return String(s || "")
+    .replace(/^\s*subject:.*(\r?\n)+/i, "")
+    .replace(/\[\s*(?:first\s*)?name\s*\]/gi, "there")  // unfilled "Hi [Name]," placeholder
+    .trim();
 }
 function lightMessageFromPlan(product, plan) {
   const qs = (plan.questions || []).map((q, i) => (i + 1) + ". " + q).join("\n");
