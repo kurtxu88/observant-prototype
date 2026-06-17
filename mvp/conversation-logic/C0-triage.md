@@ -24,6 +24,7 @@ This is **not** a study-type classifier. We are not sorting the question into a 
 - **The answer is a statable thing** — a label, feeling, reaction, rating, or recallable recent action the person gives honestly when asked: feature sentiment ("how do they feel about the community feature"), satisfaction, usage frequency, did-they-notice, **the JTBD label** ("what's the real job we're hired for").
 - **A specific surface / feature** — "what do they think of our pricing **page**" (UI: CTA placement, whether tiers read clearly) is light; "what do they think of our **pricing**" (the strategy/value) is deep. Same verb, different scope.
 - **"Why" behind one behavior that's askable behaviorally** — "when you exported to a spreadsheet, what were you trying to do?" + one follow-up. (But if the honest "why" is cliché-trapped — like churn — it's deep.)
+- **Surfacing complaints / struggles / pain points** — "what are people's complaints and struggles?" People can *name* their pain points directly, and naming them is enough. → **light.** It's only deep if the team wants to dig into the *why* behind one *specific* struggle.
 - Default: a direct ask, plus at most one follow-up, gets a genuine answer.
 
 ## Volume raises the weight
