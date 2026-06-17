@@ -18,12 +18,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const payload = await readJson(req);
-    const action = ["translate", "synthesize"].includes(payload.action) ? payload.action : "turn";
+    const action = ["translate", "triage", "synthesize"].includes(payload.action) ? payload.action : "turn";
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(200).json(noKeyStub(action, payload));
     }
 
+    if (action === "triage") {
+      const result = await triage(payload);
+      return res.status(200).json({ ok: true, ...result });
+    }
     if (action === "translate") {
       const plan = await translate(payload);
       return res.status(200).json({ ok: true, plan });
@@ -38,6 +42,44 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: false, error: String(error && error.message || error) });
   }
 };
+
+/* ---------- C0 + C1: depth triage (deep/light) + the light question set ----------
+   Runs the depth gate (C0) and the light set (C1) together. The light set IS the
+   light-mode delivery AND the pre-generated fallback if a deep invite is declined. */
+async function triage(payload) {
+  const [depth, lightPlan] = await Promise.all([classifyDepth(payload), translate(payload)]);
+  return {
+    mode: depth.mode === "deep" ? "deep" : "light",
+    rationale: depth.rationale || "",
+    dimensions: depth.dimensions || {},
+    deepPlan: depth.mode === "deep" ? (depth.deepPlan || null) : null,
+    lightPlan: lightPlan,
+  };
+}
+
+/* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
+async function classifyDepth(payload) {
+  const question = limit(payload.question, 500);
+  const product = limit(payload.product, 100) || "the product";
+  const context = limit(payload.context, 600);
+  const memory = limit(payload.memory, 1200);
+  const system = readPrompt("C0-triage.md");
+  const user =
+    "PRODUCT: " + product + "\n" +
+    (context ? "CONTEXT: " + context + "\n" : "") +
+    (memory ? "WHAT WE ALREADY KNOW ABOUT THIS PERSON: " + memory + "\n" : "") +
+    'TEAM QUESTION: "' + question + '"\n\n' +
+    'Make the depth call. Return JSON only in the schema from your instructions ' +
+    '({mode, rationale, dimensions:{scope,constructs,answerReadiness,contextLoad}, deepPlan}). ' +
+    "deepPlan must be null when mode is light.";
+  const text = await callClaude(system, [{ role: "user", content: user }], 700);
+  return parseJson(text, {
+    mode: "light",
+    rationale: "Defaulted to light (triage parse fell back).",
+    dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
+    deepPlan: null,
+  });
+}
 
 /* ---------- C1: raw question -> essence + opening question ---------- */
 async function translate(payload) {
@@ -211,6 +253,15 @@ function parseJson(text, fallback) {
 function noKeyStub(action, payload) {
   if (action === "synthesize") {
     return { ok: true, stub: true, memory: "[ANTHROPIC_API_KEY not set] would summarize this person from their intro." };
+  }
+  if (action === "triage") {
+    return {
+      ok: true, stub: true, mode: "light",
+      rationale: "[ANTHROPIC_API_KEY not set] — set it to run the live depth triage.",
+      dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
+      deepPlan: null,
+      lightPlan: { essence: "[no key] " + limit(payload.question, 160), questions: ["Set ANTHROPIC_API_KEY to run triage."], subject: "(set ANTHROPIC_API_KEY)" },
+    };
   }
   if (action === "translate") {
     return {

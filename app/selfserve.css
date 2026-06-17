@@ -2875,6 +2875,20 @@
 .ss-ask-cta:hover { filter: brightness(1.07); }
 
 /* slack upsell — compact box at the bottom of the Questions page */
+/* Ask — the depth bifurcation decision card */
+.ss-depth-card { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border,#e6e3dd); }
+.ss-depth-card.light { background: #f1f6f1; border-color: #cfe3cf; }
+.ss-depth-card.deep { background: #f4efe6; border-color: #e6ddcb; }
+.ss-depth-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 7px; }
+.ss-depth-badge { font-weight: 700; font-size: .98rem; color: #24221e; }
+.ss-depth-sub { font-size: .82rem; color: var(--text-muted); }
+.ss-depth-why { font-size: .9rem; color: #4a463f; line-height: 1.5; margin: 0 0 10px; }
+.ss-depth-dims { display: flex; flex-wrap: wrap; gap: 7px; }
+.ss-depth-dim { font-size: .74rem; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 999px; padding: 3px 9px; color: #4a463f; text-transform: capitalize; }
+.ss-depth-dim em { font-style: normal; color: #8a857c; text-transform: uppercase; letter-spacing: .03em; font-size: .68rem; margin-right: 4px; }
+.ss-fallback { font-size: .85rem; color: #6b665d; background: #f7f5f0; border-radius: 8px; padding: 9px 12px; margin: 0 0 16px; }
+.ss-fallback summary { cursor: pointer; font-weight: 500; }
+
 /* Home — new insights highlight row */
 .ss-home-insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .ss-home-insight { text-align: left; border: 1px solid var(--border,#e6e3dd); background: #fff; border-radius: 12px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s, box-shadow .15s; }

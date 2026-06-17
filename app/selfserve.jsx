@@ -771,20 +771,23 @@ function AskPanel({ product }) {
   const [temp, setTemp] = useStateSS(0.5);
   const [channel, setChannel] = useStateSS("email");
   const [wishlist, setWishlist] = useStateSS("");
-  const [plan, setPlan] = useStateSS(null);
+  const [tri, setTri] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
   const [testEmail, setTestEmail] = useStateSS("");
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
 
+  const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
+  const isDeep = tri && tri.mode === "deep";
+
   async function preview() {
     if (!question.trim()) return;
     setPreviewing(true); setErr(""); setResult(null);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "translate", product, question, wishlist, memory: anMemory(product) });
-      if (!t || !t.plan) throw new Error("couldn't compose the questions");
-      setPlan(t.plan);
+      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, memory: anMemory(product) });
+      if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
+      setTri(t);
     } catch (e) { setErr(String(e.message || e)); }
     setPreviewing(false);
   }
@@ -803,7 +806,7 @@ function AskPanel({ product }) {
       <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
       <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, batched into a real email, answers gathered for you.</p>
       <Field label="Your question">
-        <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setPlan(null); }} />
+        <textarea className="textarea" value={question} placeholder={"e.g. How do people use their " + product + " day-to-day?"} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <Field label="Where should Observant dig deeper if it comes up? (optional)">
@@ -834,18 +837,51 @@ function AskPanel({ product }) {
         <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Composing…" : "Preview what Observant will ask"}</Btn>
       </div>
 
-      {plan && (
+      {tri && (
         <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>
-          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The essence</p>
-          <p style={{ margin: "0 0 12px" }}>{plan.essence}</p>
-          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Email subject</p>
-          <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
-          <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The first batch Observant will send</p>
-          <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
-          <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy.</p>
+          {/* The bifurcation decision — light vs deep */}
+          <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
+            <div className="ss-depth-head">
+              <span className="ss-depth-badge">{isDeep ? "Deep — ~10-min conversation" : "Light — a couple of quick questions"}</span>
+              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a short voice/text session." : "Observant will ask in-channel; at most one follow-up."}</span>
+            </div>
+            {tri.rationale && <p className="ss-depth-why">{tri.rationale}</p>}
+            {tri.dimensions && (
+              <div className="ss-depth-dims">
+                {[["scope","Scope"],["constructs","Constructs"],["answerReadiness","Answer"],["contextLoad","Context"]].map(([k, lbl]) => (
+                  tri.dimensions[k] ? <span key={k} className="ss-depth-dim"><em>{lbl}</em> {tri.dimensions[k]}</span> : null
+                ))}
+              </div>
+            )}
+          </div>
+
+          {isDeep && tri.deepPlan ? (
+            <div style={{ marginTop: 14 }}>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>What we're really after</p>
+              <p style={{ margin: "0 0 12px" }}>{tri.deepPlan.essence}</p>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>How the session opens</p>
+              <p style={{ margin: "0 0 12px", fontStyle: "italic", color: "#4a463f" }}>"{tri.deepPlan.opening}"</p>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Threads it will explore live</p>
+              <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(tri.deepPlan.threads || []).map((t, i) => <li key={i} style={{ margin: "5px 0" }}>{t}</li>)}</ol>
+              <details className="ss-fallback">
+                <summary>If they decline, they get this light version instead</summary>
+                <ol style={{ margin: "8px 0 0", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
+              </details>
+            </div>
+          ) : (
+            <div style={{ marginTop: 14 }}>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The essence</p>
+              <p style={{ margin: "0 0 12px" }}>{plan.essence}</p>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>{channel === "email" ? "Email subject" : "Thread subject"}</p>
+              <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>{channel === "email" ? "The batch Observant will send" : "Asked one at a time, after a heads-up"}</p>
+              <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
+              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy.</p>
+            </div>
+          )}
 
           {channel === "email" ? (
-            <Field label="Send a real test email to yourself">
+            <Field label={isDeep ? "Send the real invitation to yourself" : "Send a real test email to yourself"}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
                 <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
