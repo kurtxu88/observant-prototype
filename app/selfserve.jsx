@@ -744,7 +744,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           <Wordmark size="1.45rem" />
         </button>
         <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>
-          <Icon name="spark" size={16} /> Ask a question
+          <Icon name="spark" size={16} /> Send a new loop
         </button>
         <nav className="ss-nav">
           {SS_SECTIONS.map((item) => (
@@ -826,10 +826,10 @@ function HomeView({ state, patchState, navigate }) {
 
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
-          <PanelTitle k="Next" title="Ask your panel a question" status="Ready" />
+          <PanelTitle k="Next" title="Send a new loop" status="Ready" />
           <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Ask a question</Btn>
+            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
           </div>
         </section>
       )}
@@ -1020,8 +1020,8 @@ function AskPanel({ product, state, patchState, navigate }) {
 
   return (
     <section className="ss-panel" id="create-loop">
-      <PanelTitle k="Ask" title="Ask your panel a question" status="Always on" />
-      <p className="ss-step-lead">Ask anything. Observant turns it into a continuous 1:1 — phrased per person, gathered for you. It draws on everything it knows about your product to tailor each one.</p>
+      <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
+      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends your users. Write what you want to learn — Observant turns it into a continuous 1:1, phrased per person, and never asks more than 3 questions in a loop. It draws on everything it knows about your product to tailor each one.</p>
 
       <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
