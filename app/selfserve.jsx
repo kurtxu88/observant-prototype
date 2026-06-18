@@ -1037,7 +1037,7 @@ function AskPanel({ product, state, patchState, navigate }) {
           </Field>
           {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}>{previewing ? "Reading your question…" : "Preview what Observant will ask"} <Icon name="arrow" size={16} /></Btn>
+            <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}>{previewing ? "Reading your question…" : "Next: see what Observant will ask"} <Icon name="arrow" size={16} /></Btn>
           </div>
         </div>
       )}
@@ -1068,7 +1068,6 @@ function AskPanel({ product, state, patchState, navigate }) {
             <div style={{ marginTop: 14 }}>
               <span className="ss-result-label">The questions it'll ask</span>
               <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
-              <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
             </div>
           )}
 
