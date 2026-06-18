@@ -2984,6 +2984,18 @@
 .jn-progress-step.on .jn-progress-label, .jn-progress-step.done .jn-progress-label { color: var(--text); font-weight: 600; }
 @media (max-width: 560px) { .jn-progress-label { display: none; } .jn-progress-step:not(:last-child)::after { width: 22px; margin: 0 7px; } }
 
+/* join: cadence preference at opt-in */
+.jn-cadence { max-width: 460px; margin: 0 0 18px; }
+.jn-cadence-label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 9px; }
+.jn-cadence-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.jn-cadence-opt { text-align: left; border: 1px solid var(--border,#e6e3dd); background: #fff; border-radius: 10px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.jn-cadence-opt b { font-size: .85rem; }
+.jn-cadence-opt span { font-size: .74rem; color: var(--text-muted); line-height: 1.4; }
+.jn-cadence-opt.on { border-color: var(--accent); background: #fbf3ee; box-shadow: 0 0 0 1px var(--accent) inset; }
+.jn-cadence-note { font-size: .8rem; color: var(--text-muted); margin: 9px 0 0; line-height: 1.45; }
+.jn-cadence-confirm { font-size: .9rem; color: #2e7d46; margin: 4px 0 10px; }
+@media (max-width: 560px) { .jn-cadence-grid { grid-template-columns: 1fr; } }
+
 /* join: optional intro framing */
 .jn-intro-why { list-style: none; padding: 0; margin: 18px 0 22px; display: flex; flex-direction: column; gap: 11px; }
 .jn-intro-why li { position: relative; padding-left: 24px; line-height: 1.5; color: var(--text-secondary,#4a463f); font-size: .95rem; }

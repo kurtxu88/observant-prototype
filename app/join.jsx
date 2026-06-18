@@ -47,6 +47,7 @@ function JoinApp() {
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
+  const [cadence, setCadence] = useStateJN("occasional");
   // In-product programs have no contact-preference step — the conversation
   // lives inside the product. Off-product is where the user picks a channel.
   const onJoin = route === "inproduct"
@@ -63,8 +64,8 @@ function JoinApp() {
       <JoinProgress phase={phase} route={route} />
 
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -88,10 +89,17 @@ function JoinProgress({ phase, route }) {
   );
 }
 
+const JN_CADENCE = [
+  { id: "open", t: "As often as helps", d: "Happy to hear from the team regularly." },
+  { id: "occasional", t: "Every week or two", d: "A light, steady rhythm." },
+  { id: "rare", t: "Only now and then", d: "Sparingly — and whenever I reach out myself." },
+];
+
 function JoinChoose({ product, channels, onConnect }) {
   const single = channels.length === 1;
   const [picked, setPicked] = useStateJN(single ? channels[0] : "");
   const [email, setEmail] = useStateJN("");
+  const [cadence, setCadence] = useStateJN("occasional");
   const emailValid = email.includes("@") && email.includes(".");
 
   // Step 1 — pick the channel
@@ -134,15 +142,28 @@ function JoinChoose({ product, channels, onConnect }) {
         <h1>{picked === "email" ? "Join by email." : "Connect on Telegram."}</h1>
         <p>This is where your one-on-one with the {product} team will live.{!single && <> <button type="button" className="jn-back" onClick={() => setPicked("")}>← pick a different way</button></>}</p>
       </section>
+
+      <div className="jn-cadence">
+        <span className="jn-cadence-label">How often do you want to hear from the {product} team?</span>
+        <div className="jn-cadence-grid">
+          {JN_CADENCE.map((c) => (
+            <button key={c.id} type="button" className={"jn-cadence-opt" + (cadence === c.id ? " on" : "")} onClick={() => setCadence(c.id)}>
+              <b>{c.t}</b><span>{c.d}</span>
+            </button>
+          ))}
+        </div>
+        <p className="jn-cadence-note">We'll respect this — and you can change it or pause anytime. (You can always reach out yourself, no matter what you pick.)</p>
+      </div>
+
       {picked === "email" ? (
         <div className="jn-next">
-          <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email); }} />
-          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email)}>Join by email</Btn>
+          <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email, cadence); }} />
+          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email, cadence)}>Join by email</Btn>
         </div>
       ) : (
         <div className="jn-next">
           <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
-          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram")}>Connect Telegram</Btn>
+          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram", "", cadence)}>Connect Telegram</Btn>
         </div>
       )}
       <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>
@@ -222,17 +243,19 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, contactEmail }) {
+function JoinWelcome({ product, channel, contactEmail, cadence }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
   const [introSkipped, setIntroSkipped] = useStateJN(false);
   const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
+  const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
   return (
     <main className="jn-main">
       {!introSkipped ? (
         <section className="jn-hero">
           <span className="eyebrow">You're in</span>
+          <p className="jn-cadence-confirm">You'll hear from the {product} team <b>{cadenceWord}</b> — change it or pause anytime.</p>
           <h1>Want to give the team a head start?</h1>
           <p>It's optional — but a short ~10-minute intro chat helps the {product} team get to know how you actually use {product}. Here's why it's worth it:</p>
           <ul className="jn-intro-why">
