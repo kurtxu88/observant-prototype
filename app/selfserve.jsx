@@ -967,6 +967,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
+  const [showContext, setShowContext] = useStateSS(false);
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
@@ -1010,10 +1011,11 @@ function AskPanel({ product, state, patchState, navigate }) {
       <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
       <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
-      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "settings", focusedTarget: "settings-context" })}>
+      <button type="button" className="ss-ctx-strip" onClick={() => setShowContext((s) => !s)}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
-        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
+        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · {showContext ? "hide" : "review / add more"}</span>
       </button>
+      {showContext && <ContextPanel state={state} patchState={patchState} />}
 
       <Field label="What do you want to learn?">
         <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
@@ -1432,15 +1434,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
   };
   const product = SelfServeData.productName(state.workspace);
   const introText = state.workspace.introQuestions != null ? state.workspace.introQuestions : ssDefaultIntroText(product);
-  const comp = SelfServeData.contextCompleteness(state.workspace);
-
   return (
-    <div className="ss-page-stack">
-    <section className={"ss-panel" + ssFocusClass(state, "settings-context")}>
-      <PanelTitle k="Context" title={"What Observant knows about " + product} status={comp.filled + " of " + comp.total + " filled"} />
-      <p className="ss-step-lead">The shared memory behind every question Observant asks your users — product, users, goal, prior learning, docs. The more it knows, the sharper each loop. Add or change this anytime.</p>
-      <ContextPanel state={state} patchState={patchState} bare />
-    </section>
     <section className={"ss-panel ss-settings-panel" + ssFocusClass(state, "settings-workspace")}>
       <PanelTitle k="Settings" title="Workspace settings" status="Saved locally" />
       <Field label="Company or product name">
@@ -1478,7 +1472,6 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <Btn variant="ghost" onClick={ssLogout}>Log out</Btn>
       </div>
     </section>
-    </div>
   );
 }
 
