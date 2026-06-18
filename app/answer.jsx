@@ -16,6 +16,7 @@ function AnswerApp() {
   const [busy, setBusy] = useStateAN(false);
   const [err, setErr] = useStateAN("");
   const [result, setResult] = useStateAN(null);
+  const [redo, setRedo] = useStateAN(null); // {verdict, summary} when answers didn't pass the quality gate
 
   useEffectAN(() => {
     (async () => {
@@ -32,10 +33,16 @@ function AnswerApp() {
     if (busy) return;
     const ans = (data.questions || []).map((q, i) => answers[i] || "");
     if (!ans.some((a) => a.trim())) { setErr("Add at least one answer."); return; }
-    setBusy(true); setErr("");
+    setBusy(true); setErr(""); setRedo(null);
     try {
       const r = await anPost({ action: "submit", d, answers: ans });
       if (!r.ok) throw new Error(r.error || "couldn't submit");
+      if (r.verdict === "fail" || r.verdict === "partial") {
+        // didn't earn the reward yet — stay on the form so they can improve
+        setRedo({ verdict: r.verdict, summary: (r.quality && r.quality.summary) || "" });
+        setBusy(false);
+        return;
+      }
       setResult(r); setPhase("done");
     } catch (e) { setErr(String(e.message || e)); }
     setBusy(false);
@@ -64,13 +71,23 @@ function AnswerApp() {
             <h1>{data.followup ? "A couple more questions" : "A few questions from the " + product + " team"}</h1>
             {data.intro ? <p>{data.intro}</p> : <p>Answer in your own words — whatever comes to mind is useful.</p>}
           </div>
+          {data.estMin > 0 && (
+            <div className="an-est">≈ {data.estMin} min · earn about <b>${data.estMin * 2}</b> — paid when your answers pass a quick quality check (genuine, on-topic, specific). Time spent doesn't matter; effort does.</div>
+          )}
+          {redo && (
+            <div className={"an-redo " + redo.verdict}>
+              {redo.verdict === "fail"
+                ? <span><b>This didn't pass our quality check yet.</b> {redo.summary || "The answers were a bit too brief or off-topic."} Add a little more — a specific example or reason — and resend to earn the reward.</span>
+                : <span><b>Almost there — just a bit more.</b> {redo.summary || "A couple answers were thin."} Expand them slightly and resend to earn the reward.</span>}
+            </div>
+          )}
           {(data.questions || []).map((q, i) => (
             <div className="an-q" key={i}>
               <label>{i + 1}. {q}</label>
               <textarea className="input" value={answers[i] || ""} placeholder="Your answer…" onChange={(e) => setAnswers(Object.assign({}, answers, { [i]: e.target.value }))} />
             </div>
           ))}
-          <div className="an-reward">You earn about <b>$2 per minute</b> you spend answering — tracked automatically.{data.accruedMinutes > 0 ? <> You're at about <b>{data.accruedMinutes} min</b> so far this conversation.</> : null} You can track and redeem your rewards on Observant anytime. <span style={{ color: "#8a857c" }}>And it's a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</span></div>
+          <div className="an-reward">{data.accruedMinutes > 0 ? <>You're at about <b>{data.accruedMinutes} min</b> so far this conversation. </> : null}Rewards are tracked automatically and redeemable on Observant anytime. <span style={{ color: "#8a857c" }}>And it's a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</span></div>
           <Btn variant="primary" size="lg" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Send my answers"} <Icon name="arrow" size={16} /></Btn>
           {err && <p className="an-err">{err}</p>}
           {data.manageUrl && <p className="an-muted" style={{ marginTop: 16, fontSize: ".8rem" }}><a href={data.manageUrl} style={{ color: "#8a857c" }}>Change how often, pause, or opt out</a></p>}

@@ -19,12 +19,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const payload = await readJson(req);
-    const action = ["translate", "triage", "synthesize", "describe"].includes(payload.action) ? payload.action : "turn";
+    const action = ["translate", "triage", "synthesize", "describe", "quality"].includes(payload.action) ? payload.action : "turn";
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(200).json(noKeyStub(action, payload));
     }
 
+    if (action === "quality") {
+      const q = await assessQuality(payload);
+      return res.status(200).json({ ok: true, ...q });
+    }
     if (action === "describe") {
       const description = await describeProduct(payload);
       return res.status(200).json({ ok: true, description });
@@ -58,6 +62,7 @@ async function triage(payload) {
     rationale: depth.rationale || "",
     dimensions: depth.dimensions || {},
     exploration: exploreFromDimensions(depth.dimensions, depth.mode),
+    estMin: estMinForLoop(depth.mode, lightPlan),
     deepPlan: depth.mode === "deep" ? (depth.deepPlan || null) : null,
     split: (depth.split && depth.split.recommend) ? { recommend: true, note: limit(depth.split.note, 300) } : { recommend: false, note: "" },
     lightPlan: lightPlan,
@@ -109,6 +114,38 @@ function stripHtml(html) {
     .replace(/&[a-z#0-9]+;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/* Pre-determined minute estimate for a loop — what the task is WORTH, set up front
+   (not actual time spent). Light scales with the question count; deep is a ~10-min session. */
+function estMinForLoop(mode, lightPlan) {
+  if (mode === "deep") return 10;
+  const n = ((lightPlan && lightPlan.questions) || []).length || 1;
+  return Math.max(2, Math.round(n * 1.5));
+}
+
+/* ---------- Reward quality gate (ported from uxr-claw quality-assessor) ----------
+   Whether a response earns the reward is an AI judgment of engagement + on-topic + effort,
+   NOT time spent. Returns pass | partial | fail + a short reason. */
+async function assessQuality(payload) {
+  const product = limit(payload.product, 100) || "the product";
+  const questions = (Array.isArray(payload.questions) ? payload.questions : []).map((q) => limit(q, 240)).filter(Boolean);
+  const answers = (Array.isArray(payload.answers) ? payload.answers : []).map((a) => limit(a, 2000));
+  const transcript = questions.length
+    ? questions.map((q, i) => "Q: " + q + "\nA: " + (answers[i] || "(no answer)")).join("\n\n")
+    : answers.join("\n");
+  const system =
+    "You evaluate the QUALITY of a user's feedback responses to decide if they earn the reward. Judge three things, each pass or fail:\n" +
+    "1. ENGAGEMENT — did they actually engage, or give one-word/empty/dismissive answers?\n" +
+    "2. ON-TOPIC — are the answers about " + product + " and the questions asked (not gibberish or off-topic)?\n" +
+    "3. EFFORT — is there genuine, specific content (a real example, detail, or reason), not just a vague gesture?\n" +
+    "Overall: 'pass' if all three pass; 'partial' if it's close but thin/incomplete and worth one nudge to improve; 'fail' if it's empty, gibberish, off-topic, or clearly low-effort. " +
+    "Be fair, not harsh — a short but genuine and specific answer passes. Reward effort and honesty, not length.\n" +
+    'Return JSON only: {"engagement":"pass|fail","on_topic":"pass|fail","effort":"pass|fail","overall":"pass|partial|fail","summary":"one short line"}';
+  const text = await callClaude(system, [{ role: "user", content: "Responses:\n" + transcript + "\n\nEvaluate." }], 300, FAST_MODEL);
+  const r = parseJson(text, { overall: "pass", summary: "" });
+  const overall = ["pass", "partial", "fail"].includes(r.overall) ? r.overall : "pass";
+  return { engagement: r.engagement || "pass", on_topic: r.on_topic || "pass", effort: r.effort || "pass", overall, summary: limit(r.summary, 300) };
 }
 
 /* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
@@ -313,6 +350,9 @@ function parseJson(text, fallback) {
 }
 
 function noKeyStub(action, payload) {
+  if (action === "quality") {
+    return { ok: true, stub: true, engagement: "pass", on_topic: "pass", effort: "pass", overall: "pass", summary: "[no key] auto-pass." };
+  }
   if (action === "describe") {
     return { ok: true, stub: true, description: "" };
   }
@@ -325,6 +365,7 @@ function noKeyStub(action, payload) {
       rationale: "[ANTHROPIC_API_KEY not set] — set it to run the live depth triage.",
       dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
       exploration: 0.2,
+      estMin: 2,
       deepPlan: null,
       split: { recommend: false, note: "" },
       lightPlan: { essence: "[no key] " + limit(payload.question, 160), questions: ["Set ANTHROPIC_API_KEY to run triage."], subject: "(set ANTHROPIC_API_KEY)" },

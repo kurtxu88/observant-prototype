@@ -22,6 +22,8 @@ module.exports = async function handler(req, res) {
     const context = limit(payload.context, 2000);
     const mode = payload.mode === "deep" ? "deep" : "light";
     const deepPlan = payload.deepPlan && typeof payload.deepPlan === "object" ? payload.deepPlan : null;
+    const estMin = Math.max(1, Number(payload.estMin) || (mode === "deep" ? 10 : 4)); // pre-determined; ~$2/min
+    const estPay = estMin * 2;
     if (!question) return res.status(200).json({ ok: false, error: "question is required" });
     if (!/.+@.+\..+/.test(toEmail)) return res.status(200).json({ ok: false, error: "a valid test email is required" });
 
@@ -40,7 +42,7 @@ module.exports = async function handler(req, res) {
       subject = threadSubject;
       const essence = (deepPlan && deepPlan.essence) || plan.essence || question;
       // async fallback: the light set, opened on the hosted form
-      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: threadSubject, accruedMinutes: 0, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
+      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: threadSubject, estMin, accruedMinutes: 0, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
       const answerUrl = base + "/app/Answer.html?d=" + encodeState(lightState);
       const introUrl = base + "/app/IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeState({ product, mode: "deep", essence: essence, threads: (deepPlan && deepPlan.threads) || [] });
       const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });

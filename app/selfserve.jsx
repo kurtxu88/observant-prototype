@@ -973,6 +973,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
   const comp = SelfServeData.contextCompleteness(state.workspace);
+  const rate = (state.setup && state.setup.rate) || 2;
   const loopStep = !tri ? 0 : (result && result.ok ? 2 : 1); // 0 write · 1 review · 2 test
 
   async function preview() {
@@ -991,7 +992,7 @@ function AskPanel({ product, state, patchState, navigate }) {
     if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      const r = await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null });
+      const r = await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null, estMin: tri ? tri.estMin : undefined });
       setResult(r);
       if (r && r.ok) {
         // log this loop to Activity history
@@ -1067,6 +1068,10 @@ function AskPanel({ product, state, patchState, navigate }) {
                 <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
               </details>
             </div>
+
+            {tri.estMin > 0 && (
+              <p className="ss-reward-line">Reward offered: <b>~{tri.estMin} min · ${tri.estMin * rate}</b> per person — shown to them up front, paid when their answers pass a quick quality check (genuine · on-topic · specific). Not based on time spent.</p>
+            )}
 
             {tri.split && tri.split.recommend && (
               <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>

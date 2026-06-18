@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
       // It's a follow-up only if the user has actually replied before (not on the first answer).
       const followup = state.messages.filter((m) => m.role === "user").length > 0;
       const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product: state.product, contact: state.toEmail });
-      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject, accruedMinutes: Number(state.accruedMinutes) || 0, followup, manageUrl });
+      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject, accruedMinutes: Number(state.accruedMinutes) || 0, estMin: Number(state.estMin) || 0, followup, manageUrl });
     }
 
     // submit: assemble the user's reply, run it through the engine
@@ -36,13 +36,23 @@ module.exports = async function handler(req, res) {
 
     const messages = state.messages.concat([{ role: "user", content: userText }]);
     const answeredCount = answers.filter((a) => String(a || "").trim()).length;
-    const minutes = estMinutes(userText, answeredCount);
-    const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
     const priorEmails = state.messages.filter((m) => m.role === "assistant").length;
+
+    // AI-judged quality gate (ported from the Codified quality-assessor): does this EARN the reward?
+    const qa = await callSelf(base, { action: "quality", product: state.product, questions: parsed.questions, answers });
+    const verdict = (qa && ["pass", "partial", "fail"].includes(qa.overall)) ? qa.overall : "pass";
+    if (verdict !== "pass") {
+      // No reward yet — fail = re-answer, partial = add a bit more. The user stays on the form.
+      return res.status(200).json({ ok: true, done: false, verdict, quality: qa });
+    }
+
+    // PASS → award the PRE-DETERMINED minutes (what the loop is worth), not time spent.
+    const minutes = Math.max(1, Number(state.estMin) || estMinutes(userText, answeredCount));
+    const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
 
     // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
     if (priorEmails >= 2) {
-      return res.status(200).json({ ok: true, done: true, decision: "PAUSE", minutes, totalMinutes, capped: true });
+      return res.status(200).json({ ok: true, done: true, decision: "PAUSE", verdict, minutes, totalMinutes, capped: true });
     }
 
     // This is the only follow-up we're allowed — tell the engine so it only asks if genuinely worth it.
@@ -55,7 +65,7 @@ module.exports = async function handler(req, res) {
     const decision = (turn && turn.decision) || "CONTINUE";
 
     if (decision === "SUFFICIENT" || decision === "PAUSE" || !next.trim()) {
-      return res.status(200).json({ ok: true, done: true, decision, message: next, minutes, totalMinutes });
+      return res.status(200).json({ ok: true, done: true, decision, verdict, message: next, minutes, totalMinutes });
     }
 
     // continue: send the next email with a fresh answer link
@@ -75,7 +85,7 @@ module.exports = async function handler(req, res) {
       });
       sent = r.ok;
     }
-    return res.status(200).json({ ok: true, done: false, sent, decision, minutes, totalMinutes });
+    return res.status(200).json({ ok: true, done: false, sent, decision, verdict, minutes, totalMinutes });
   } catch (error) {
     return res.status(200).json({ ok: false, error: String(error && error.message || error) });
   }

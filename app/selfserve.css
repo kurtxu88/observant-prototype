@@ -2961,6 +2961,8 @@
 .ss-result-qs li { margin: 6px 0; line-height: 1.5; }
 .ss-result-foot { font-size: .82rem; color: #6b665d; line-height: 1.5; margin: 0; background: #f7f5f0; border-radius: 8px; padding: 9px 12px; }
 .ss-result-help { font-size: .85rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px; }
+.ss-reward-line { font-size: .85rem; color: #5a5347; line-height: 1.5; margin: 12px 0 0; background: #f4efe6; border: 1px solid #e6ddcb; border-radius: 8px; padding: 9px 12px; }
+.ss-reward-line b { color: #24221e; }
 .ss-send-row { display: flex; gap: 8px; }
 .ss-send-row .input { flex: 1; }
 /* secondary, not a competing CTA */
