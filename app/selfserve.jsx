@@ -1008,9 +1008,9 @@ function AskPanel({ product, state, patchState, navigate }) {
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
-      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user. Just write what you want to learn — <b>business or product questions, in your own words.</b> Observant translates them into natural, user-facing questions.</p>
-      <p className="ss-step-lead">Depending on what you're after, Observant runs the loop in <b>Light mode</b> (a couple of quick questions in their inbox or chat — for things people can tell you directly) or <b>Deep mode</b> (a ~10-minute AI-guided voice/text conversation — for questions where the real answer only comes out through back-and-forth). We pick, and show you which before you send.</p>
-      <p className="ss-step-lead">Focus on the <b>most impactful questions</b> for this loop and keep them to one theme. If you add a lot, or mix unrelated themes, we'll suggest breaking them into separate loops rather than sending all at once.</p>
+      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user. Write what you want to learn in your own words — business or product questions are fine; Observant rewrites them as natural user questions.</p>
+      <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
+      <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
       <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
@@ -1047,11 +1047,11 @@ function AskPanel({ product, state, patchState, navigate }) {
           <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
             <div className="ss-depth-head">
               <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
-              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a short voice/text session." : "Observant will ask in-channel; at most one follow-up."}</span>
+              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
             <details className="ss-depth-learn">
               <summary>What's light mode vs deep mode?</summary>
-              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided conversation (voice or text) for questions that need real back-and-forth to unfold. If someone doesn't have time, they're offered the light version instead.</p>
+              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
             </details>
           </div>
 
