@@ -55,14 +55,13 @@ function AnswerApp() {
 
       {phase === "form" && data && (
         <div>
-          {data.round > 0 && (
+          {data.followup && (
             <div className="an-followup">
-              <span className="an-followup-tag">Follow-up · round {data.round + 1}</span>
               <span>A couple of follow-ups based on what you shared earlier.{data.accruedMinutes > 0 ? <> You've banked about <b>{data.accruedMinutes} min</b> so far.</> : null}</span>
             </div>
           )}
           <div className="an-hero">
-            <h1>{data.round > 0 ? "A couple more questions" : "A few questions from the " + product + " team"}</h1>
+            <h1>{data.followup ? "A couple more questions" : "A few questions from the " + product + " team"}</h1>
             {data.intro ? <p>{data.intro}</p> : <p>Answer in your own words — whatever comes to mind is useful.</p>}
           </div>
           {(data.questions || []).map((q, i) => (

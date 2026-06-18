@@ -21,8 +21,9 @@ module.exports = async function handler(req, res) {
 
     if (payload.action !== "submit") {
       // load: hand the form the questions to render (+ minutes already banked in earlier rounds)
-      const round = state.messages.filter((m) => m.role === "assistant").length;
-      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject, accruedMinutes: Number(state.accruedMinutes) || 0, round });
+      // It's a follow-up only if the user has actually replied before (not on the first answer).
+      const followup = state.messages.filter((m) => m.role === "user").length > 0;
+      return res.status(200).json({ ok: true, product: state.product, intro: parsed.intro, questions: parsed.questions, outro: parsed.outro, subject: state.subject, accruedMinutes: Number(state.accruedMinutes) || 0, followup });
     }
 
     // submit: assemble the user's reply, run it through the engine
