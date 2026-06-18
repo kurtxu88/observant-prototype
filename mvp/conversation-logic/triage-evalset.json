@@ -1,0 +1,25 @@
+{
+  "_note": "Ground truth for the deep/light triage (C0). The axis is QUALITY OF A DIRECT ANSWER: a direct ask gets the truth → light; the truth needs indirection (cliché trap, social desirability, mental model, too-big) → deep. Strategic != deep (JTBD label is strategic but light). Edit `expect`, re-run scripts/eval-triage.mjs.",
+  "product": "AlphaCommons",
+  "cases": [
+    { "q": "how do they feel about the community feature", "expect": "light", "why": "statable feature sentiment" },
+    { "q": "what do people think of our pricing page", "expect": "light", "why": "UI surface" },
+    { "q": "how satisfied are people with onboarding", "expect": "light", "why": "satisfaction" },
+    { "q": "do they like the new dashboard design", "expect": "light", "why": "reaction" },
+    { "q": "how was their experience with support last time", "expect": "light", "why": "recent recall" },
+    { "q": "would they recommend us to a friend", "expect": "light", "why": "statable opinion" },
+    { "q": "how often do people use boards", "expect": "light", "why": "usage" },
+    { "q": "did people notice the new export button", "expect": "light", "why": "did-they-notice" },
+    { "q": "what's confusing about the signup flow", "expect": "light", "why": "specific surface friction" },
+    { "q": "why do power users export to a spreadsheet instead of dashboards", "expect": "light", "why": "why behind a behavior, askable behaviorally" },
+    { "q": "what's the real job people hire us for", "expect": "light", "why": "JTBD label — strategic but directly statable" },
+    { "q": "how important is the community board vs recruiting privately", "expect": "light", "why": "comparative importance, statable" },
+    { "q": "what are people's complaints and struggles", "expect": "light", "why": "statable list" },
+    { "q": "why did they churn", "expect": "deep", "why": "cliché trap — flat ask gives 'too expensive'; truth needs indirection + right people" },
+    { "q": "what do people think of our pricing", "expect": "deep", "why": "pricing strategy / value, not the page — too big, cliché-trapped" },
+    { "q": "how do people use competitors", "expect": "deep", "why": "competitive landscape, needs exploration" },
+    { "q": "what should we build next for power users", "expect": "deep", "why": "real unmet need behind a feature wishlist" },
+    { "q": "how do builders think about where we fit alongside their other tools", "expect": "deep", "why": "mental model — inferred, not stated" },
+    { "q": "how do people mentally categorize our product", "expect": "deep", "why": "mental model" }
+  ]
+}

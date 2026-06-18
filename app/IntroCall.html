@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your intro — Observant</title>
+<link rel="stylesheet" href="/app/app.css" />
+<link rel="stylesheet" href="/app/selfserve.css" />
+<style>
+  .ic-wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 60px; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
+  .ic-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .ic-brand { font-weight: 600; }
+  .ic-brand em { font-style: normal; color: #8a857c; font-weight: 400; }
+  .ic-sub { font-size: .82rem; color: #8a857c; margin: 0 0 18px; }
+  .ic-thread { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .ic-msg { display: flex; gap: 10px; max-width: 84%; }
+  .ic-msg.me { align-self: flex-end; flex-direction: row-reverse; }
+  .ic-bubble { padding: 11px 14px; border-radius: 14px; font-size: .94rem; line-height: 1.5; }
+  .ic-msg.them .ic-bubble { background: var(--wash, #f4f1ea); }
+  .ic-msg.me .ic-bubble { background: var(--accent, #b4532a); color: #fff; }
+  .ic-composer { display: flex; gap: 8px; margin-top: 16px; position: sticky; bottom: 12px; }
+  .ic-composer input { flex: 1; }
+  .ic-done { text-align: center; color: #4a463f; line-height: 1.55; padding: 14px; background: var(--wash,#f4f1ea); border-radius: 12px; margin-top: 12px; }
+  .ic-muted { color: #8a857c; font-size: .85rem; }
+  /* live voice — centered orb, on-brand */
+  .ic-voice { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 24px 0; }
+  .ic-orb { width: 150px; height: 150px; border-radius: 50%; position: relative; transition: transform .1s ease-out; }
+  .ic-orb-core { position: absolute; inset: 22px; border-radius: 50%; background: rgba(255,255,255,.22); filter: blur(5px); }
+  .ic-voice-status { font-size: .95rem; font-weight: 600; color: #4a463f; letter-spacing: .01em; }
+  .ic-voice-hint { font-size: .85rem; color: #8a857c; max-width: 360px; line-height: 1.5; }
+  .ic-voice-btns { display: flex; gap: 10px; align-items: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="module">
+  // Framework-agnostic ElevenLabs voice client → exposed on window for the Babel-compiled app.
+  try {
+    const mod = await import("https://esm.sh/@elevenlabs/client@1.11.2");
+    window.ElevenLabsConversation = mod.Conversation;
+  } catch (e) { console.warn("ElevenLabs client failed to load", e); }
+  window.dispatchEvent(new Event("el-client-ready"));
+</script>
+<script type="text/babel" src="/app/ui.jsx"></script>
+<script type="text/babel" src="/app/introcall.jsx"></script>
+</body>
+</html>

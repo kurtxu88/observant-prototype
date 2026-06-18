@@ -1,0 +1,74 @@
+# C3 — Stop & Follow-up Policy
+
+**Role in the loop:** the judgment that replaces the clock. After each user reply (and during silences), C3 decides whether to follow up now, wait, gently nudge, or declare the question sufficiently answered and report it up to the team.
+
+This is the cornerstone the old engine has no analog for. In the synchronous interviewer, "when am I done" was answered by a 10-minute timer and a fixed 5-question guide. Async deletes the timer. Sufficiency must be judged, not counted down.
+
+> Governing idea: **follow up until something meaningful surfaces, then stop — without exhausting the person.** Under-probing yields thin data; over-probing burns a relationship you want to keep for the next question.
+
+---
+
+## Knowing when to end (the levels — this is the crux)
+"When are we done?" operates at three levels; be explicit about which one you're deciding:
+
+1. **End of an email/turn** — you always end after sending the batch and wait for the reply (it's async). Trivial; not a real decision.
+2. **End of an active round — the *marginal-value test*.** After each reply, decide whether ANOTHER email/batch is worth sending. Send one **only if there's real remaining value**: threads still thin but promising, or a worthwhile new angle to advance the essence. **Wind the round down** the moment marginal value drops — answers converging or thin, energy fading (P11), the topic saturated. Don't keep a thread alive for its own sake.
+3. **End / dormancy of the engagement.** Observant never abruptly "finishes" — it goes **dormant** and re-engages only when there's genuinely new value (a new team question; later, a behavior trigger). **Wind the relationship down** (stop reaching out) when the person has clearly disengaged (no reply after a single nudge), gives sustained thin answers (diminishing returns), or **opts out** — honor an opt-out immediately, always.
+
+**Graceful wind-down (every time a round ends):** close warmly, acknowledge what they gave, and surface their **participation + reward summary** — then go quiet. Never end on an interrogation; end on a thank-you and their reward balance.
+
+The four decisions below map onto this: **CONTINUE** = the marginal-value test passed, send another batch; **SUFFICIENT / PAUSE** = wind the round down (dormant, relationship stays open); **NUDGE** = one gentle nudge, then PAUSE.
+
+## The decision (made after every user reply)
+
+Choose exactly one:
+
+- **CONTINUE** — the answer is on the right track but not yet meaningful (still thin, still hypothetical, story not yet concrete). Ask one more probe now. **Use sparingly:** in the real email cadence this fires another message, and you get only **ONE** follow-up per inquiry — so only CONTINUE if there's a genuinely important, *specific* thing their answers opened up, never "more detail would be nice." When unsure, prefer SUFFICIENT/PAUSE.
+- **SUFFICIENT** — the success criteria from the interview plan (C1) are met. Stop probing this question, report it up to the team, and rest the thread (the relationship stays open for future questions).
+- **PAUSE** — the person has given what they can right now, **the round's energy has dried up**, or they're disengaging. Bank what we have and stop for now, *even if the question isn't fully answered.* Don't grind a tired round; the relationship stays open and the next fresh question gets fresh attention.
+- **NUDGE** — the person has gone silent mid-thread. Schedule a single, light re-engagement; do not pile on.
+
+CONTINUE / SUFFICIENT / PAUSE are decided by C3 from the conversation; the *timing* of NUDGE and any revisit is executed by the backend scheduler — C3 sets the policy, the scheduler fires it.
+
+## Decide from the gap (shared vocabulary with C2)
+C2 classifies every reply into a **gap type**; C3 maps that gap onto the decision so the two never disagree:
+- **Concrete AND actionable** (a real account that resolves the essence *and* informs a decision) → **SUFFICIENT.** Don't squeeze another probe out of a satisfied answer.
+- **Thin / evaluative, hypothetical, or concrete-but-not-actionable** → a gap remains; **CONTINUE** is justified *only if* the one allowed follow-up would close the single most decision-relevant gap. If the gap is minor or "more detail would be nice," prefer SUFFICIENT/PAUSE.
+- **Energy spent** (shorter replies, "it's fine," winding down) → **PAUSE**, regardless of gap — a tired round is not worth the one follow-up.
+- **Silence mid-thread** → **NUDGE** once, then PAUSE.
+
+The rule of thumb: CONTINUE spends your one follow-up; only spend it on a gap whose answer would actually change what the team does.
+
+## What "meaningful / sufficient" means
+A question is sufficiently answered when we have **a concrete behavioral account that resolves the plan's goal** — actions, sequence, specifics — such that you could describe what this person actually did, in order. Equivalently sufficient:
+- A **clearly-probed absence** ("they never noticed the feature at all" / "they never read the pricing page") — a real answer, worth one probe to confirm it's genuine and not avoidance.
+- A **confident-but-wrong understanding**, fully surfaced — often the most valuable finding.
+
+Quality bars:
+- **Actionable bar (the one that matters most):** a concrete story is NOT enough if it doesn't inform a product decision. Keep laddering until you've clarified the *nature* of what they raised in terms the team could act on — and prefer **offering framings to react to** ("is this a camera-angle issue, a coverage gap that wants more devices, the doorbell's job and it's falling short, or a general unmet need?") over collecting more incident detail. SUFFICIENT = a product-useful understanding, never "a vivid story about the car" that changes no decision.
+- **Concrete-behavior bar:** if you can't yet describe what they *did* in sequential steps, you usually aren't at SUFFICIENT — but don't mistake *more detail* for *more usefulness* (see the actionable bar).
+- **Joy bar:** the best exchanges make the person curious about their *own* answer. A conversation hitting that bar can earn another probe; one clearly boring the person should move toward PAUSE.
+
+## Anti-patterns (explicit)
+- **Don't fire a time-based close.** There is no clock. Never wrap because "we're almost out of time."
+- **Don't stop at a thin answer** just because the user replied. A reply is not data; a concrete story is.
+- **Don't over-probe past saturation.** Once the success criteria are met, stop. Squeezing two more questions out of a satisfied answer is how you train a user to stop replying.
+- **Don't pester during silence.** At most one nudge per silent stretch; if still silent, PAUSE — don't chase.
+
+## Respect the round's energy (precious-attention rule)
+Go deep **while the opening is live** — if there's a real thread to pull and the person is engaged, absolutely pull it. But each batch spends a finite, precious slice of someone's attention. The moment a round's energy is spent — answers getting shorter, "it's fine," clear wind-down — **PAUSE and wait for the next fresh question.** A new question next time is met with fresh attention; grinding a tired round trains the person to treat your messages as spam. The skill is reading when to push and when to bank.
+
+## Follow-up budgeting (soft, not a counter)
+There is no fixed number of turns. As rough guidance, most questions reach SUFFICIENT within a handful of exchanges; if you've probed several times and the story still isn't converging — or the energy has dried up — prefer PAUSE (bank the partial, move on) over grinding. The goal is the answer, not a transcript length.
+
+## What to hand the team on SUFFICIENT
+When you report a question up, include:
+- The **concrete story / answer** in the user's own words (a verbatim quote where it lands).
+- A one-line **resolution of the plan's goal** (what we now know).
+- Light **characterization** picked up along the way (usage pattern, attitude, use case) — feeds the user's memory (C4) and any later synthesis.
+- A flag if the answer **contradicts the team's likely assumption** — that's the signal worth surfacing loudly.
+
+## Hooks the backend must provide
+- **Time since last user message** — so C3 can distinguish "still thinking" from "silent → NUDGE."
+- A way to **schedule** a nudge or a later revisit (scheduler).
+- A path to **report up** a SUFFICIENT result to the team UI, and to **route** a proactive/off-guide item (from C2 / C5) independently of the active question.

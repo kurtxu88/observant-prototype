@@ -19,7 +19,7 @@ function jnContext() {
   if (/^[a-z0-9][a-z0-9-]*$/.test(product)) {
     product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   }
-  let rate = 1;
+  let rate = 2;
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
   try {
@@ -27,7 +27,7 @@ function jnContext() {
     if (raw) {
       const state = JSON.parse(raw);
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
-      if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 1;
+      if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 2;
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "telegram"].filter((c) => state.setup.surfaces[c]);
       }
@@ -47,6 +47,7 @@ function JoinApp() {
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
+  const [cadence, setCadence] = useStateJN("occasional");
   // In-product programs have no contact-preference step — the conversation
   // lives inside the product. Off-product is where the user picks a channel.
   const onJoin = route === "inproduct"
@@ -60,9 +61,11 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
+      <JoinProgress phase={phase} route={route} />
+
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact) => { setChannel(picked); setContactEmail(contact || ""); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -71,49 +74,99 @@ function JoinApp() {
   );
 }
 
-function JoinChoose({ product, channels, onConnect }) {
-  const [email, setEmail] = useStateJN("");
-  const emailValid = email.includes("@") && email.includes(".");
-  const single = channels.length === 1;
+function JoinProgress({ phase, route }) {
+  const steps = route === "inproduct" ? ["Join", "Get started"] : ["Join", "Choose channel", "Get started"];
+  const current = phase === "invite" ? 0 : (route === "inproduct" ? 1 : (phase === "choose" ? 1 : 2));
+  return (
+    <ol className="jn-progress" aria-label="Sign-up progress">
+      {steps.map((label, i) => (
+        <li key={label} className={"jn-progress-step" + (i < current ? " done" : i === current ? " on" : "")}>
+          <span className="jn-progress-dot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+          <span className="jn-progress-label">{label}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
+const JN_CADENCE = [
+  { id: "open", t: "As often as helps", d: "Happy to hear from the team regularly." },
+  { id: "occasional", t: "Every week or two", d: "A light, steady rhythm." },
+  { id: "rare", t: "Only now and then", d: "Sparingly — and whenever I reach out myself." },
+];
+
+function JoinChoose({ product, channels, onConnect }) {
+  const single = channels.length === 1;
+  const [picked, setPicked] = useStateJN(single ? channels[0] : "");
+  const [email, setEmail] = useStateJN("");
+  const [cadence, setCadence] = useStateJN("occasional");
+  const emailValid = email.includes("@") && email.includes(".");
+
+  // Step 1 — pick the channel
+  if (!picked) {
+    return (
+      <main className="jn-main">
+        <section className="jn-hero">
+          <span className="eyebrow">One last choice</span>
+          <h1>Where should we reach you?</h1>
+          <p>Pick one — this is where your one-on-one with the {product} team will live. You can switch channels later, and opt out anytime.</p>
+        </section>
+        <div className="jn-choice-grid">
+          {channels.includes("email") && (
+            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("email")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("email"); } }}>
+              <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
+              <b>Email</b>
+              <p>Quiet and async — reply whenever you have five minutes.</p>
+              <span className="jn-choice-go">Choose email <Icon name="arrow" size={14} /></span>
+            </article>
+          )}
+          {channels.includes("telegram") && (
+            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("telegram")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("telegram"); } }}>
+              <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
+              <b>Telegram</b>
+              <p>A private chat with the Observant bot — replying feels like texting a friend.</p>
+              <span className="jn-choice-go">Choose Telegram <Icon name="arrow" size={14} /></span>
+            </article>
+          )}
+        </div>
+        <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands.</p>
+      </main>
+    );
+  }
+
+  // Step 2 — next step for the chosen channel
   return (
     <main className="jn-main">
       <section className="jn-hero">
-        <span className="eyebrow">One last choice</span>
-        <h1>{single ? (channels[0] === "email" ? "Join by email." : "Connect on Telegram.") : "Where should we reach you?"}</h1>
-        <p>{single ? "This is where your one-on-one with the " + product + " team will live." : "Pick one — this is where your one-on-one with the " + product + " team will live."} You can switch channels later, and opt out anytime.</p>
+        <span className="eyebrow">{picked === "email" ? "Email" : "Telegram"}</span>
+        <h1>{picked === "email" ? "Join by email." : "Connect on Telegram."}</h1>
+        <p>This is where your one-on-one with the {product} team will live.{!single && <> <button type="button" className="jn-back" onClick={() => setPicked("")}>← pick a different way</button></>}</p>
       </section>
 
-      <div className={"jn-choice-grid" + (single ? " single" : "")}>
-        {channels.includes("email") && (
-          <article className="jn-choice">
-            <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
-            <b>Email</b>
-            <p>Quiet and async — reply whenever you have five minutes. We'll only ever use this address for your 1:1.</p>
-            <input
-              className="input"
-              type="email"
-              value={email}
-              placeholder="you@example.com"
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email); }}
-            />
-            <Btn variant="primary" size="sm" disabled={!emailValid} onClick={() => onConnect("email", email)}>Join by email</Btn>
-          </article>
-        )}
-
-        {channels.includes("telegram") && (
-          <article className="jn-choice">
-            <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
-            <b>Telegram</b>
-            <p>A private chat with the Observant bot — one tap to connect, and replying feels like texting a friend.</p>
-            <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
-            <Btn variant="primary" size="sm" onClick={() => onConnect("telegram")}>Connect Telegram</Btn>
-          </article>
-        )}
+      <div className="jn-cadence">
+        <span className="jn-cadence-label">How often do you want to hear from the {product} team?</span>
+        <div className="jn-cadence-grid">
+          {JN_CADENCE.map((c) => (
+            <button key={c.id} type="button" className={"jn-cadence-opt" + (cadence === c.id ? " on" : "")} onClick={() => setCadence(c.id)}>
+              <b>{c.t}</b><span>{c.d}</span>
+            </button>
+          ))}
+        </div>
+        <p className="jn-cadence-note">We'll respect this — and you can change it or pause anytime. (You can always reach out yourself, no matter what you pick.)</p>
       </div>
 
-      <p className="jn-choice-note">{single ? "That's all we know you by — no other personal data changes hands." : "Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands."}</p>
+      {picked === "email" ? (
+        <div className="jn-next">
+          <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email, cadence); }} />
+          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email, cadence)}>Join by email</Btn>
+        </div>
+      ) : (
+        <div className="jn-next">
+          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
+          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram", "", cadence)}>Connect Telegram</Btn>
+        </div>
+      )}
+      <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>
     </main>
   );
 }
@@ -135,16 +188,16 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <h2>How it works</h2>
         <ol className="jn-steps">
           <li>
-            <b>Opt in once</b>
-            <p>Joining takes a minute. You can pause or leave anytime — one tap, no questions.</p>
+            <b>Opt in, then a quick hello</b>
+            <p>Joining takes a minute, then a short ~10-minute intro chat so the {product} team gets to know how you actually use it — that way everything they ask later is tailored to you. Pause or leave anytime.</p>
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
             <p>Usually a few messages or a short voice chat with the {product} team's AI interviewer; once in a while, the product folks themselves may ask for a live video call. {reachLine}, and you say yes or no each time — it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
-            <b>Earn as you go</b>
-            <p>Every minute you participate counts — text replies, voice chats, and calls alike. Your minutes are tracked and audited automatically. You never log anything.</p>
+            <b>Earn as you go — and reach out anytime</b>
+            <p>Every minute you participate counts — text replies, voice chats, and calls alike, tracked and audited automatically. It's a two-way line, too: message the team anytime something goes wrong or you want to share feedback, not just when they ask — genuine feedback you send earns rewards the same way.</p>
           </li>
         </ol>
       </section>
@@ -155,13 +208,12 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <div className="jn-rate-card">
           <b>${rate} per participated minute</b>
           <p>Every reply, voice chat, and call counts — tracked and audited automatically. 30 minutes ≈ ${Math.round(30 * rate)}, and your balance works like a gift card: claim small amounts often, or save it up.</p>
+          <p className="jn-rate-perks">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
         </div>
-        <p className="jn-perks-note">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
       </section>
 
       <section className="jn-cta">
         <Btn variant="primary" size="lg" onClick={onJoin}>Join as a feedback partner <Icon name="arrow" size={16} /></Btn>
-        <span>Takes about a minute. Opt out anytime.</span>
       </section>
 
       <section className="jn-block jn-faq">
@@ -191,17 +243,38 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, contactEmail }) {
+function JoinWelcome({ product, channel, contactEmail, cadence }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
+  const [introSkipped, setIntroSkipped] = useStateJN(false);
+  const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
+  const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
   return (
     <main className="jn-main">
-      <section className="jn-hero">
-        <span className="eyebrow">You're in</span>
-        <h1>Welcome to the program.</h1>
-        <p>{channel === "inproduct" ? "The first check-in will find you inside " + product + " — most take just a few minutes." : "Watch for the first check-in soon — most take just a few minutes."} Your minutes and rewards are tracked automatically from the very first reply.</p>
-      </section>
+      {!introSkipped ? (
+        <section className="jn-hero">
+          <span className="eyebrow">You're in</span>
+          <p className="jn-cadence-confirm">You'll hear from the {product} team <b>{cadenceWord}</b> — change it or pause anytime.</p>
+          <h1>Want to give the team a head start?</h1>
+          <p>It's optional — but a short ~10-minute intro chat helps the {product} team get to know how you actually use {product}. Here's why it's worth it:</p>
+          <ul className="jn-intro-why">
+            <li><b>Everything's tailored to you.</b> They learn your context once, so later questions fit how you really use {product}.</li>
+            <li><b>Fewer, better check-ins.</b> Knowing you up front means they ask less often and never repeat themselves — far less spammy.</li>
+            <li><b>You earn for it.</b> The intro counts like any other time — your minutes and rewards are tracked from your very first reply.</li>
+          </ul>
+          <div className="jn-intro-actions">
+            <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product)}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
+            <button type="button" className="jn-skip" onClick={() => setIntroSkipped(true)}>Skip for now</button>
+          </div>
+        </section>
+      ) : (
+        <section className="jn-hero">
+          <span className="eyebrow">You're all set</span>
+          <h1>You're in — no intro needed.</h1>
+          <p>The {product} team will reach out with their first question by {reachWord} when they have one. Your minutes and rewards are tracked automatically from your very first reply. Want to do the intro after all? <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>It's still here.</button></p>
+        </section>
+      )}
 
       <section className="jn-block jn-account">
         <h2>Track your {product} rewards</h2>
