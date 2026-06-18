@@ -73,6 +73,7 @@ function AnswerApp() {
           <div className="an-reward">You earn about <b>$2 per minute</b> you spend answering — tracked automatically.{data.accruedMinutes > 0 ? <> You're at about <b>{data.accruedMinutes} min</b> so far this conversation.</> : null} You can track and redeem your rewards on Observant anytime. <span style={{ color: "#8a857c" }}>And it's a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</span></div>
           <Btn variant="primary" size="lg" onClick={submit} disabled={busy}>{busy ? "Sending…" : "Send my answers"} <Icon name="arrow" size={16} /></Btn>
           {err && <p className="an-err">{err}</p>}
+          {data.manageUrl && <p className="an-muted" style={{ marginTop: 16, fontSize: ".8rem" }}><a href={data.manageUrl} style={{ color: "#8a857c" }}>Change how often, pause, or opt out</a></p>}
         </div>
       )}
 
