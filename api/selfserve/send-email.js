@@ -27,6 +27,8 @@ module.exports = async function handler(req, res) {
 
     const base = "https://" + req.headers.host;
     const exp = isFinite(exploration) ? exploration : 0.5;
+    // One ongoing thread per person → one stable, relationship-level subject (so every loop groups together).
+    const threadSubject = "Your line to the " + product + " team";
 
     // C1 — the light question set (light delivery, and deep's async fallback).
     const t = await callSelf(base, { action: "translate", product, question, wishlist, memory, context });
@@ -35,10 +37,10 @@ module.exports = async function handler(req, res) {
     let subject, body, html, emailText;
 
     if (mode === "deep") {
-      subject = "A 10-minute conversation with the " + product + " team?";
+      subject = threadSubject;
       const essence = (deepPlan && deepPlan.essence) || plan.essence || question;
       // async fallback: the light set, opened on the hosted form
-      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: plan.subject, accruedMinutes: 0, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
+      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: threadSubject, accruedMinutes: 0, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
       const answerUrl = base + "/app/Answer.html?d=" + encodeState(lightState);
       const introUrl = base + "/app/IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeState({ product, mode: "deep", essence: essence, threads: (deepPlan && deepPlan.threads) || [] });
       const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
@@ -53,7 +55,7 @@ module.exports = async function handler(req, res) {
 
     // LIGHT — compose the professional opening (C2), answered by replying inline.
     const turn = await callSelf(base, { action: "turn", product, channel, exploration: exp, plan, wishlist, memory, context, messages: [] });
-    subject = plan.subject || ("A couple questions from the " + product + " team");
+    subject = threadSubject;
     body = stripSubjectLine((turn && turn.message) || lightMessageFromPlan(product, plan));
     const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
     emailText = body + lightFooterText(manageUrl);

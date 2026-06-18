@@ -973,6 +973,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
   const comp = SelfServeData.contextCompleteness(state.workspace);
+  const loopStep = !tri ? 0 : (result && result.ok ? 2 : 1); // 0 write · 1 review · 2 test
 
   async function preview() {
     if (!question.trim()) return;
@@ -1011,17 +1012,28 @@ function AskPanel({ product, state, patchState, navigate }) {
       <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
       <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
-      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
-        <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
-        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
-      </button>
+      <ol className="ss-loop-steps">
+        {["Write", "Review", "Test"].map((s, i) => (
+          <li key={s} className={"ss-loop-step" + (i < loopStep ? " done" : i === loopStep ? " on" : "")}>
+            <span className="ss-loop-dot">{i < loopStep ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+            <span className="ss-loop-label">{s}</span>
+          </li>
+        ))}
+      </ol>
 
-      <Field label="What do you want to learn?">
-        <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
-      </Field>
-      {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
-      <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
+      <div className="ss-step-block">
+        <span className="ss-step-tag">Step 1 · Write your loop</span>
+        <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
+          <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
+          <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
+        </button>
+        <Field label="What do you want to learn?">
+          <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
+        </Field>
+        {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
+        <div className="ss-panel-actions">
+          <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
+        </div>
       </div>
 
       <div id="ss-preview-out" />
@@ -1042,34 +1054,35 @@ function AskPanel({ product, state, patchState, navigate }) {
 
       {tri && (
         <div className="ss-result">
-          <span className="ss-result-eyebrow">Here's what Observant will do</span>
-
-          {/* The bifurcation decision — light vs deep */}
-          <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
-            <div className="ss-depth-head">
-              <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
-              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
+          <div className="ss-step-block">
+            <span className="ss-step-tag">Step 2 · What Observant will do</span>
+            {/* The bifurcation decision — light vs deep */}
+            <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
+              <div className="ss-depth-head">
+                <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
+                <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
+              </div>
+              <details className="ss-depth-learn">
+                <summary>What's light mode vs deep mode?</summary>
+                <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
+              </details>
             </div>
-            <details className="ss-depth-learn">
-              <summary>What's light mode vs deep mode?</summary>
-              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
-            </details>
+
+            {tri.split && tri.split.recommend && (
+              <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
+            )}
+
+            {!isDeep && (
+              <div style={{ marginTop: 14 }}>
+                <span className="ss-result-label">The questions it'll ask</span>
+                <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
+                <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
+              </div>
+            )}
           </div>
 
-          {tri.split && tri.split.recommend && (
-            <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
-          )}
-
-          {!isDeep && (
-            <div className="ss-result-block">
-              <span className="ss-result-label">The questions it'll ask</span>
-              <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
-              <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
-            </div>
-          )}
-
-          <div className="ss-result-block">
-            <span className="ss-result-label">See it as your users do</span>
+          <div className="ss-step-block">
+            <span className="ss-step-tag">Step 3 · See it as your users do</span>
             {channel === "email" ? (
               <>
                 <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>

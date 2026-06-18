@@ -2939,6 +2939,19 @@
 .ss-skel-line.w30 { width: 30%; } .ss-skel-line.w40 { width: 40%; } .ss-skel-line.w60 { width: 60%; } .ss-skel-line.w70 { width: 70%; } .ss-skel-line.w80 { width: 80%; } .ss-skel-line.w90 { width: 90%; }
 .ss-muted-note { font-size: .82rem; color: var(--text-muted); margin: 12px 0 0; }
 
+/* Ask — explicit numbered steps so the process is legible */
+.ss-loop-steps { display: flex; align-items: center; gap: 0; list-style: none; margin: 6px 0 22px; padding: 0; }
+.ss-loop-step { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .85rem; }
+.ss-loop-step:not(:last-child)::after { content: ""; width: 28px; height: 2px; background: var(--border,#e6e3dd); margin: 0 12px; }
+.ss-loop-step.done:not(:last-child)::after { background: var(--accent); }
+.ss-loop-dot { width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 700; border: 1.5px solid var(--border,#e6e3dd); background: #fff; color: var(--text-muted); }
+.ss-loop-step.on .ss-loop-dot { border-color: var(--accent); color: var(--accent); }
+.ss-loop-step.done .ss-loop-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ss-loop-step.on .ss-loop-label, .ss-loop-step.done .ss-loop-label { color: var(--text); font-weight: 600; }
+.ss-step-block { margin: 0 0 22px; }
+.ss-step-tag { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+@media (max-width: 560px) { .ss-loop-label { display: none; } .ss-loop-step:not(:last-child)::after { width: 16px; margin: 0 7px; } }
+
 /* Ask — unified "what Observant will do" result section (one label treatment) */
 .ss-result { margin-top: 20px; border-top: 1px solid var(--border,#e6e3dd); padding-top: 18px; }
 .ss-result-eyebrow { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; }
