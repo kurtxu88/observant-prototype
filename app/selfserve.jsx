@@ -1021,7 +1021,8 @@ function AskPanel({ product, state, patchState, navigate }) {
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
-      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user — it becomes a continuous 1:1, phrased per person and tailored to everything Observant knows about your product. It's okay to add multiple questions, but be mindful of how much someone has to track in one loop: <b>group similar themes</b>, and Observant never asks more than <b>3 questions per loop</b>.</p>
+      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user — it becomes a continuous 1:1, phrased per person and tailored to everything Observant knows about your product.</p>
+      <p className="ss-step-lead">It's okay to add multiple questions, but be mindful of how much someone has to track in one loop: <b>group similar themes</b>, and Observant never asks more than <b>3 questions per loop</b>.</p>
 
       <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
