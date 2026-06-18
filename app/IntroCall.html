@@ -39,7 +39,7 @@
 <script type="module">
   // Framework-agnostic ElevenLabs voice client → exposed on window for the Babel-compiled app.
   try {
-    const mod = await import("https://esm.sh/@elevenlabs/client@0.1.4");
+    const mod = await import("https://esm.sh/@elevenlabs/client@1.11.2");
     window.ElevenLabsConversation = mod.Conversation;
   } catch (e) { console.warn("ElevenLabs client failed to load", e); }
   window.dispatchEvent(new Event("el-client-ready"));
