@@ -700,7 +700,7 @@ function ReviewRowSS({ k, v, sub }) {
 }
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const section = SS_SECTIONS.some((item) => item.id === state.section) ? state.section : "home";
+  const section = (SS_SECTIONS.some((item) => item.id === state.section) || state.section === "context") ? state.section : "home";
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
@@ -792,6 +792,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
       </div>
@@ -967,7 +968,6 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
-  const [showContext, setShowContext] = useStateSS(false);
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
@@ -1011,11 +1011,10 @@ function AskPanel({ product, state, patchState, navigate }) {
       <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
       <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
-      <button type="button" className="ss-ctx-strip" onClick={() => setShowContext((s) => !s)}>
+      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
-        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · {showContext ? "hide" : "review / add more"}</span>
+        <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
       </button>
-      {showContext && <ContextPanel state={state} patchState={patchState} />}
 
       <Field label="What do you want to learn?">
         <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />

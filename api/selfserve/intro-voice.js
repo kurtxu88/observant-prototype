@@ -34,18 +34,17 @@ module.exports = async function handler(req, res) {
       ? questions.map((q) => "- " + q).join("\n")
       : "- What got you using " + product + ", and how does it fit into your day?";
 
-    // The REAL trained interviewer (C2) + a voice override so it runs as a live call.
-    const c2 = readPrompt("C2-continuous-interviewer.md");
+    // The dedicated SYNCHRONOUS interviewer skill (C2v) — same craft as Codified's
+    // interviewer, built for a live voice session. Falls back to C2 if missing.
+    const skill = readPrompt("C2v-voice-interviewer.md") || readPrompt("C2-continuous-interviewer.md");
     const systemPrompt =
-      (c2 ? c2 + "\n\n" : "") +
-      "================ OVERRIDE FOR THIS SESSION (these instructions win over anything above) ================\n" +
-      "You are on a LIVE ~10-minute VOICE call — SYNCHRONOUS, not async. Ignore any 'no clock / async / email thread / batch / wait days' guidance above: here you SPEAK in short, natural turns, ONE question at a time, and there IS a soft ~10-minute budget. " +
-      "KEEP the probing craft from above: anchor on what they actually DID (not hypotheticals); unfold thin answers ('it's fine') into a concrete story; ladder every follow-up to something the team could act on; mirror their words; one construct at a time; follow the richest thread rather than reading a list. " +
-      "PRODUCT: " + product + ". " +
-      (deep ? "This is a DEEPER conversation on a specific topic. " : "This is a warm get-to-know-you intro with a brand-new feedback partner who just opted in. ") +
-      (essence ? "WHAT WE'RE REALLY AFTER: " + essence + ". " : "GOAL: understand them as a person and a user so the team can tailor future questions to them. ") +
-      "COVER THESE, conversationally and one at a time:\n" + qLines + "\n" +
-      "When you have a genuine, concrete feel for the answer, thank them warmly and wrap up — don't drag it out.";
+      skill.replace(/\[product\]/g, product) + "\n\n" +
+      "================ THIS SESSION ================\n" +
+      "PRODUCT: " + product + ".\n" +
+      (deep ? "This is a DEEP-mode conversation on a specific topic the team wants to understand.\n" : "This is a warm get-to-know-you intro with a brand-new feedback partner who just opted in.\n") +
+      "ESSENCE (what we're really after): " + (essence || ("understand how this person uses " + product + " so the team can tailor future questions")) + "\n" +
+      "THREADS to explore (most important first — a guide, not a script):\n" + qLines + "\n" +
+      "Open broad, follow the richest thread, anchor on what they actually did, and wrap warmly once you have a concrete answer.";
     const firstMessage = deep
       ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
       : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";

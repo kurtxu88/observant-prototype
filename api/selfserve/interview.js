@@ -9,6 +9,7 @@ const path = require("path");
 
 const MAX_BODY_BYTES = 30000;
 const DEFAULT_MODEL = "claude-sonnet-4-6";
+const FAST_MODEL = process.env.ANTHROPIC_FAST_MODEL || "claude-haiku-4-5-20251001"; // preview/triage path — speed over the marginal quality
 const PROMPT_DIR = path.join(__dirname, "..", "..", "mvp", "conversation-logic");
 
 module.exports = async function handler(req, res) {
@@ -126,7 +127,7 @@ async function classifyDepth(payload) {
     'Make the depth call. Return JSON only in the schema from your instructions ' +
     '({mode, rationale, dimensions:{scope,constructs,answerReadiness,contextLoad}, deepPlan, split:{recommend,note}}). ' +
     "deepPlan must be null when mode is light; split.recommend=false unless the input spans distinct/unrelated themes.";
-  const text = await callClaude(system, [{ role: "user", content: user }], 700);
+  const text = await callClaude(system, [{ role: "user", content: user }], 600, FAST_MODEL);
   return parseJson(text, {
     mode: "light",
     rationale: "Defaulted to light (triage parse fell back).",
@@ -151,8 +152,8 @@ async function translate(payload) {
     (wishlist ? "WISHLIST (where to dig deeper if it comes up): " + wishlist + "\n" : "") +
     'TEAM QUESTION: "' + question + '"\n\n' +
     'Return JSON only: {"essence": string, "questions": [string], "subject": string}. ' +
-    "essence short; questions = a small set, **NEVER more than 3 in one loop** (a loop = one batch we send the user) — if the team asked more, GROUP by theme and keep only the 3 most important for this loop; MOST IMPORTANT FIRST, anchored on TODAY and behavioral (no 'last time', no closed 'is there anything'); subject = the subject of the ONE ongoing thread (not about this round's topic), reading like a REAL, personal note from the [product] team that warrants attention — NOT a 'feedback program'/onboarding label, not spammy. e.g. 'A couple questions from the Northwind team'.";
-  const text = await callClaude(system, [{ role: "user", content: user }], 700);
+    "essence short; questions = a small set, NEVER more than 3 in one loop (a loop = one batch we send the user) — if the team asked more, GROUP by theme and keep only the 3 most important for this loop; MOST IMPORTANT FIRST, anchored on TODAY and behavioral (no 'last time', no closed 'is there anything'); subject = the subject of the ONE ongoing thread (not about this round's topic), reading like a REAL, personal note from the [product] team that warrants attention — NOT a 'feedback program'/onboarding label, not spammy. e.g. 'A couple questions from the Northwind team'.";
+  const text = await callClaude(system, [{ role: "user", content: user }], 700, FAST_MODEL);
   return parseJson(text, {
     essence: question,
     questions: ["What's something you ran into with this recently — maybe today? What happened?"],
@@ -262,7 +263,7 @@ function channelHint(channel) {
 }
 
 /* ---------- Claude call (raw API, no SDK) ---------- */
-async function callClaude(system, messages, maxTokens) {
+async function callClaude(system, messages, maxTokens, model) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -271,7 +272,7 @@ async function callClaude(system, messages, maxTokens) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+      model: model || process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
       max_tokens: maxTokens || 900,
       system,
       messages,
