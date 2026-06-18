@@ -828,6 +828,8 @@
 }
 .ss-panel-actions {
   margin-top: 0.8rem;
+  display: flex;
+  justify-content: flex-end;
 }
 .ss-start-panel p {
   color: var(--text-secondary);
