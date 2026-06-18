@@ -5,6 +5,11 @@
    intro questions; the intro page connects to it for live voice.
    Needs ELEVENLABS_API_KEY (and optionally ELEVENLABS_VOICE_ID).
    ============================================================ */
+const fs = require("fs");
+const path = require("path");
+const PROMPT_DIR = path.join(__dirname, "..", "..", "mvp", "conversation-logic");
+function readPrompt(f) { try { return fs.readFileSync(path.join(PROMPT_DIR, f), "utf-8"); } catch (e) { return ""; } }
+
 const BASE = "https://api.elevenlabs.io/v1/convai";
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM"; // Rachel — a standard premade voice present on most accounts
 
@@ -29,15 +34,18 @@ module.exports = async function handler(req, res) {
       ? questions.map((q) => "- " + q).join("\n")
       : "- What got you using " + product + ", and how does it fit into your day?";
 
-    // The real interviewer craft (the working product), adapted for a live voice call.
+    // The REAL trained interviewer (C2) + a voice override so it runs as a live call.
+    const c2 = readPrompt("C2-continuous-interviewer.md");
     const systemPrompt =
-      "You are Observant, " + product + "'s research interviewer, on a LIVE ~10-minute VOICE call with " +
-      (deep ? "a user, going a bit deeper on a specific topic." : "a brand-new feedback partner who just opted in.") + " " +
-      "Talk like a real person on a call: short, warm turns, ask ONE thing at a time, and genuinely follow the most interesting thread they give you — never read questions like a form. " +
-      "Interview craft (this is the part that matters): anchor on what they ACTUALLY did, not hypotheticals; when an answer is thin ('it's fine'), pull the specific story — what happened, what they did, a concrete recent example; mirror their own words; every follow-up should ladder toward something the team could act on, not detail for its own sake. " +
-      (essence ? "What we're really trying to learn: " + essence + ". " : "Goal: understand them as a person and a user so the team can tailor future questions to them. ") +
-      "Cover these, conversationally and one at a time, following the richest thread:\n" + qLines + "\n" +
-      "This is synchronous — there's a soft ~10-minute budget (unlike async, you're not waiting days). When you have a genuine, concrete feel for the answer, thank them warmly and wrap up — don't drag it out.";
+      (c2 ? c2 + "\n\n" : "") +
+      "================ OVERRIDE FOR THIS SESSION (these instructions win over anything above) ================\n" +
+      "You are on a LIVE ~10-minute VOICE call — SYNCHRONOUS, not async. Ignore any 'no clock / async / email thread / batch / wait days' guidance above: here you SPEAK in short, natural turns, ONE question at a time, and there IS a soft ~10-minute budget. " +
+      "KEEP the probing craft from above: anchor on what they actually DID (not hypotheticals); unfold thin answers ('it's fine') into a concrete story; ladder every follow-up to something the team could act on; mirror their words; one construct at a time; follow the richest thread rather than reading a list. " +
+      "PRODUCT: " + product + ". " +
+      (deep ? "This is a DEEPER conversation on a specific topic. " : "This is a warm get-to-know-you intro with a brand-new feedback partner who just opted in. ") +
+      (essence ? "WHAT WE'RE REALLY AFTER: " + essence + ". " : "GOAL: understand them as a person and a user so the team can tailor future questions to them. ") +
+      "COVER THESE, conversationally and one at a time:\n" + qLines + "\n" +
+      "When you have a genuine, concrete feel for the answer, thank them warmly and wrap up — don't drag it out.";
     const firstMessage = deep
       ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
       : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";
