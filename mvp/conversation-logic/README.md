@@ -25,7 +25,7 @@ The probing *craft* (anchor on past behavior, unfold thin answers, behavioral tr
 | **C3** | `C3-stop-policy.md` | The saturation policy that replaces the clock — continue / pause / nudge / sufficient, decide-from-the-gap, and what to report up | draft v2 (#15) |
 | C4 | _(later)_ | Per-person memory logic (what to remember, how to carry it forward) | not started |
 | C5 | _(later)_ | Proactive / off-guide user input handler (capture as signal, not redirect) | not started |
-| C6 | _(later)_ | Multi-question weaver (one relationship, not a queue of surveys) | not started |
+| **C6** | `C6-multi-question-weaver.md` | Multi-question weaver — fold a person's queued team questions into one woven thread, paced to cadence/energy (anti-spam) | draft v1 (policy; orchestration is backend) |
 | C7 | _(later)_ | Channel-tone adaptation (email vs IM) | not started |
 
 C1–C3 are the structural cornerstones: most absent in the current engine, and pure prompt/policy so they can be iterated immediately with no backend.

@@ -2938,6 +2938,20 @@
 .ss-skel-line { height: 12px; border-radius: 6px; margin: 9px 0; background: linear-gradient(90deg, #ece7de 25%, #f6f2ea 37%, #ece7de 63%); background-size: 400% 100%; animation: ss-shimmer 1.3s ease-in-out infinite; }
 .ss-skel-line.w30 { width: 30%; } .ss-skel-line.w40 { width: 40%; } .ss-skel-line.w60 { width: 60%; } .ss-skel-line.w70 { width: 70%; } .ss-skel-line.w80 { width: 80%; } .ss-skel-line.w90 { width: 90%; }
 .ss-muted-note { font-size: .82rem; color: var(--text-muted); margin: 12px 0 0; }
+
+/* Ask — unified "what Observant will do" result section (one label treatment) */
+.ss-result { margin-top: 20px; border-top: 1px solid var(--border,#e6e3dd); padding-top: 18px; }
+.ss-result-eyebrow { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; }
+.ss-result-block { margin-top: 18px; }
+.ss-result-label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 8px; }
+.ss-result-qs { margin: 0 0 12px; padding-left: 20px; }
+.ss-result-qs li { margin: 6px 0; line-height: 1.5; }
+.ss-result-foot { font-size: .82rem; color: #6b665d; line-height: 1.5; margin: 0; background: #f7f5f0; border-radius: 8px; padding: 9px 12px; }
+.ss-result-help { font-size: .85rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px; }
+.ss-send-row { display: flex; gap: 8px; }
+.ss-send-row .input { flex: 1; }
+/* secondary, not a competing CTA */
+.ss-depth-learn summary { color: var(--text-muted); }
 @keyframes ss-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 
 /* Ask — the depth bifurcation decision card */

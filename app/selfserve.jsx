@@ -5,10 +5,9 @@ const { useState: useStateSS, useEffect: useEffectSS } = React;
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "learning", label: "Activity", icon: "chat" },
+  { id: "learning", label: "Loop history", icon: "chat" },
   { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
-  { id: "context", label: "Context", icon: "globe" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
@@ -793,7 +792,6 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
       </div>
@@ -1012,7 +1010,7 @@ function AskPanel({ product, state, patchState, navigate }) {
       <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
       <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
-      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
+      <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "settings", focusedTarget: "settings-context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
         <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
       </button>
@@ -1042,7 +1040,9 @@ function AskPanel({ product, state, patchState, navigate }) {
       )}
 
       {tri && (
-        <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>
+        <div className="ss-result">
+          <span className="ss-result-eyebrow">Here's what Observant will do</span>
+
           {/* The bifurcation decision — light vs deep */}
           <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
             <div className="ss-depth-head">
@@ -1060,29 +1060,33 @@ function AskPanel({ product, state, patchState, navigate }) {
           )}
 
           {!isDeep && (
-            <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The questions Observant will ask</p>
-              <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
-              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
+            <div className="ss-result-block">
+              <span className="ss-result-label">The questions it'll ask</span>
+              <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
+              <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
             </div>
           )}
 
-          {channel === "email" ? (
-            <Field label="Send a test email to see the end-user experience">
-              <div style={{ display: "flex", gap: 8 }}>
-                <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
-                <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
-              </div>
-            </Field>
-          ) : (
-            <p style={{ fontSize: ".85rem", color: "#8a857c" }}>Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
-          )}
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox to see exactly what your users receive. In a live program, their replies flow back here to your dashboard.</p>}
-          {result && !result.ok && result.needKey && <p style={{ fontSize: ".85rem", color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to the Vercel project to send for real.</p>}
-          {result && !result.ok && !result.needKey && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{result.error}</p>}
+          <div className="ss-result-block">
+            <span className="ss-result-label">See it as your users do</span>
+            {channel === "email" ? (
+              <>
+                <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
+                <div className="ss-send-row">
+                  <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+                  <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
+                </div>
+              </>
+            ) : (
+              <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
+            )}
+            {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
+            {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+            {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
+          </div>
         </div>
       )}
-      {err && <p style={{ color: "#b4291f", fontSize: ".85rem" }}>{err}</p>}
+      {err && <p className="ss-result-help" style={{ color: "#b4291f" }}>{err}</p>}
     </section>
   );
 }
@@ -1428,8 +1432,15 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
   };
   const product = SelfServeData.productName(state.workspace);
   const introText = state.workspace.introQuestions != null ? state.workspace.introQuestions : ssDefaultIntroText(product);
+  const comp = SelfServeData.contextCompleteness(state.workspace);
 
   return (
+    <div className="ss-page-stack">
+    <section className={"ss-panel" + ssFocusClass(state, "settings-context")}>
+      <PanelTitle k="Context" title={"What Observant knows about " + product} status={comp.filled + " of " + comp.total + " filled"} />
+      <p className="ss-step-lead">The shared memory behind every question Observant asks your users — product, users, goal, prior learning, docs. The more it knows, the sharper each loop. Add or change this anytime.</p>
+      <ContextPanel state={state} patchState={patchState} bare />
+    </section>
     <section className={"ss-panel ss-settings-panel" + ssFocusClass(state, "settings-workspace")}>
       <PanelTitle k="Settings" title="Workspace settings" status="Saved locally" />
       <Field label="Company or product name">
@@ -1467,6 +1478,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <Btn variant="ghost" onClick={ssLogout}>Log out</Btn>
       </div>
     </section>
+    </div>
   );
 }
 
