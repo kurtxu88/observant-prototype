@@ -1038,7 +1038,7 @@ function AskPanel({ product, state, patchState, navigate }) {
           ))}
         </div>
         <button type="button" className="ss-ask-add" onClick={addQ}><Icon name="plus" size={13} /> Add another question</button>
-        <p className="ss-ask-hint">One question per box. More questions → a heavier, likely 10-minute conversation.</p>
+        <p className="ss-ask-hint">It's okay to add multiple questions — just be mindful of how much people have to track in one <b>loop</b> (each batch Observant sends them). Group similar themes together; Observant never asks more than <b>3 questions in one loop</b>.</p>
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <div className="ss-panel-actions">
