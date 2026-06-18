@@ -27,8 +27,10 @@ This is **not** a study-type classifier. We are not sorting the question into a 
 - **Surfacing complaints / struggles / pain points** — "what are people's complaints and struggles?" People can *name* their pain points directly, and naming them is enough. → **light.** It's only deep if the team wants to dig into the *why* behind one *specific* struggle.
 - Default: a direct ask, plus at most one follow-up, gets a genuine answer.
 
-## Volume raises the weight
-Each additional stacked question makes the conversation heavier. One focused question → usually light; **2–3+ distinct questions → lean DEEP** — covering several threads is more than a 2-round text loop holds; that's what a 10-minute session is for.
+## Volume & splitting into loops
+The team writes freely — possibly several questions, in their own words. Your job is to filter:
+- **Related questions in one theme are fine** — keep them in this loop (the depth call still follows the questions' nature). Cap what actually gets sent at **3 per loop** (C1 enforces; group/keep the most impactful).
+- **If the input spans clearly DISTINCT / unrelated themes, or is too much for one focused loop → recommend SPLITTING** into separate loops. Set `split.recommend = true` and a one-line `split.note` naming the themes to break apart. We'd rather send two focused loops than one overloaded, scattered one. (Splitting is a separate axis from deep/light — a split recommendation can apply to either mode.)
 
 ## On the fence → LIGHT
 Deep asks 10 real minutes; reserve it. Light escalates later if answers come back thin or cliché.
@@ -65,9 +67,11 @@ Return JSON only:
     "essence": "what we're really trying to learn",
     "opening": "the first thing the interviewer says in the live session (warm, sets the ~10-min expectation, opens broad)",
     "threads": ["the 2-4 areas to explore live, most important first — a guide, not a script"]
-  }
+  },
+  "split": { "recommend": false, "note": "" }
 }
 ```
+- `split.recommend = true` only when the input spans distinct/unrelated themes or is too much for one focused loop; `note` = one line naming how to break it up. Otherwise `recommend: false, note: ""`.
 - Always fill `mode`, `rationale`, `dimensions`.
 - Fill `deepPlan` **only when mode is deep** (otherwise return `deepPlan: null`). The **light** set (essence + questions + subject) is produced separately by C1 and is always available, so you don't repeat it here.
 

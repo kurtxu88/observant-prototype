@@ -864,23 +864,6 @@ function HomeView({ state, patchState, navigate }) {
 
       <div className="ss-dashboard-grid">
         <AskObservant state={state} patchState={patchState} />
-        <section className="ss-panel">
-          <PanelTitle k="Memory" title="What Observant remembers" status="Growing" />
-          {state.people.length ? (
-            <ul className="ss-memory-list">
-              {state.people.slice(0, 3).map((person) => (
-                <li key={person.id}>
-                  <button type="button" className="ss-memory-row" onClick={() => {
-                    const conversationId = ssConversationIdForPerson(state, person.id);
-                    navigate({ section: "people", conversationId, focusedTarget: "person-" + person.id });
-                  }}>
-                    <b>{person.name}</b><span>{person.memory}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : <EmptyState title="No memory yet" text="Observant remembers each person's context as soon as the first conversations come in." />}
-        </section>
       </div>
     </div>
   );
@@ -978,13 +961,8 @@ function ContextPanel({ state, patchState, bare }) {
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
 function AskPanel({ product, state, patchState, navigate }) {
-  const [questions, setQuestions] = useStateSS([""]);
+  const [question, setQuestion] = useStateSS("");
   const [wishlist, setWishlist] = useStateSS("");
-  const setQ = (i, v) => { setQuestions((qs) => qs.map((q, j) => (j === i ? v : q))); setTri(null); };
-  const addQ = () => setQuestions((qs) => qs.concat([""]));
-  const rmQ = (i) => { setQuestions((qs) => qs.length > 1 ? qs.filter((_, j) => j !== i) : qs); setTri(null); };
-  const askList = questions.map((q) => q.trim()).filter(Boolean);
-  const askJoined = askList.map((q, i) => (askList.length > 1 ? (i + 1) + ". " : "") + q).join("\n");
   const [tri, setTri] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
   const [testEmail, setTestEmail] = useStateSS("");
@@ -998,11 +976,11 @@ function AskPanel({ product, state, patchState, navigate }) {
   const comp = SelfServeData.contextCompleteness(state.workspace);
 
   async function preview() {
-    if (!askList.length) return;
+    if (!question.trim()) return;
     setTri(null); setPreviewing(true); setErr(""); setResult(null);
     setTimeout(() => { const el = document.getElementById("ss-preview-out"); if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 30);
     try {
-      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question: askJoined, questionCount: askList.length, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
+      const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
       if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
       setTri(t);
     } catch (e) { setErr(String(e.message || e)); }
@@ -1010,10 +988,19 @@ function AskPanel({ product, state, patchState, navigate }) {
   }
 
   async function sendTest() {
-    if (!testEmail.includes("@") || !askList.length) return;
+    if (!testEmail.includes("@") || !question.trim()) return;
     setSending(true); setErr(""); setResult(null);
     try {
-      setResult(await ssPostJson("/api/selfserve/send-email", { product, question: askJoined, questionCount: askList.length, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null }));
+      const r = await ssPostJson("/api/selfserve/send-email", { product, question, toEmail: testEmail, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null });
+      setResult(r);
+      if (r && r.ok) {
+        // log this loop to Activity history
+        patchState((cur) => {
+          if ((cur.loops || []).some((l) => l.question === question)) return cur;
+          const loop = { id: "loop-" + (cur.loops ? cur.loops.length : 0) + "-" + question.length, name: question.length > 44 ? question.slice(0, 42) + "…" : question, question, mode: tri ? tri.mode : "light", people: 0, memory: 0 };
+          return { ...cur, loops: [loop, ...(cur.loops || [])], activity: ["Loop sent: " + loop.name + ".", ...(cur.activity || [])] };
+        });
+      }
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
   }
@@ -1021,28 +1008,21 @@ function AskPanel({ product, state, patchState, navigate }) {
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
-      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user — it becomes a continuous 1:1, phrased per person and tailored to everything Observant knows about your product.</p>
-      <p className="ss-step-lead">It's okay to add multiple questions, but be mindful of how much someone has to track in one loop: <b>group similar themes</b>, and Observant never asks more than <b>3 questions per loop</b>.</p>
+      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user. Just write what you want to learn — <b>business or product questions, in your own words.</b> Observant translates them into natural, user-facing questions.</p>
+      <p className="ss-step-lead">Depending on what you're after, Observant runs the loop in <b>Light mode</b> (a couple of quick questions in their inbox or chat — for things people can tell you directly) or <b>Deep mode</b> (a ~10-minute AI-guided voice/text conversation — for questions where the real answer only comes out through back-and-forth). We pick, and show you which before you send.</p>
+      <p className="ss-step-lead">Focus on the <b>most impactful questions</b> for this loop and keep them to one theme. If you add a lot, or mix unrelated themes, we'll suggest breaking them into separate loops rather than sending all at once.</p>
 
       <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
         <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
       </button>
 
-      <Field label={questions.length > 1 ? "Your questions" : "Your question"}>
-        <div className="ss-ask-qs">
-          {questions.map((q, i) => (
-            <div className="ss-ask-q" key={i}>
-              <textarea className="textarea" value={q} placeholder={i === 0 ? "One question — e.g. How do people use " + product + " day-to-day?" : "Another question…"} onChange={(e) => setQ(i, e.target.value)} />
-              {questions.length > 1 && <button type="button" className="ss-ask-q-rm" onClick={() => rmQ(i)} aria-label="Remove question">×</button>}
-            </div>
-          ))}
-        </div>
-        <button type="button" className="ss-ask-add" onClick={addQ}><Icon name="plus" size={13} /> Add another question</button>
+      <Field label="What do you want to learn?">
+        <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={preview} disabled={!askList.length || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
+        <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
       </div>
 
       <div id="ss-preview-out" />
@@ -1074,6 +1054,10 @@ function AskPanel({ product, state, patchState, navigate }) {
               <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided conversation (voice or text) for questions that need real back-and-forth to unfold. If someone doesn't have time, they're offered the light version instead.</p>
             </details>
           </div>
+
+          {tri.split && tri.split.recommend && (
+            <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
+          )}
 
           {!isDeep && (
             <div style={{ marginTop: 14 }}>
@@ -1176,9 +1160,21 @@ function LearningView({ state, patchState, navigate }) {
     });
   };
 
+  const composing = state.focusedTarget === "create-loop";
+  if (composing) {
+    return (
+      <div className="ss-page-stack">
+        <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
+      </div>
+    );
+  }
   return (
     <div className="ss-page-stack">
-      <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
+      <div className="ss-activity-head">
+        <div><span className="eyebrow no-rule">Activity</span><h2 style={{ margin: "2px 0 0" }}>Loops you've sent</h2></div>
+        <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+      </div>
+      <QuestionHistory state={state} />
     </div>
   );
 }

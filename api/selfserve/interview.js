@@ -58,6 +58,7 @@ async function triage(payload) {
     dimensions: depth.dimensions || {},
     exploration: exploreFromDimensions(depth.dimensions, depth.mode),
     deepPlan: depth.mode === "deep" ? (depth.deepPlan || null) : null,
+    split: (depth.split && depth.split.recommend) ? { recommend: true, note: limit(depth.split.note, 300) } : { recommend: false, note: "" },
     lightPlan: lightPlan,
   };
 }
@@ -123,14 +124,15 @@ async function classifyDepth(payload) {
     (memory ? "WHAT WE ALREADY KNOW ABOUT THIS PERSON: " + memory + "\n" : "") +
     "TEAM QUESTION" + (questionCount > 1 ? "S (" + questionCount + " distinct asks — apply the volume rule: 2-3+ leans DEEP)" : "") + ":\n" + question + "\n\n" +
     'Make the depth call. Return JSON only in the schema from your instructions ' +
-    '({mode, rationale, dimensions:{scope,constructs,answerReadiness,contextLoad}, deepPlan}). ' +
-    "deepPlan must be null when mode is light.";
+    '({mode, rationale, dimensions:{scope,constructs,answerReadiness,contextLoad}, deepPlan, split:{recommend,note}}). ' +
+    "deepPlan must be null when mode is light; split.recommend=false unless the input spans distinct/unrelated themes.";
   const text = await callClaude(system, [{ role: "user", content: user }], 700);
   return parseJson(text, {
     mode: "light",
     rationale: "Defaulted to light (triage parse fell back).",
     dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
     deepPlan: null,
+    split: { recommend: false, note: "" },
   });
 }
 
@@ -322,6 +324,7 @@ function noKeyStub(action, payload) {
       dimensions: { scope: "tactical", constructs: "single", answerReadiness: "recallable", contextLoad: "self-contained" },
       exploration: 0.2,
       deepPlan: null,
+      split: { recommend: false, note: "" },
       lightPlan: { essence: "[no key] " + limit(payload.question, 160), questions: ["Set ANTHROPIC_API_KEY to run triage."], subject: "(set ANTHROPIC_API_KEY)" },
     };
   }
