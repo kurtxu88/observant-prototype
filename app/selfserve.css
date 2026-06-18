@@ -2922,7 +2922,7 @@
 /* Ask — one-question-per-box intake with + */
 .ss-ask-qs { display: flex; flex-direction: column; gap: 8px; }
 .ss-ask-q { position: relative; display: flex; align-items: flex-start; gap: 6px; }
-.ss-ask-q .textarea { flex: 1; min-height: 52px; }
+.ss-ask-q .textarea { flex: 1; min-height: 40px; height: 40px; padding-top: 9px; padding-bottom: 9px; line-height: 1.4; }
 .ss-ask-q-rm { flex: none; width: 28px; height: 28px; border: none; background: #f0ece4; color: #8a857c; border-radius: 7px; font-size: 1.1rem; line-height: 1; cursor: pointer; margin-top: 4px; }
 .ss-ask-q-rm:hover { background: #e7ddd2; color: #b4291f; }
 .ss-ask-add { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: none; border: 1px dashed var(--border,#cfc8bd); border-radius: 8px; padding: 6px 11px; font: inherit; font-size: .82rem; color: var(--accent); cursor: pointer; }

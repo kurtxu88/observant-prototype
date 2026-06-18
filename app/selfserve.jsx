@@ -1021,7 +1021,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
-      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends your users. Write what you want to learn — Observant turns it into a continuous 1:1, phrased per person, and never asks more than 3 questions in a loop. It draws on everything it knows about your product to tailor each one.</p>
+      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user — it becomes a continuous 1:1, phrased per person and tailored to everything Observant knows about your product. It's okay to add multiple questions, but be mindful of how much someone has to track in one loop: <b>group similar themes</b>, and Observant never asks more than <b>3 questions per loop</b>.</p>
 
       <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
         <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
@@ -1038,7 +1038,6 @@ function AskPanel({ product, state, patchState, navigate }) {
           ))}
         </div>
         <button type="button" className="ss-ask-add" onClick={addQ}><Icon name="plus" size={13} /> Add another question</button>
-        <p className="ss-ask-hint">It's okay to add multiple questions — just be mindful of how much people have to track in one <b>loop</b> (each batch Observant sends them). Group similar themes together; Observant never asks more than <b>3 questions in one loop</b>.</p>
       </Field>
       {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
       <div className="ss-panel-actions">
@@ -1075,26 +1074,11 @@ function AskPanel({ product, state, patchState, navigate }) {
             </details>
           </div>
 
-          {isDeep && tri.deepPlan ? (
+          {!isDeep && (
             <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>What we're really after</p>
-              <p style={{ margin: "0 0 12px" }}>{tri.deepPlan.essence}</p>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>Threads it will explore live</p>
-              <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(tri.deepPlan.threads || []).map((t, i) => <li key={i} style={{ margin: "5px 0" }}>{t}</li>)}</ol>
-              <details className="ss-fallback">
-                <summary>If they decline, they get this light version instead</summary>
-                <ol style={{ margin: "8px 0 0", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
-              </details>
-            </div>
-          ) : (
-            <div style={{ marginTop: 14 }}>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The essence</p>
-              <p style={{ margin: "0 0 12px" }}>{plan.essence}</p>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>{channel === "email" ? "Email subject" : "Thread subject"}</p>
-              <p style={{ margin: "0 0 12px" }}>{plan.subject}</p>
-              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>{channel === "email" ? "The batch Observant will send" : "Asked one at a time, after a heads-up"}</p>
+              <p style={{ fontSize: ".8rem", color: "#8a857c", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: ".04em" }}>The questions Observant will ask</p>
               <ol style={{ margin: "0 0 14px", paddingLeft: 20 }}>{(plan.questions || []).map((q, i) => <li key={i} style={{ margin: "5px 0" }}>{q}</li>)}</ol>
-              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up round — only if their answer opens something genuinely worth digging into. Never more than one, so it never feels spammy. <span style={{ color: "#8a857c" }}>Delivery adapts to each user's chosen channel — email gets the set at once, Telegram one at a time after a heads-up. This preview shows the email version.</span></p>
+              <p style={{ fontSize: ".82rem", color: "#6b665d", margin: "0 0 16px", lineHeight: 1.5, background: "#f7f5f0", borderRadius: "8px", padding: "9px 12px" }}>After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
             </div>
           )}
 
