@@ -1069,7 +1069,6 @@ function AskPanel({ product, state, patchState, navigate }) {
               <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
               <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a short voice/text session." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
-            {tri.rationale && <p className="ss-depth-why">{tri.rationale}</p>}
             <details className="ss-depth-learn">
               <summary>What's light mode vs deep mode?</summary>
               <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided conversation (voice or text) for questions that need real back-and-forth to unfold. If someone doesn't have time, they're offered the light version instead.</p>
