@@ -175,8 +175,8 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
             <p>Usually a few messages or a short voice chat with the {product} team's AI interviewer; once in a while, the product folks themselves may ask for a live video call. {reachLine}, and you say yes or no each time — it remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
-            <b>Earn as you go</b>
-            <p>Every minute you participate counts — text replies, voice chats, and calls alike. Your minutes are tracked and audited automatically. You never log anything.</p>
+            <b>Earn as you go — and reach out anytime</b>
+            <p>Every minute you participate counts — text replies, voice chats, and calls alike, tracked and audited automatically. It's a two-way line, too: message the team anytime something goes wrong or you want to share feedback, not just when they ask — genuine feedback you send earns rewards the same way.</p>
           </li>
         </ol>
       </section>

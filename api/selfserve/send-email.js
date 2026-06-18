@@ -96,13 +96,13 @@ function lightMessageFromPlan(product, plan) {
 
 /* ---- LIGHT: answer by replying inline ---- */
 function lightFooterText() {
-  return "\n\n———\nJust reply to this email with your answers — write right under each question. Your minutes and rewards are tracked automatically; redeem on Observant anytime.";
+  return "\n\n———\nJust reply to this email with your answers — write right under each question. And this is a two-way line: reply anytime something goes wrong or you want to share feedback, not only when we ask — genuine feedback earns rewards too. Your minutes and rewards are tracked automatically; redeem on Observant anytime.";
 }
 function lightInlineHtml(body) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return shell(
     bodyHtml +
-    '<div style="margin:20px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answers — write right under each question.</div>' +
+    '<div style="margin:20px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answers — write right under each question.<br><span style="color:#8a857c">It\'s a two-way line — reach out anytime something breaks or you have feedback, not only when we ask. Genuine feedback earns rewards too.</span></div>' +
     rewardNote()
   );
 }
@@ -113,7 +113,8 @@ function deepInviteText(product, essence, introUrl, answerUrl) {
     "The " + product + " team would love to go a little deeper on something — a short conversation, about 10 minutes, guided by our AI interviewer, whenever suits you. No prep needed; you can use voice or just type.\n\n" +
     "▶ Start the conversation: " + introUrl + "\n\n" +
     "Short on time? You can answer a few quick questions async instead:\n→ " + answerUrl + "\n\n" +
-    "Either way your time is rewarded — about $2 per minute, tracked automatically. Redeem on Observant anytime.";
+    "Either way your time is rewarded — about $2 per minute, tracked automatically. Redeem on Observant anytime.\n\n" +
+    "And this is a two-way line: reach out anytime something goes wrong or you've got product feedback — not just when we ask. Genuine feedback you send earns rewards too.";
 }
 function deepInviteHtml(product, essence, introUrl, answerUrl) {
   return shell(
@@ -121,6 +122,7 @@ function deepInviteHtml(product, essence, introUrl, answerUrl) {
     '<p style="margin:0 0 14px">The <b>' + esc(product) + '</b> team would love to go a little deeper on something — a short conversation, about <b>10 minutes</b>, guided by our AI interviewer, whenever suits you. No prep needed; use voice or just type.</p>' +
     '<div style="margin:22px 0"><a href="' + esc(introUrl) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Start the conversation →</a></div>' +
     '<p style="margin:0 0 14px;font-size:14px;color:#5a5347">Short on time? <a href="' + esc(answerUrl) + '" style="color:#b4532a">Answer a few quick questions async instead →</a></p>' +
+    '<p style="margin:0 0 6px;font-size:13px;color:#8a857c">And it\'s a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</p>' +
     rewardNote()
   );
 }
