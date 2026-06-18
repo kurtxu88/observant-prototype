@@ -700,7 +700,8 @@ function ReviewRowSS({ k, v, sub }) {
 }
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const section = (SS_SECTIONS.some((item) => item.id === state.section) || state.section === "context") ? state.section : "home";
+  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop" }; // non-nav pages
+  const section = (SS_SECTIONS.some((item) => item.id === state.section) || EXTRA_SECTIONS[state.section]) ? state.section : "home";
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
@@ -742,7 +743,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
         <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "home" })} aria-label="Go to Home">
           <Wordmark size="1.45rem" />
         </button>
-        <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}>
+        <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "compose" })}>
           <Icon name="spark" size={16} /> Send a new loop
         </button>
         <nav className="ss-nav">
@@ -779,7 +780,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             {navStack.length > 0 && <button type="button" className="ss-back-btn" onClick={goBack}><Icon name="back" size={15} /> Back</button>}
             <div>
               <span className="ss-breadcrumb">{product}</span>
-              <h1>{SS_SECTIONS.find((s) => s.id === section)?.label || "Home"}</h1>
+              <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
             </div>
           </div>
           <div className="ss-topbar-actions">
@@ -792,6 +793,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "compose" && <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>}
           {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
@@ -828,7 +830,7 @@ function HomeView({ state, patchState, navigate }) {
           <PanelTitle k="Next" title="Send a new loop" status="Ready" />
           <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+            <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
           </div>
         </section>
       )}
@@ -968,6 +970,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
+  const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
@@ -983,7 +986,7 @@ function AskPanel({ product, state, patchState, navigate }) {
     try {
       const t = await ssPostJson("/api/selfserve/interview", { action: "triage", product, question, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product) });
       if (!t || !t.lightPlan) throw new Error("couldn't compose the questions");
-      setTri(t);
+      setTri(t); setPage(1);
     } catch (e) { setErr(String(e.message || e)); }
     setPreviewing(false);
   }
@@ -1006,103 +1009,104 @@ function AskPanel({ product, state, patchState, navigate }) {
     setSending(false);
   }
 
+  const goStep = (i) => { if (i === 0 || tri) setPage(i); };
+
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
-      <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user. Write what you want to learn in your own words — business or product questions are fine; Observant rewrites them as natural user questions.</p>
-      <p className="ss-step-lead">It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks, and shows you which before you send.</p>
-      <p className="ss-step-lead">Keep each loop to one theme and your most important questions; mix too much and we'll suggest splitting it into separate loops.</p>
 
       <ol className="ss-loop-steps">
         {["Write", "Review", "Test"].map((s, i) => (
-          <li key={s} className={"ss-loop-step" + (i < loopStep ? " done" : i === loopStep ? " on" : "")}>
-            <span className="ss-loop-dot">{i < loopStep ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+          <li key={s} className={"ss-loop-step" + (i < page ? " done" : i === page ? " on" : "") + ((i === 0 || tri) ? " nav" : "")} onClick={() => goStep(i)}>
+            <span className="ss-loop-dot">{i < page ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
             <span className="ss-loop-label">{s}</span>
           </li>
         ))}
       </ol>
 
-      <div className="ss-step-block">
-        <span className="ss-step-tag">Step 1 · Write your loop</span>
-        <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
-          <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
-          <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
-        </button>
-        <Field label="What do you want to learn?">
-          <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); }} />
-        </Field>
-        {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
-        <div className="ss-panel-actions">
-          <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}><Icon name="spark" size={15} /> {previewing ? "Reading your question…" : "Preview what Observant will ask"}</Btn>
-        </div>
-      </div>
-
-      <div id="ss-preview-out" />
-
-      {previewing && !tri && (
-        <div style={{ marginTop: 16, borderTop: "1px solid var(--line,#e6e3dd)", paddingTop: 16 }}>
-          <div className="ss-depth-card ss-skel-card">
-            <div className="ss-skel-line w40" />
-            <div className="ss-skel-line w70" />
-            <div className="ss-skel-line w90" />
+      {/* ── STEP 1 · WRITE ── */}
+      {page === 0 && (
+        <div className="ss-step-block">
+          <p className="ss-step-lead">A <b>loop</b> is one batch of questions Observant sends a user. Write what you want to learn in your own words — business or product questions are fine; Observant rewrites them as natural user questions. It runs as <b>Light mode</b> (a couple of quick questions) or <b>Deep mode</b> (a ~10-minute AI-guided voice interview) — Observant picks. Keep each loop to one theme; mix too much and we'll suggest splitting it.</p>
+          <button type="button" className="ss-ctx-strip" onClick={() => navigate({ section: "context" })}>
+            <span className="ss-ctx-strip-main"><Icon name="book" size={15} /> What Observant knows about {product}</span>
+            <span className="ss-ctx-strip-meta">{comp.filled} of {comp.total} areas filled · review / add more <Icon name="arrow" size={13} /></span>
+          </button>
+          <Field label="What do you want to learn?">
+            <textarea className="textarea ss-ask-open" value={question} placeholder={"Write your questions however you think of them — e.g. How do people use " + product + " day-to-day? What made power users stick around? Observant will translate and group them."} onChange={(e) => { setQuestion(e.target.value); setTri(null); setPage(0); }} />
+          </Field>
+          {anMemory(product) && <p style={{ fontSize: ".82rem", color: "#2e7d46", margin: "-4px 0 14px" }}>✓ Observant will tailor these to what it learned about this person in their intro.</p>}
+          <div className="ss-panel-actions">
+            <Btn variant="primary" onClick={preview} disabled={!question.trim() || previewing}>{previewing ? "Reading your question…" : "Preview what Observant will ask"} <Icon name="arrow" size={16} /></Btn>
           </div>
-          <div className="ss-skel-line w30" style={{ marginTop: 16 }} />
-          <div className="ss-skel-line w80" />
-          <div className="ss-skel-line w60" />
-          <p className="ss-muted-note">Observant is reading your question and composing what to ask…</p>
         </div>
       )}
 
-      {tri && (
-        <div className="ss-result">
-          <div className="ss-step-block">
-            <span className="ss-step-tag">Step 2 · What Observant will do</span>
-            {/* The bifurcation decision — light vs deep */}
-            <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
-              <div className="ss-depth-head">
-                <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
-                <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
-              </div>
-              <details className="ss-depth-learn">
-                <summary>What's light mode vs deep mode?</summary>
-                <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
-              </details>
+      {/* ── STEP 2 · REVIEW ── */}
+      {page === 1 && tri && (
+        <div className="ss-step-block">
+          <span className="ss-step-tag">Step 2 · What Observant will do</span>
+          <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
+            <div className="ss-depth-head">
+              <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
+              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
-
             {tri.estMin > 0 && (
-              <p className="ss-reward-line">Reward offered: <b>~{tri.estMin} min · ${tri.estMin * rate}</b> per person — shown to them up front, paid when their answers pass a quick quality check (genuine · on-topic · specific). Not based on time spent.</p>
+              <p className="ss-depth-reward">Reward offered: <b>~{tri.estMin} min · ${tri.estMin * rate}</b> per person — paid when their answers pass a quick quality check.</p>
             )}
+            <details className="ss-depth-learn">
+              <summary>What's light mode vs deep mode?</summary>
+              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
+            </details>
+          </div>
 
-            {tri.split && tri.split.recommend && (
-              <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
-            )}
+          {tri.split && tri.split.recommend && (
+            <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
+          )}
 
-            {!isDeep && (
-              <div style={{ marginTop: 14 }}>
-                <span className="ss-result-label">The questions it'll ask</span>
-                <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
-                <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
+          {!isDeep && (
+            <div style={{ marginTop: 14 }}>
+              <span className="ss-result-label">The questions it'll ask</span>
+              <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
+              <p className="ss-result-foot">After someone replies, Observant asks <b>one</b> follow-up — only if their answer opens something genuinely worth digging into. Never more, so it's never spammy.</p>
+            </div>
+          )}
+
+          <div className="ss-wiz-nav">
+            <button type="button" className="ss-linklike" onClick={() => setPage(0)}><Icon name="back" size={14} /> Back to edit</button>
+            <Btn variant="primary" onClick={() => setPage(2)}>Next: see what users get <Icon name="arrow" size={16} /></Btn>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3 · TEST ── */}
+      {page === 2 && tri && (
+        <div className="ss-step-block">
+          <span className="ss-step-tag">Step 3 · See it as your users do</span>
+          {channel === "email" ? (
+            <>
+              <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
+              <div className="ss-send-row">
+                <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+                <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
               </div>
-            )}
+            </>
+          ) : (
+            <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
+          )}
+          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
+          {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+          {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
+          <div className="ss-wiz-nav">
+            <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
           </div>
+        </div>
+      )}
 
-          <div className="ss-step-block">
-            <span className="ss-step-tag">Step 3 · See it as your users do</span>
-            {channel === "email" ? (
-              <>
-                <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
-                <div className="ss-send-row">
-                  <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
-                  <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
-                </div>
-              </>
-            ) : (
-              <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
-            )}
-            {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
-            {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
-            {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
-          </div>
+      {previewing && !tri && (
+        <div className="ss-step-block">
+          <div className="ss-depth-card ss-skel-card"><div className="ss-skel-line w40" /><div className="ss-skel-line w70" /><div className="ss-skel-line w90" /></div>
+          <p className="ss-muted-note">Observant is reading your question and composing what to ask…</p>
         </div>
       )}
       {err && <p className="ss-result-help" style={{ color: "#b4291f" }}>{err}</p>}
@@ -1183,19 +1187,11 @@ function LearningView({ state, patchState, navigate }) {
     });
   };
 
-  const composing = state.focusedTarget === "create-loop";
-  if (composing) {
-    return (
-      <div className="ss-page-stack">
-        <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
-      </div>
-    );
-  }
   return (
     <div className="ss-page-stack">
       <div className="ss-activity-head">
-        <div><span className="eyebrow no-rule">Activity</span><h2 style={{ margin: "2px 0 0" }}>Loops you've sent</h2></div>
-        <Btn variant="primary" onClick={() => navigate({ section: "learning", focusedTarget: "create-loop" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+        <div><span className="eyebrow no-rule">Loop history</span><h2 style={{ margin: "2px 0 0" }}>Loops you've sent</h2></div>
+        <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
       </div>
       <QuestionHistory state={state} />
     </div>

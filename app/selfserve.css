@@ -2950,6 +2950,10 @@
 .ss-loop-step.on .ss-loop-label, .ss-loop-step.done .ss-loop-label { color: var(--text); font-weight: 600; }
 .ss-step-block { margin: 0 0 22px; }
 .ss-step-tag { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+.ss-loop-step.nav { cursor: pointer; }
+.ss-wiz-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border,#e6e3dd); }
+.ss-depth-reward { font-size: .85rem; color: #5a5347; line-height: 1.5; margin: 10px 0 0; }
+.ss-depth-reward b { color: #24221e; }
 @media (max-width: 560px) { .ss-loop-label { display: none; } .ss-loop-step:not(:last-child)::after { width: 16px; margin: 0 7px; } }
 
 /* Ask — unified "what Observant will do" result section (one label treatment) */
