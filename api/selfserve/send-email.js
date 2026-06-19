@@ -3,7 +3,8 @@
    LIGHT mode: the question set inline, answered by REPLYING to the email
    (true in-email fill-in fields need AMP for email — a later upgrade).
    DEEP mode: an invitation to a ~10-min AI-guided session, with an async
-   fallback. Sent via Resend. Needs RESEND_API_KEY (+ optional RESEND_FROM).
+   fallback. Sent via Resend. Needs RESEND_API_KEY (+ optional RESEND_FROM /
+   RESEND_REPLY_TO).
    ============================================================ */
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -72,10 +73,20 @@ module.exports = async function handler(req, res) {
 };
 
 async function resendSend(toEmail, subject, html, text) {
+  const payload = {
+    from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
+    to: [toEmail],
+    subject,
+    html,
+    text,
+  };
+  const replyTo = String(process.env.RESEND_REPLY_TO || "").trim();
+  if (replyTo) payload.reply_to = replyTo;
+
   const send = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>", to: [toEmail], subject, html, text }),
+    body: JSON.stringify(payload),
   });
   if (!send.ok) { const detail = await send.text(); return { ok: false, error: "Resend " + send.status + ": " + detail.slice(0, 240) }; }
   const data = await send.json();
