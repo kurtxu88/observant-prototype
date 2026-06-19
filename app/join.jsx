@@ -1,7 +1,7 @@
 /* ============================================================
    OBSERVANT magic-link experience — what a user sees when they
    open the invite link a team sent them.
-   Participant-facing: the page speaks in the client's brand,
+   Participant-facing: the page speaks in the cliednt's brand,
    with Observant as the feedback partner running the program.
    ============================================================ */
 const { useState: useStateJN } = React;
