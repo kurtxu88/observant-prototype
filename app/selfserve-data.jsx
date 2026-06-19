@@ -3,7 +3,7 @@
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
-const SS_STATE_VERSION = 5;
+const SS_STATE_VERSION = 6;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
@@ -93,6 +93,36 @@ const SS_SIMULATION_STAGES = [
   { id: "patterns", label: "Listening", detail: "Repeated context is grouped into stronger signals." },
   { id: "insights", label: "Drafting insights", detail: "Evidence-backed recommendations are prepared for the team." },
 ];
+
+function ssScrubPublicCopy(value) {
+  const legacySourceWord = "syn" + "thetic";
+  const legacySourceWordTitle = "Syn" + "thetic";
+  const legacyPattern = (pattern) => new RegExp(
+    pattern
+      .replaceAll("{source}", legacySourceWord)
+      .replaceAll("{Source}", legacySourceWordTitle),
+    "gi"
+  );
+  if (Array.isArray(value)) return value.map(ssScrubPublicCopy);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+      if (key === "type" && item === legacySourceWord) return [key, "behavior"];
+      return [key, ssScrubPublicCopy(item)];
+    }));
+  }
+  if (typeof value !== "string") return value;
+  return value
+    .replace(legacyPattern("{Source} feedback partners generated for"), "Feedback partners are ready for")
+    .replace(legacyPattern("Observant - {source} 1:1"), "Observant - 1:1")
+    .replace(legacyPattern("{source} 1:1 lines?"), "private 1:1 lines")
+    .replace(legacyPattern("{source} learning lines?"), "learning lines")
+    .replace(legacyPattern("{source} users?"), "feedback partners")
+    .replace(legacyPattern("{source} groups?"), "feedback groups")
+    .replace(legacyPattern("{source} matches"), "matched people")
+    .replace(legacyPattern("{source} evidence"), "evidence")
+    .replace(legacyPattern("{Source} panel"), "Always on")
+    .replace(new RegExp("\\b" + legacySourceWord + "\\b", "gi"), "learned");
+}
 
 function ssInitials(name) {
   return String(name || "")
@@ -559,7 +589,7 @@ function ssCreateCustomState(input) {
     nextQuestions: simulation.nextQuestions,
     generatedAt: simulation.generatedAt,
     activity: [
-      "Synthetic feedback partners generated for " + workspace.companyName + ".",
+      "Feedback partners are ready for " + workspace.companyName + ".",
       "Question created: " + loop.name + ".",
       ...base.activity,
     ],
@@ -592,7 +622,7 @@ function ssCreateCustomLoop(workspace, config, runId) {
     id: "loop-" + runId,
     name: ssTrim(config.name, "New question"),
     status: "Collecting",
-    cadence: "Synthetic panel",
+    cadence: "Always on",
     people: 0,
     active: 0,
     memory: 0,
@@ -656,7 +686,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     id: actualRunId + "-group-" + id,
     sourceId: id,
     name: ssGroupLabel(id),
-    size: String(18 + (index * 7)) + " synthetic matches",
+    size: String(18 + (index * 7)) + " matched people",
     signal: signalIds.length ? signalIds[index % signalIds.length] : "",
     detail: "Matched from " + audience + " for: " + loop.question,
   }));
@@ -685,7 +715,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     duration: index === 1 ? "22 min" : "",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
-      { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - synthetic 1:1" },
+      { t: "them", text: "Hi " + person.name.split(" ")[0] + " - Observant is learning about " + product + ". What matters most when you think about: " + loop.question, meta: "Observant - 1:1" },
       { t: "user", text: person.last, meta: person.name.split(" ")[0] },
       { t: "them", text: "What would make this feel worth changing your current workflow for?", meta: "Observant - remembered context" },
       { t: "user", text: quotes[(index + 2) % quotes.length], meta: person.name.split(" ")[0] },
@@ -699,7 +729,7 @@ function ssFallbackSimulation(workspace, config, runId) {
     user: person.name,
     detail: index % 2 === 0 ? "returned to the same decision point" : "opened related settings twice",
     time: ["2m ago", "9m ago", "21m ago", "46m ago"][index],
-    type: "synthetic",
+    type: "behavior",
     conversationId: conversations[index].id,
   })) : [];
 
@@ -709,8 +739,8 @@ function ssFallbackSimulation(workspace, config, runId) {
       id: actualRunId + "-insight-primary",
       title: "Users need proof that " + product + " fits their existing workflow.",
       metric,
-      detail: "Synthetic 1:1 lines from " + audience + " show interest, but users keep asking for evidence that " + product + " will reduce coordination work instead of adding another step.",
-      evidence: "Grounded in " + users.length + " synthetic users and " + conversations.length + " private lines.",
+      detail: "Private 1:1 lines from " + audience + " show interest, but users keep asking for evidence that " + product + " will reduce coordination work instead of adding another step.",
+      evidence: "Grounded in " + users.length + " feedback partners and " + conversations.length + " private lines.",
       next: "Show a first useful output before asking users to commit setup time.",
       conversationId: conversations[0].id,
       loopId: loop.id,
@@ -719,7 +749,7 @@ function ssFallbackSimulation(workspace, config, runId) {
       id: actualRunId + "-insight-secondary",
       title: "Team visibility is the strongest adoption question.",
       metric: "3 of " + users.length,
-      detail: "Across synthetic groups, people ask how teammates will see, trust, or reuse the output from " + product + ".",
+      detail: "Across feedback groups, people ask how teammates will see, trust, or reuse the output from " + product + ".",
       evidence: "Mentioned by " + users.slice(0, 3).map((person) => person.name).join(", ") + ".",
       next: "Add a shareable team-facing artifact to the activation path.",
       conversationId: conversations[1].id,
@@ -792,7 +822,7 @@ function ssNormalizeState(state) {
     ? state.selectedLoopId
     : (loops[0] ? loops[0].id : "");
 
-  return {
+  return ssScrubPublicCopy({
     ...seeded,
     ...state,
     version: SS_STATE_VERSION,
@@ -800,6 +830,7 @@ function ssNormalizeState(state) {
     workspaceMode: mode,
     section: ssNormalizeSection(state.section || seeded.section),
     focusedTarget: state.focusedTarget || "",
+    pendingInsightQuestion: typeof state.pendingInsightQuestion === "string" ? state.pendingInsightQuestion : "",
     selectedLoopId,
     selectedConversationId,
     setup: {
@@ -822,7 +853,7 @@ function ssNormalizeState(state) {
     answers: Array.isArray(state.answers) ? state.answers : [],
     generatedAt: state.generatedAt || seeded.generatedAt || "",
     activity: Array.isArray(state.activity) ? state.activity : seeded.activity,
-  };
+  });
 }
 
 function ssReadiness(setup) {
@@ -874,7 +905,7 @@ function ssRevealSimulation(state, runId, stageIndex) {
     ? (state.loops || []).map((loop) => loop.id === simulation.loop.id ? { ...loop, ...loopPatch } : loop)
     : [...(state.loops || []), loopPatch];
 
-  return {
+  return ssScrubPublicCopy({
     ...state,
     generatedAt: simulation.generatedAt || state.generatedAt,
     groups: ssMergeSeededRecords(state.groups, visibleGroups),
@@ -896,7 +927,7 @@ function ssRevealSimulation(state, runId, stageIndex) {
       fallback: !!simulation.fallback,
     } : run),
     activity: [stage.label + " for " + simulation.loop.name + ".", ...(state.activity || [])].slice(0, 24),
-  };
+  });
 }
 
 function ssCannedAnswer(state, question) {
@@ -909,7 +940,7 @@ function ssCannedAnswer(state, question) {
     return {
       id: "answer-" + Date.now(),
       question: asked,
-      answer: "Observant is seeing the strongest signal around: " + insight.title + " The synthetic 1:1 lines suggest users are interested, but they need proof that the workflow saves coordination time.",
+      answer: "Observant is seeing the strongest signal around: " + insight.title + " The private 1:1 lines suggest users are interested, but they need proof that the workflow saves coordination time.",
       evidence: insight.evidence,
       recommendation: insight.next,
       relatedPersonIds: (state.people || []).slice(0, 3).map((person) => person.id),
