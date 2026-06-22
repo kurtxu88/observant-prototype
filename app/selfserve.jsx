@@ -962,6 +962,18 @@ function ContextPanel({ state, patchState, bare }) {
   );
 }
 
+// Launch the REAL ElevenLabs voice interview (IntroCall) for a deep question —
+// encodes the deep plan exactly the way IntroCall.html decodes it (?d=). Needs
+// ELEVENLABS_API_KEY set on the Vercel project; otherwise IntroCall falls back to text.
+function ssEncodeDeep(plan) {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(plan)))); } catch (e) { return ""; }
+}
+function ssOpenVoicePreview(product, deepPlan) {
+  const plan = { product, mode: "deep", essence: (deepPlan && deepPlan.essence) || "", threads: (deepPlan && deepPlan.threads) || [] };
+  const url = "IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeURIComponent(ssEncodeDeep(plan));
+  try { window.open(url, "_blank", "noopener"); } catch (e) { window.location.href = url; }
+}
+
 // Redesigned ask experience — applies the conversation logic (C1) inline and
 // sends a REAL test email of the first batch. No simulated thread on the page.
 function AskPanel({ product, state, patchState, navigate }) {
@@ -1062,6 +1074,14 @@ function AskPanel({ product, state, patchState, navigate }) {
               <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
             </details>
           </div>
+
+          {isDeep && (
+            <div className="ss-voice-preview">
+              <span className="ss-result-label">The 10-minute voice interview</span>
+              <p className="ss-result-help">This runs a real, live AI voice interview on the question above — try it exactly the way your user would.</p>
+              <Btn variant="primary" onClick={() => ssOpenVoicePreview(product, tri.deepPlan)}><Icon name="phone" size={15} /> Preview the voice interview</Btn>
+            </div>
+          )}
 
           {tri.split && tri.split.recommend && (
             <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>

@@ -3158,3 +3158,7 @@
 .ss-step-copy { font: inherit; font-size: .78rem; font-weight: 600; color: var(--accent); background: none; border: none; cursor: pointer; padding: .15rem 0; }
 .ss-closeloop .btn { margin-top: .2rem; }
 .ss-insight-cta { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-weight: 600; font-size: .82rem; margin-top: .3rem; }
+
+/* Voice interview preview (deep compose) */
+.ss-voice-preview { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.ss-voice-preview .btn { margin-top: 8px; }
