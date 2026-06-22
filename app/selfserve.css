@@ -3129,3 +3129,32 @@
 
 /* Insight card -> conversations link (card is no longer a button) */
 .ss-insight-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: var(--accent); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; padding: 2px 0; margin-top: .2rem; }
+
+/* ---- One-click fix: insight detail (Novus-grounded, on the why) ---- */
+.ss-insight-detail-head { display: flex; gap: 1rem; align-items: flex-start; }
+.ss-insight-metric-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; color: var(--accent); flex: none; }
+.ss-insight-detail-head h2 { margin: .15rem 0 .35rem; }
+.ss-insight-detail-head p { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.ss-insight-detail-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1rem; }
+@media (max-width: 860px) { .ss-insight-detail-grid { grid-template-columns: 1fr; } }
+.ss-rootcause { margin: .2rem 0 0; padding-left: 1.2rem; }
+.ss-rootcause li { font-size: .92rem; line-height: 1.55; margin: .5rem 0; }
+.ss-sources .ss-source-people { display: flex; flex-direction: column; gap: .3rem; margin-top: .2rem; }
+.ss-source-counts { margin: .7rem 0 0; font-size: .8rem; color: var(--text-secondary); }
+.ss-plan-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .9rem; }
+.ss-steps { display: flex; flex-direction: column; gap: .5rem; }
+.ss-step { display: flex; gap: .6rem; border: 1px solid var(--border); border-radius: 12px; padding: .7rem .8rem; background: var(--panel); transition: opacity .15s; }
+.ss-step.off { opacity: .45; }
+.ss-step-check { flex: none; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--accent-soft); background: var(--accent-tint); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; margin-top: 2px; }
+.ss-step.off .ss-step-check { background: transparent; }
+.ss-step-main { flex: 1; min-width: 0; }
+.ss-step-head { display: flex; align-items: center; gap: .55rem; width: 100%; background: none; border: none; padding: 0; cursor: pointer; font: inherit; text-align: left; flex-wrap: wrap; }
+.ss-step-label { font-size: .66rem; letter-spacing: .07em; color: var(--text-secondary); font-weight: 700; }
+.ss-step-head b { font-size: .9rem; }
+.ss-step-type { margin-left: auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--accent-hover); background: var(--accent-tint); padding: .12rem .45rem; border-radius: 999px; }
+.ss-step-body { margin-top: .55rem; padding-top: .55rem; border-top: 1px dashed var(--border); }
+.ss-step-body p { margin: 0 0 .5rem; font-size: .87rem; line-height: 1.5; }
+.ss-step-affects { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74rem; background: oklch(0.96 0.006 80); color: var(--text-secondary); padding: .15rem .4rem; border-radius: 6px; margin-right: .5rem; }
+.ss-step-copy { font: inherit; font-size: .78rem; font-weight: 600; color: var(--accent); background: none; border: none; cursor: pointer; padding: .15rem 0; }
+.ss-closeloop .btn { margin-top: .2rem; }
+.ss-insight-cta { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-weight: 600; font-size: .82rem; margin-top: .3rem; }
