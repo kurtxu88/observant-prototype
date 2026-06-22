@@ -1416,99 +1416,6 @@ function PartnerMemory({ person }) {
 // can't DM anonymous reviewers. Real recruiting = post the magic link where the
 // feedback already happens. Public signal still pre-briefs the companion below.)
 
-// One-click fix, modeled on Novus's flow (synthesis → root cause → file-scoped
-// plan → hand to Claude / open PR) — but grounded in the WHY (conversations), and
-// it can close the loop with the humans who raised it (a behavioral tool can't).
-function ssCopyClip(text) { try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (e) {} }
-
-function InsightStep({ step }) {
-  const [open, setOpen] = useStateSS(false);
-  const [on, setOn] = useStateSS(true);
-  const [copied, setCopied] = useStateSS(false);
-  const copy = (e) => { e.stopPropagation(); ssCopyClip(step.prompt || step.detail); setCopied(true); setTimeout(() => setCopied(false), 1600); };
-  return (
-    <div className={"ss-step" + (on ? "" : " off")}>
-      <button type="button" className="ss-step-check" aria-label="Include this step" onClick={() => setOn((v) => !v)}>{on ? <Icon name="check" size={13} sw={2.6} /> : null}</button>
-      <div className="ss-step-main">
-        <button type="button" className="ss-step-head" onClick={() => setOpen((v) => !v)}>
-          <span className="ss-step-label">STEP {step.n}</span>
-          <b>{step.title}</b>
-          <span className="ss-step-type">{step.type}</span>
-        </button>
-        {open && (
-          <div className="ss-step-body">
-            <p>{step.detail}</p>
-            {step.affects && <span className="ss-step-affects">Affects: {step.affects}</span>}
-            <button type="button" className="ss-step-copy" onClick={copy}>{copied ? "Copied ✓" : "Copy prompt"}</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function InsightDetail({ insight, state, patchState, onBack }) {
-  const [closed, setClosed] = useStateSS(false);
-  const [planCopied, setPlanCopied] = useStateSS(false);
-  const raised = (insight.raisedBy || []).map((id) => (state.people || []).find((pp) => pp.id === id)).filter(Boolean);
-  const steps = insight.steps || [];
-  const firstNames = raised.map((pp) => pp.name.split(" ")[0]).join(", ");
-  const copyPlan = () => {
-    const text = insight.title + "\n\nRoot cause:\n" + (insight.rootCause || []).map((x) => "- " + x).join("\n") +
-      "\n\nPlan:\n" + steps.map((s) => "STEP " + s.n + " — " + s.title + (s.affects ? " (" + s.affects + ")" : "") + "\n" + s.detail).join("\n\n");
-    ssCopyClip(text); setPlanCopied(true); setTimeout(() => setPlanCopied(false), 1600);
-  };
-  const closeLoop = () => {
-    setClosed(true);
-    patchState((cur) => ({ ...cur, activity: ["Closed the loop with " + firstNames + " on “" + insight.title + "”.", ...(cur.activity || [])] }));
-  };
-  return (
-    <div className="ss-page-stack">
-      <button type="button" className="ss-insight-link" onClick={onBack}><Icon name="back" size={14} /> All insights</button>
-      <section className="ss-panel">
-        <div className="ss-insight-detail-head">
-          <span className="ss-insight-metric-big">{insight.metric}</span>
-          <div>
-            <span className="eyebrow no-rule">Insight · Plan ready</span>
-            <h2>{insight.title}</h2>
-            <p>{insight.detail}</p>
-          </div>
-        </div>
-      </section>
-      <div className="ss-insight-detail-grid">
-        <section className="ss-panel">
-          <PanelTitle k="Root cause" title="What the conversations say" />
-          <ol className="ss-rootcause">{(insight.rootCause || []).map((x, i) => <li key={i}>{x}</li>)}</ol>
-        </section>
-        <section className="ss-panel ss-sources">
-          <PanelTitle k="Sources" title="Grounded in" status={raised.length + " partners"} />
-          <div className="ss-source-people">
-            {raised.map((pp) => <PersonLine key={pp.id} person={pp} meta={pp.segment + " · " + pp.surface} compact />)}
-          </div>
-          {insight.sourceCounts && <p className="ss-source-counts">{insight.sourceCounts.conversations} conversations · {insight.sourceCounts.moments} remembered moments</p>}
-        </section>
-      </div>
-      <section className="ss-panel">
-        <PanelTitle k="Implementation plan" title={steps.length + " steps — grounded in the why"} status="Plan ready" />
-        <div className="ss-plan-actions">
-          <Btn variant="ghost" size="sm" onClick={copyPlan}><Icon name="book" size={14} /> {planCopied ? "Copied ✓" : "Copy plan"}</Btn>
-          <Btn variant="ghost" size="sm" onClick={copyPlan}><Icon name="spark" size={14} /> Hand to Claude</Btn>
-          <Btn variant="primary" size="sm" title="Connect your repo to open a PR directly"><Icon name="link" size={14} /> Open PR — connect repo</Btn>
-        </div>
-        <div className="ss-steps">{steps.map((s) => <InsightStep key={s.id} step={s} />)}</div>
-      </section>
-      {raised.length > 0 && (
-        <section className="ss-panel ss-closeloop">
-          <PanelTitle k="Close the loop" title="Tell the people who raised this" status={raised.length + " partners"} />
-          <p className="ss-step-lead">Behavioral tools fix the code and stop. You have the relationship — let {firstNames} know you're acting on what they told you.</p>
-          <Btn variant="primary" size="sm" onClick={closeLoop} disabled={closed}><Icon name="relay" size={14} /> {closed ? "Loop closed ✓" : "Tell " + firstNames}</Btn>
-          {closed && <p className="ss-fix-closed">Observant let {firstNames} know their feedback shaped a fix — the part a behavioral tool can't do.</p>}
-        </section>
-      )}
-    </div>
-  );
-}
-
 // Weekly digest — the relationship-flavored version of Novus's Signals.
 function WeeklyDigest({ state, navigate }) {
   const d = state.digest;
@@ -1564,13 +1471,7 @@ function PreBriefed({ state }) {
 }
 
 function InsightsView({ state, patchState, navigate }) {
-  const [selectedId, setSelectedId] = useStateSS(() => {
-    const ft = state.focusedTarget || "";
-    return (state.insights || []).some((i) => i.id === ft) ? ft : "";
-  });
   const latestAnswer = state.answers[0];
-  const selected = (state.insights || []).find((i) => i.id === selectedId);
-  if (selected) return <InsightDetail insight={selected} state={state} patchState={patchState} onBack={() => setSelectedId("")} />;
 
   return (
     <div className="ss-page-stack">
@@ -1578,23 +1479,26 @@ function InsightsView({ state, patchState, navigate }) {
       {latestAnswer && <LatestAnswerCard answer={latestAnswer} />}
       {state.insights.length ? (
         <div className="ss-list-grid">
-          {state.insights.map((insight) => (
-            <button type="button" className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)} key={insight.id} onClick={() => setSelectedId(insight.id)}>
-              <span>{insight.metric}</span>
-              <h3>{insight.title}</h3>
-              <p>{insight.detail}</p>
-              <em>{insight.evidence}</em>
-              <div className="ss-insight-cta">{insight.steps ? insight.steps.length + "-step fix plan ready" : insight.next} <Icon name="arrow" size={13} /></div>
-            </button>
-          ))}
+          {state.insights.map((insight) => {
+            const conversation = state.conversations.find((item) => item.id === insight.conversationId);
+            const rowPerson = ssPersonForConversation(state, conversation);
+            return (
+              <button
+                type="button"
+                className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)}
+                key={insight.id}
+                onClick={() => navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) })}
+              >
+                <span>{insight.metric}</span>
+                <h3>{insight.title}</h3>
+                <p>{insight.detail}</p>
+                <em>{insight.evidence}</em>
+                <div>{insight.next}</div>
+              </button>
+            );
+          })}
         </div>
       ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
-      {(state.unanswered || []).length > 0 && (
-        <section className="ss-panel ss-unanswered">
-          <PanelTitle k="Honest gaps" title="What Observant can’t answer yet" status="And why" />
-          <ul>{state.unanswered.map((x, i) => <li key={i}>{x}</li>)}</ul>
-        </section>
-      )}
     </div>
   );
 }
