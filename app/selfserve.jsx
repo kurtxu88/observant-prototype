@@ -825,6 +825,8 @@ function HomeView({ state, patchState, navigate }) {
         </div>
       </section>
 
+      <WeeklyDigest state={state} navigate={navigate} />
+
       {custom && !state.loops.length && (
         <section className="ss-panel ss-start-panel">
           <PanelTitle k="Next" title="Send a new loop" status="Ready" />
@@ -925,6 +927,7 @@ function ContextView({ state, patchState }) {
   const comp = SelfServeData.contextCompleteness(state.workspace);
   return (
     <div className="ss-page-stack">
+      <PreBriefed state={state} />
       <section className="ss-panel">
         <PanelTitle k="Context" title={"What Observant knows about " + product} status={comp.filled + " of " + comp.total + " filled"} />
         <p className="ss-step-lead">This is the shared memory behind every question Observant asks your users. The more it knows, the sharper and more tailored each conversation — and you can keep adding to it anytime, forever. <b>New context is always welcome.</b></p>
@@ -1297,7 +1300,9 @@ function PeopleView({ state, patchState }) {
   };
 
   return (
-    <div className="ss-people-layout">
+    <div className="ss-page-stack">
+      <ReviewsToPartners state={state} patchState={patchState} />
+      <div className="ss-people-layout">
       <section className="ss-panel">
         <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " partners"} />
         <div className="ss-table-list">
@@ -1328,6 +1333,7 @@ function PeopleView({ state, patchState }) {
           <span className="ss-via">via Observant over {person.surface}</span>
         </div>
         <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
+        <PartnerMemory person={person} />
         <div className="ss-mode-tabs">
           <button type="button" className={modeTab === "chat" ? "on" : ""} onClick={() => setModeTab("chat")}><Icon name="chat" size={15} /> 1:1 chat <em>async</em></button>
           <button type="button" className={modeTab === "voice" ? "on" : ""} onClick={() => setModeTab("voice")}><Icon name="phone" size={15} /> Voice interviews <em>transcripts{voiceConversations.length ? " · " + voiceConversations.length : ""}</em></button>
@@ -1381,7 +1387,162 @@ function PeopleView({ state, patchState }) {
           </div>
         </>
       )}
+      </div>
     </div>
+  );
+}
+
+// ---- Bucket A: relationship-frame surfaces ----
+
+// Per-partner living memory — the company side of the relationship, made visible.
+function PartnerMemory({ person }) {
+  const p = person.profile;
+  if (!p) return null;
+  const block = (label, items) => items && items.length ? (
+    <div className="ss-memory-block"><b>{label}</b><ul>{items.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+  ) : null;
+  return (
+    <div className="ss-memory">
+      <div className="ss-memory-head">
+        <span className="eyebrow no-rule">Relationship memory</span>
+        <em>{p.since}{p.reward ? " · " + p.reward : ""}</em>
+      </div>
+      {block("What Observant knows", p.knows)}
+      {block("What they’ve shared", p.shared)}
+      {block("Open threads", p.open)}
+      <p className="ss-memory-foot">Carried across every conversation — {person.name.split(" ")[0]} never repeats themselves, and the relationship compounds.</p>
+    </div>
+  );
+}
+
+// Reviews → feedback partners: jump-start the panel from people already talking about you.
+function ReviewsToPartners({ state, patchState }) {
+  const reviews = (state.reviews || []).filter((r) => r.status !== "invited");
+  if (!reviews.length) return null;
+  const srcIcon = (s) => (s === "App Store" || s === "G2") ? "globe" : s === "Reddit" ? "chat" : "mail";
+  const invite = (review) => {
+    patchState((cur) => {
+      const id = "rev-p-" + review.id;
+      const exists = (cur.people || []).some((pp) => pp.id === id);
+      const name = /Priya/.test(review.author) ? "Priya S." : review.author.replace(/^u\//, "@");
+      const person = {
+        id, name, color: "teal", segment: "From " + review.source,
+        surface: review.source === "Reddit" ? "Telegram" : "Email", status: "Invited",
+        memory: "Joined from a " + review.source + " review.", last: review.text,
+        profile: {
+          since: "Just invited from " + review.source, reward: "Just started accruing",
+          knows: ["Raised this publicly: “" + review.text + "”"], shared: [], open: ["Following up on what they raised."],
+        },
+      };
+      return {
+        ...cur,
+        reviews: (cur.reviews || []).map((r) => r.id === review.id ? { ...r, status: "invited" } : r),
+        people: exists ? cur.people : [...(cur.people || []), person],
+        activity: ["Replied to a " + review.source + " review and invited " + name + " to the panel.", ...(cur.activity || [])],
+      };
+    });
+  };
+  return (
+    <section className="ss-panel">
+      <PanelTitle k="Jump-start" title="People already talking about you" status={reviews.length + " to invite"} />
+      <p className="ss-step-lead">You don’t start from zero. These are reviews and tickets already out there — reply to invite them onto the panel, then keep the conversation going.</p>
+      <div className="ss-reviews">
+        {reviews.map((r) => (
+          <div className="ss-review" key={r.id}>
+            <div className="ss-review-meta"><Icon name={srcIcon(r.source)} size={14} /> <b>{r.source}</b> <span>{r.author}</span>{r.rating ? <em>{"★".repeat(r.rating)}</em> : null}</div>
+            <p>{r.text}</p>
+            <Btn variant="primary" size="sm" onClick={() => invite(r)}><Icon name="relay" size={14} /> Reply &amp; invite</Btn>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// One-click fix + close-the-loop, modeled on Novus's "fix = a concrete artifact you act on".
+function InsightFix({ insight, state, patchState }) {
+  const [open, setOpen] = useStateSS(false);
+  const [closed, setClosed] = useStateSS(false);
+  if (!insight.fix) return null;
+  const raised = (insight.raisedBy || []).map((id) => (state.people || []).find((pp) => pp.id === id)).filter(Boolean);
+  const firstNames = raised.map((pp) => pp.name.split(" ")[0]).join(", ");
+  const closeLoop = () => {
+    setClosed(true);
+    patchState((cur) => ({ ...cur, activity: ["Closed the loop with " + firstNames + " on “" + insight.title + "”.", ...(cur.activity || [])] }));
+  };
+  return (
+    <div className="ss-fix">
+      <div className="ss-fix-actions">
+        <Btn variant="primary" size="sm" onClick={() => setOpen((v) => !v)}><Icon name="bolt" size={14} /> {open ? "Hide fix" : "One-click fix"}</Btn>
+        {raised.length > 0 && (
+          <Btn variant="ghost" size="sm" onClick={closeLoop} disabled={closed}>
+            <Icon name="relay" size={14} /> {closed ? "Loop closed ✓" : "Tell the " + raised.length + " who raised this"}
+          </Btn>
+        )}
+      </div>
+      {open && (
+        <div className="ss-fix-draft">
+          <div className="ss-fix-draft-head"><span className="ss-fix-type">{insight.fix.type}</span><b>{insight.fix.title}</b></div>
+          <pre>{insight.fix.draft}</pre>
+          <div className="ss-fix-draft-foot"><Icon name="check" size={13} sw={2.4} /> Ready to paste into Linear / a PR — grounded in the conversations behind this insight.</div>
+        </div>
+      )}
+      {closed && <p className="ss-fix-closed">Observant told {firstNames} you’re acting on their feedback — the part a behavioral tool can’t do.</p>}
+    </div>
+  );
+}
+
+// Weekly digest — the relationship-flavored version of Novus's Signals.
+function WeeklyDigest({ state, navigate }) {
+  const d = state.digest;
+  if (!d) return null;
+  return (
+    <section className="ss-panel ss-digest">
+      <PanelTitle k="Weekly digest" title={d.period + " — what your users told you"} status="Auto-sent" />
+      <p className="ss-digest-headline">{d.headline}</p>
+      {d.stats && <div className="ss-digest-stats">{d.stats.map((s, i) => <div key={i}><b>{s.n}</b><span>{s.l}</span></div>)}</div>}
+      <ul className="ss-digest-list">{d.items.map((x, i) => <li key={i}>{x}</li>)}</ul>
+      {d.insightId && navigate && <button type="button" className="ss-home-seeall" onClick={() => navigate({ section: "insights", focusedTarget: d.insightId })}>Open the insight <Icon name="arrow" size={14} /></button>}
+    </section>
+  );
+}
+
+// Ask Observant where teams already work — Slack + MCP (mirrors Novus's MCP presentation).
+function Integrations({ state }) {
+  const qa = (state.slackQA || [])[0];
+  return (
+    <section className="ss-panel">
+      <PanelTitle k="Integrations" title="Ask Observant where you already work" status="Slack · MCP" />
+      <div className="ss-integ-grid">
+        <div className="ss-integ-card">
+          <div className="ss-integ-head"><Icon name="chat" size={16} /> <b>Ask Observant in Slack</b></div>
+          {qa ? (
+            <div className="ss-slack">
+              <div className="ss-slack-msg"><span className="ss-slack-who">you</span><p>{qa.q}</p></div>
+              <div className="ss-slack-msg ss-slack-bot"><span className="ss-slack-who">Observant</span><p>{qa.a}</p></div>
+            </div>
+          ) : <p className="mut">Ask about your users in plain English, right in Slack.</p>}
+        </div>
+        <div className="ss-integ-card">
+          <div className="ss-integ-head"><Icon name="link" size={16} /> <b>MCP server</b></div>
+          <p className="mut">Pull what Observant has learned into Claude Code, Cursor, or any MCP client — mid-task.</p>
+          <code className="ss-mcp">claude mcp add observant https://api.observant.ai/mcp</code>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Pre-briefed companion — Observant arrives already knowing the product (from a scan).
+function PreBriefed({ state }) {
+  const b = state.briefing;
+  if (!b) return null;
+  return (
+    <section className="ss-panel ss-prebrief">
+      <PanelTitle k="Pre-briefed" title="What Observant already knows" status="From a scan" />
+      <p className="ss-step-lead">Before the first conversation, Observant read {b.scanned.join(", ")} — so the companion shows up already understanding your product and who’s worth talking to.</p>
+      <ul className="ss-prebrief-list">{b.knows.map((x, i) => <li key={i}><Icon name="check" size={13} sw={2.4} /> {x}</li>)}</ul>
+    </section>
   );
 }
 
@@ -1394,26 +1555,31 @@ function InsightsView({ state, patchState, navigate }) {
       {latestAnswer && <LatestAnswerCard answer={latestAnswer} />}
       {state.insights.length ? (
         <div className="ss-list-grid">
-          {state.insights.map((insight) => (
-            <button
-              type="button"
-              className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)}
-              key={insight.id}
-              onClick={() => {
-                const conversation = state.conversations.find((item) => item.id === insight.conversationId);
-                const rowPerson = ssPersonForConversation(state, conversation);
-                navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) });
-              }}
-            >
-              <span>{insight.metric}</span>
-              <h3>{insight.title}</h3>
-              <p>{insight.detail}</p>
-              <em>{insight.evidence}</em>
-              <div>{insight.next}</div>
-            </button>
-          ))}
+          {state.insights.map((insight) => {
+            const conversation = state.conversations.find((item) => item.id === insight.conversationId);
+            const rowPerson = ssPersonForConversation(state, conversation);
+            return (
+              <div className={"ss-insight-card" + ssFocusClass(state, insight.id)} key={insight.id}>
+                <span>{insight.metric}</span>
+                <h3>{insight.title}</h3>
+                <p>{insight.detail}</p>
+                <em>{insight.evidence}</em>
+                <div>{insight.next}</div>
+                <button type="button" className="ss-insight-link" onClick={() => navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) })}>
+                  See the conversations behind this <Icon name="arrow" size={13} />
+                </button>
+                <InsightFix insight={insight} state={state} patchState={patchState} />
+              </div>
+            );
+          })}
         </div>
       ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
+      {(state.unanswered || []).length > 0 && (
+        <section className="ss-panel ss-unanswered">
+          <PanelTitle k="Honest gaps" title="What Observant can’t answer yet" status="And why" />
+          <ul>{state.unanswered.map((x, i) => <li key={i}>{x}</li>)}</ul>
+        </section>
+      )}
     </div>
   );
 }
@@ -1447,6 +1613,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
   const introText = state.workspace.introQuestions != null ? state.workspace.introQuestions : ssDefaultIntroText(product);
   return (
+    <div className="ss-page-stack">
     <section className={"ss-panel ss-settings-panel" + ssFocusClass(state, "settings-workspace")}>
       <PanelTitle k="Settings" title="Workspace settings" status="Saved locally" />
       <Field label="Company or product name">
@@ -1484,6 +1651,8 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <Btn variant="ghost" onClick={ssLogout}>Log out</Btn>
       </div>
     </section>
+    <Integrations state={state} />
+    </div>
   );
 }
 

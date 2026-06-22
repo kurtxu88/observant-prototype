@@ -219,6 +219,20 @@ function ssCreatePeople(workspace) {
       status: "Active now",
       memory: "Exports every Monday and rebuilds the report for her team.",
       last: "A live dashboard is exactly the thing I keep wishing existed.",
+      profile: {
+        since: "On the panel 6 weeks · 41 min",
+        reward: "Silver — 6 months free",
+        knows: [
+          "Ops lead; owns the weekly report her team reads.",
+          "Exports every Monday, then rebuilds a pivot by hand (~20 min/week).",
+          "Her team has no seats — the CSV is really a sharing workaround.",
+        ],
+        shared: [
+          "“Give me a read-only link and I’d never export again.”",
+          "Trusts the numbers; it’s the presentation that’s the work.",
+        ],
+        open: ["Would a shareable live dashboard replace the export? — awaiting reply"],
+      },
     },
     {
       id: "marcus",
@@ -229,6 +243,16 @@ function ssCreatePeople(workspace) {
       status: "Active now",
       memory: "Uses " + product + " for weekly ops reporting and wants share links.",
       last: "I need a link my ops lead can read, not another CSV.",
+      profile: {
+        since: "On the panel 5 weeks · 33 min",
+        reward: "Bronze — $30 gift card",
+        knows: [
+          "Runs weekly ops reporting; reports up to an ops lead without a seat.",
+          "Opened reporting settings 3× after export, hunting for a share link.",
+        ],
+        shared: ["“I need a link my ops lead can read, not another CSV.”"],
+        open: ["Would per-report share links (no seat needed) unblock you?"],
+      },
     },
     {
       id: "priya",
@@ -239,6 +263,16 @@ function ssCreatePeople(workspace) {
       status: "Async",
       memory: "Joined this week and shares reporting updates from email.",
       last: "I forwarded the CSV because I could not find the dashboard sharing flow.",
+      profile: {
+        since: "Joined this week · 8 min",
+        reward: "Just started accruing",
+        knows: [
+          "New this week; still forming her mental model of " + product + ".",
+          "Couldn’t find the dashboard-sharing flow, so she emailed a CSV.",
+        ],
+        shared: ["“I need a clean update I can send from email without rebuilding the export.”"],
+        open: ["Where did the sharing flow break down in your first week?"],
+      },
     },
     {
       id: "owen",
@@ -249,6 +283,16 @@ function ssCreatePeople(workspace) {
       status: "Watching",
       memory: "Builds internal dashboards on top of the API.",
       last: "The API is the whole reason I am here.",
+      profile: {
+        since: "On the panel 9 weeks · 22 min",
+        reward: "Bronze — $30 gift card",
+        knows: [
+          "Builds the exec-facing internal dashboard on top of the API.",
+          "Exports, then rebuilds outside the product to match exec expectations.",
+        ],
+        shared: ["“The API is the whole reason I am here.”"],
+        open: ["What would the in-product dashboard need to replace your internal one?"],
+      },
     },
     {
       id: "leah",
@@ -259,6 +303,16 @@ function ssCreatePeople(workspace) {
       status: "Watching",
       memory: "Paused on the upgrade page after comparing reporting permissions.",
       last: "I need to know whether the team can see this before we upgrade.",
+      profile: {
+        since: "On the panel 2 weeks · 12 min",
+        reward: "Just started accruing",
+        knows: [
+          "Evaluating an upgrade; paused on the page after checking reporting permissions.",
+          "Blocker is team visibility, not price.",
+        ],
+        shared: ["“I need to know whether the team can see this before we upgrade.”"],
+        open: ["What proof of safe team sharing would let you upgrade?"],
+      },
     },
   ];
 }
@@ -359,6 +413,12 @@ function ssCreateInsights(workspace) {
       evidence: "Grounded in 252 remembered moments and 18 recent private lines.",
       next: "Ship a live dashboard link; keep CSV as secondary.",
       conversationId: "dana",
+      raisedBy: ["dana", "marcus", "owen"],
+      fix: {
+        type: "PRD draft",
+        title: "Shareable read-only dashboard links",
+        draft: "Problem: power users export weekly only to rebuild a team-readable view; their teammates have no seats, so the CSV is a sharing workaround.\n\nProposal: a read-only dashboard link (no seat required) scoped per report, with the existing CSV kept as secondary.\n\nGrounded in: Dana, Marcus, Owen — 252 remembered moments, 18 private lines.\nSuccess: weekly exports/user drop ≥40% among power users within 30 days.",
+      },
     },
     {
       id: "insight-onboarding",
@@ -368,8 +428,65 @@ function ssCreateInsights(workspace) {
       evidence: "Surfaced from onboarding lines and feature_opened events.",
       next: "Add reporting intent to first-run setup.",
       conversationId: "priya",
+      raisedBy: ["priya"],
+      fix: {
+        type: "Copy rewrite",
+        title: "First-run reporting step",
+        draft: "Add to first-run setup, after account creation:\n\nHeadline: “What do you need to report on?”\nSub: “Pick a starting view — we’ll set up sharing so your team can read it without a seat.”\nOptions: Weekly ops report · Exec summary · Custom\n\nWhy: new users name the same reporting job in different words, then hunt for settings later. Naming it up front routes them to sharing before they email a CSV.",
+      },
     },
   ];
+}
+
+function ssCreateReviews(workspace) {
+  const product = ssProductName(workspace);
+  return [
+    { id: "rev-1", source: "App Store", author: "ops_nerd", rating: 2, text: "Love the data but I export to a spreadsheet every week just to share it with my team. Why no read-only link?", status: "open" },
+    { id: "rev-2", source: "Reddit", author: "u/dashboards4life", rating: null, text: "Anyone else rebuilding " + product + " reports by hand for execs? Feels like the dashboard stops one step short.", status: "open" },
+    { id: "rev-3", source: "Support ticket", author: "Priya S.", rating: null, text: "Couldn’t find how to share a dashboard with a teammate who doesn’t have a login.", status: "open" },
+    { id: "rev-4", source: "G2", author: "Verified user", rating: 4, text: "Solid for analysts. Sharing with non-users is the one rough edge.", status: "open" },
+  ];
+}
+
+function ssCreateDigest(workspace) {
+  const product = ssProductName(workspace);
+  return {
+    period: "This week",
+    headline: "Sharing — not the data — is what keeps pulling power users out of " + product + ".",
+    stats: [
+      { n: "18", l: "private lines active" },
+      { n: "3", l: "new partners joined" },
+      { n: "61%", l: "named a sharing gap" },
+    ],
+    items: [
+      "Power users export weekly only to rebuild a team-readable view — the CSV is a sharing workaround.",
+      "New customers can’t find the dashboard-sharing flow in their first week.",
+      "Upgrade evaluators are blocked on team-visibility proof, not price.",
+    ],
+    insightId: "insight-export",
+  };
+}
+
+function ssCreateSlackQA(workspace) {
+  const product = ssProductName(workspace);
+  return [
+    {
+      q: "What are users saying about sharing this week?",
+      a: "61% of active partners raised a sharing gap. The pattern: the dashboard is trusted, but teammates have no seats — so people export a CSV to share. Dana, Marcus, and Owen all described the same workaround. Suggested next step: a read-only dashboard link (no seat).",
+    },
+  ];
+}
+
+function ssCreateBriefing(workspace) {
+  const product = ssProductName(workspace);
+  return {
+    scanned: [workspace.productUrl || "your product site", "App Store + G2 reviews", "Reddit mentions", "uploaded docs"],
+    knows: [
+      product + " is a reporting/analytics tool for ops and data teams.",
+      "Key flow: export → rebuild → share. Sharing is the recurring friction.",
+      "Worth talking to: weekly exporters, new customers in week one, upgrade evaluators.",
+    ],
+  };
 }
 
 function ssCreateLoops() {
@@ -448,6 +565,11 @@ function ssBaseState(workspace, mode) {
     ],
     scheduledCalls: [],
     answers: [],
+    reviews: [],
+    digest: null,
+    slackQA: [],
+    briefing: null,
+    unanswered: [],
     generatedAt: "",
     activity: [
       "Workspace created for " + ssProductName(workspace) + ".",
@@ -468,6 +590,14 @@ function ssCreateSampleState(input) {
     events: ssCreateEvents(workspace),
     insights: ssCreateInsights(workspace),
     loops: ssCreateLoops(workspace),
+    reviews: ssCreateReviews(workspace),
+    digest: ssCreateDigest(workspace),
+    slackQA: ssCreateSlackQA(workspace),
+    briefing: ssCreateBriefing(workspace),
+    unanswered: [
+      "Why churned users left — no churned users are on the panel yet (recruit from cancellations).",
+      "Mobile-specific friction — too few mobile sessions in the lines so far.",
+    ],
     nextQuestions: [
       "Would a live, shareable dashboard replace your weekly export cleanup?",
       "Which part of " + product + " still makes you leave the product?",

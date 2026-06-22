@@ -3066,3 +3066,66 @@
 .ss-slack-side-done { display: flex; gap: 9px; align-items: flex-start; color: #2e7d46; }
 .ss-slack-side-done b { font-size: .82rem; display: block; color: #24221e; }
 .ss-slack-side-done span { font-size: .74rem; color: var(--text-muted); line-height: 1.45; display: block; margin-top: 2px; }
+
+/* ============================================================
+   Bucket A — relationship-frame surfaces (added 2026-06-22)
+   ============================================================ */
+
+/* Per-partner relationship memory */
+.ss-memory { border: 1px solid var(--border); border-radius: 14px; background: oklch(0.99 0.004 80 / .55); padding: 1rem 1.1rem; margin: .25rem 0 1rem; }
+.ss-memory-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .6rem; }
+.ss-memory-head em { font-style: normal; font-size: .76rem; color: var(--text-secondary); }
+.ss-memory-block { margin-top: .55rem; }
+.ss-memory-block b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin-bottom: .25rem; }
+.ss-memory-block ul { margin: 0; padding-left: 1.05rem; }
+.ss-memory-block li { font-size: .88rem; line-height: 1.45; margin: .15rem 0; }
+.ss-memory-foot { margin: .7rem 0 0; font-size: .8rem; color: var(--text-secondary); font-style: italic; }
+
+/* Reviews -> partners jump-start */
+.ss-reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .8rem; }
+.ss-review { border: 1px solid var(--border); border-radius: 14px; padding: .85rem .95rem; background: var(--panel); display: flex; flex-direction: column; gap: .55rem; }
+.ss-review-meta { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--text-secondary); }
+.ss-review-meta b { color: inherit; }
+.ss-review-meta em { font-style: normal; color: var(--accent); margin-left: auto; }
+.ss-review p { margin: 0; font-size: .9rem; line-height: 1.45; }
+.ss-review .btn { align-self: flex-start; }
+
+/* One-click fix + close-the-loop */
+.ss-fix { margin-top: .85rem; border-top: 1px dashed var(--border); padding-top: .75rem; }
+.ss-fix-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ss-fix-draft { margin-top: .7rem; border: 1px solid var(--accent-soft); border-radius: 12px; background: var(--accent-tint); padding: .8rem .9rem; }
+.ss-fix-draft-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+.ss-fix-type { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; background: var(--accent); color: #fff; padding: .15rem .45rem; border-radius: 999px; }
+.ss-fix-draft pre { margin: 0; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; line-height: 1.5; color: var(--accent-hover); }
+.ss-fix-draft-foot { margin-top: .6rem; display: flex; align-items: center; gap: .35rem; font-size: .76rem; color: var(--accent-hover); }
+.ss-fix-closed { margin: .6rem 0 0; font-size: .82rem; color: var(--accent-hover); font-style: italic; }
+
+/* Weekly digest */
+.ss-digest-headline { font-size: 1.02rem; line-height: 1.45; margin: .2rem 0 .8rem; font-weight: 500; }
+.ss-digest-stats { display: flex; gap: 1.4rem; margin-bottom: .85rem; }
+.ss-digest-stats b { display: block; font-family: var(--font-display); font-size: 1.5rem; color: var(--accent); line-height: 1; }
+.ss-digest-stats span { font-size: .76rem; color: var(--text-secondary); }
+.ss-digest-list { margin: 0; padding-left: 1.05rem; }
+.ss-digest-list li { font-size: .9rem; line-height: 1.5; margin: .25rem 0; }
+
+/* Integrations: Slack + MCP */
+.ss-integ-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .9rem; }
+.ss-integ-card { border: 1px solid var(--border); border-radius: 14px; padding: .95rem 1rem; background: oklch(0.99 0.004 80 / .55); }
+.ss-integ-head { display: flex; align-items: center; gap: .45rem; font-weight: 600; margin-bottom: .55rem; }
+.ss-slack { display: flex; flex-direction: column; gap: .5rem; }
+.ss-slack-msg { font-size: .85rem; line-height: 1.45; }
+.ss-slack-who { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin-bottom: .1rem; }
+.ss-slack-bot { border-left: 2px solid var(--accent-soft); padding-left: .6rem; }
+.ss-slack-bot .ss-slack-who { color: var(--accent); }
+.ss-mcp { display: block; margin-top: .6rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem; background: var(--accent-tint); color: var(--accent-hover); padding: .5rem .6rem; border-radius: 8px; overflow-x: auto; }
+
+/* Pre-briefed companion */
+.ss-prebrief-list { list-style: none; margin: .2rem 0 0; padding: 0; }
+.ss-prebrief-list li { display: flex; align-items: flex-start; gap: .45rem; font-size: .9rem; line-height: 1.45; margin: .35rem 0; color: var(--accent-hover); }
+
+/* Honest gaps */
+.ss-unanswered ul { margin: 0; padding-left: 1.05rem; }
+.ss-unanswered li { font-size: .88rem; line-height: 1.5; margin: .2rem 0; color: var(--text-secondary); }
+
+/* Insight card -> conversations link (card is no longer a button) */
+.ss-insight-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: var(--accent); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; padding: 2px 0; margin-top: .2rem; }
