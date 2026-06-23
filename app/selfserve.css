@@ -3162,3 +3162,8 @@
 /* Voice interview preview (deep compose) */
 .ss-voice-preview { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .ss-voice-preview .btn { margin-top: 8px; }
+
+/* B2B partnership comp tiers (replaces the cash/$-per-min card) */
+.ss-comp-tiers { display: flex; flex-direction: column; gap: .3rem; margin: .25rem 0 .15rem; }
+.ss-comp-tier { font-size: .8rem; line-height: 1.4; color: var(--text-secondary); }
+.ss-comp-tier b { color: inherit; }

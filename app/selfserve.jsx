@@ -545,13 +545,14 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                 <div className="ss-comp-grid">
                   <article className="ss-comp-card on">
                     <em className="ss-comp-tag active">Active · managed by Observant</em>
-                    <b>Cash</b>
-                    <p>Set the design-partner offer — we handle the rest.</p>
-                    <div className="ss-comp-rate">
-                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 2) })} /> / min</span>
-                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 2))}</b>
+                    <b>Partnership</b>
+                    <p>Partners trade a product discount and early access for being a design partner — no cash, no per-minute payout.</p>
+                    <div className="ss-comp-tiers">
+                      <span className="ss-comp-tier"><b>Design partner</b> — 10% off + early access</span>
+                      <span className="ss-comp-tier"><b>Reference partner</b> — co-marketing + case study</span>
+                      <span className="ss-comp-tier"><b>Strategic partner</b> — advisory seat + roadmap influence</span>
                     </div>
-                    <small>For B2B, partnership beats cash — a discount + early access is what accounts actually want.</small>
+                    <small>Observant tracks each partnership and deepens it as the account engages.</small>
                   </article>
 
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
@@ -566,7 +567,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   <article className="ss-comp-card">
                     <em className="ss-comp-tag coming">Coming</em>
                     <b>Your product credits</b>
-                    <p>The strongest currency in B2B is the partnership itself — a discount, early access, and a real seat at the table.</p>
+                    <p>Soon: redeem partner perks as credit inside your own product — another way to make the partnership tangible.</p>
                   </article>
                 </div>
               </div>
@@ -590,7 +591,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                 <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS
                   k="Compensation"
-                  v="Cash — managed by Observant"
+                  v="Partnership — managed by Observant"
                   sub={<>
                     <span className="ss-review-tier">Design partner → reference partner → strategic partner · deeper relationship, more value both ways</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
