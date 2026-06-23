@@ -7,9 +7,9 @@ const SS_STATE_VERSION = 6;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Steijn Pelle",
-  email: "steijn@lassie.health",
-  companyName: "Lassie",
-  productUrl: "https://lassie.health",
+  email: "founder@northwind.health",
+  companyName: "Northwind",
+  productUrl: "https://northwind.health",
   productDescription: "An AI admin worker that runs the dental office — automating insurance AR and payment reconciliation for practices.",
   userBase: "700+ dental practices across 49 states — office managers, billing leads, and practice owners.",
   learningGoal: "Stay ahead of which practices are quietly unhappy before they churn — and learn what would get them to expand to more locations.",
@@ -35,7 +35,7 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
 };
 
 const SS_GROUP_OPTIONS = [
-  { id: "power", label: "Power practices", text: "Practices that run most of their AR through Lassie." },
+  { id: "power", label: "Power practices", text: "Practices that run most of their AR through Northwind." },
   { id: "onboarding", label: "Newly onboarded", text: "Practices in their first 30 days, still forming habits." },
   { id: "expansion", label: "Expansion candidates", text: "Multi-location groups that could add more offices." },
   { id: "owners", label: "Practice owners", text: "Dentists and owners who decide on renewal." },
@@ -247,19 +247,19 @@ function ssCreatePeople(workspace) {
     {
       id: "bright", name: "Maria · Bright Smiles Dental", color: "teal",
       segment: "Power practice", surface: "Email", status: "Healthy",
-      memory: "Office manager; runs all month-end AR through Lassie at a 4-chair practice.",
-      last: "Honestly Lassie saved us a hire — but the new payer rules have me nervous.",
+      memory: "Office manager; runs all month-end AR through Northwind at a 4-chair practice.",
+      last: "Honestly Northwind saved us a hire — but the new payer rules have me nervous.",
       profile: {
         since: "Partner 7 months · Strategic partner",
         reward: "Advisory seat + roadmap influence",
         knows: [
           "Office manager at a single-location, 4-chair practice.",
-          "Runs 100% of month-end insurance AR through Lassie.",
+          "Runs 100% of month-end insurance AR through Northwind.",
           "Most valuable when reconciliation just clears without her checking.",
         ],
         shared: [
-          "“Lassie saved us a hire.”",
-          "Anxious about new payer rules — wants to know Lassie keeps up.",
+          "“Northwind saved us a hire.”",
+          "Anxious about new payer rules — wants to know Northwind keeps up.",
         ],
         open: ["Would a heads-up when payer rules change keep her confident? — awaiting reply"],
       },
@@ -283,13 +283,13 @@ function ssCreatePeople(workspace) {
     {
       id: "lakeview", name: "Priya · Lakeview Dental Group", color: "blue",
       segment: "Expansion candidate", surface: "In-product", status: "Expanding",
-      memory: "Multi-location group running Lassie at 2 of 5 offices.",
+      memory: "Multi-location group running Northwind at 2 of 5 offices.",
       last: "If this works at the other three, that's our whole back office.",
       profile: {
         since: "Partner 4 months · Reference partner",
         reward: "Co-marketing + case study",
         knows: [
-          "5-location group; Lassie live at 2 offices, evaluating the rest.",
+          "5-location group; Northwind live at 2 offices, evaluating the rest.",
           "Decision hinges on the pilot offices showing real hours saved.",
         ],
         shared: ["“If this works at the other three, that's our whole back office.”"],
@@ -343,8 +343,8 @@ function ssCreateConversations(workspace) {
         { t: "them", text: "You mentioned a claim batch went sideways last month — walk me through what happened.", meta: "Observant" },
         { t: "user", text: "Month-end, a batch of claims didn't reconcile and we didn't catch it for days. AR backed up and I felt blind.", meta: "Dr. Okafor" },
         { t: "them", text: "When you realized, what did you need from us that wasn't there?", meta: "Observant" },
-        { t: "user", text: "Someone to reach out. The product's fine — it was the silence. I didn't know if it was me or Lassie.", meta: "Dr. Okafor" },
-        { t: "them", text: "If Lassie had flagged the batch and a person had called, would that have changed it?", meta: "Observant" },
+        { t: "user", text: "Someone to reach out. The product's fine — it was the silence. I didn't know if it was me or Northwind.", meta: "Dr. Okafor" },
+        { t: "them", text: "If Northwind had flagged the batch and a person had called, would that have changed it?", meta: "Observant" },
         { t: "user", text: "Completely. I'd still be all-in. Right now I'm quietly looking around.", meta: "Dr. Okafor" },
       ],
     },
@@ -379,7 +379,7 @@ function ssCreateConversations(workspace) {
     {
       id: "bright", userId: "bright", title: "Staying ahead of payer rules", state: "Active", mode: "chat",
       messages: [
-        { t: "them", text: "You mentioned the new payer rules — what are you worried Lassie might miss?", meta: "Observant" },
+        { t: "them", text: "You mentioned the new payer rules — what are you worried Northwind might miss?", meta: "Observant" },
         { t: "user", text: "That the rules change and I don't find out until a batch fails. A heads-up would keep me calm.", meta: "Maria" },
       ],
     },
