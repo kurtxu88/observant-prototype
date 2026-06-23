@@ -6,19 +6,19 @@ const SS_STORAGE_KEY = "observant.selfserve.v1";
 const SS_STATE_VERSION = 6;
 
 const SS_DEFAULT_WORKSPACE = {
-  founderName: "Maya Chen",
-  email: "maya@northwind.ai",
-  companyName: "Northwind",
-  productUrl: "https://northwind.ai",
-  productDescription: "A reporting and analytics tool for ops and data teams.",
-  userBase: "Ops leads and analysts at 50–500 person B2B companies.",
-  learningGoal: "Stay ahead of which accounts are quietly disengaging before they churn — and learn what would get them onto live dashboards and expanding seats.",
+  founderName: "Teddy",
+  email: "teddy@magicpatterns.com",
+  companyName: "Magic Patterns",
+  productUrl: "https://magicpatterns.com",
+  productDescription: "An AI design tool — describe what you want and it generates the UI. Used by founders, designers, and PMs to prototype fast.",
+  userBase: "Founders, designers, and PMs at companies adopting AI prototyping — a growing set of enterprise accounts.",
+  learningGoal: "Stay ahead of which enterprise accounts are quietly at risk, and stop losing the product signal buried inside sales calls.",
   context: {
-    goal3mo: "Get 30% of power accounts onto live dashboards (off spreadsheet exports) and open 3 expansion conversations a week, on the way to the Series A.",
-    priorLearning: "Support spikes around quarter-close reporting; a couple of accounts went quiet after a permissions change, then downgraded. Unverified which signals actually predict churn.",
+    goal3mo: "Hold net revenue retention as we move upmarket; get the whole team — not just the founders — to know every key account.",
+    priorLearning: "We rely on Intercom, sales calls, and Slack Connect, and trust that 'the important things surface themselves.' At enterprise scale that's starting to feel risky.",
     docs: [
       { id: "doc-onb", name: "Account onboarding playbook.pdf", note: "The first 30 days for a new account." },
-      { id: "doc-churn", name: "Churn post-mortems Q2.doc", note: "Why four accounts left last quarter." },
+      { id: "doc-churn", name: "Churn post-mortems Q2.doc", note: "Why accounts went quiet last quarter." },
     ],
   },
 };
@@ -35,23 +35,23 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
 };
 
 const SS_GROUP_OPTIONS = [
-  { id: "power", label: "Power accounts", text: "Accounts that run most of their reporting through Northwind." },
+  { id: "power", label: "Power accounts", text: "Accounts that live in Slack Connect and lean on Magic Patterns every day." },
   { id: "onboarding", label: "Newly onboarded", text: "Accounts in their first 30 days, still forming habits." },
-  { id: "expansion", label: "Expansion candidates", text: "Teams that could add more seats and workspaces." },
-  { id: "owners", label: "Account admins", text: "Admins and owners who decide on renewal." },
+  { id: "expansion", label: "Expansion candidates", text: "Accounts ready to add more seats and teams." },
+  { id: "owners", label: "Enterprise (in sales)", text: "Accounts in an active sales motion where product signal is at risk." },
   { id: "at-risk", label: "At-risk accounts", text: "Accounts gone quiet or trending toward churn." },
 ];
 
 const SS_SURFACE_OPTIONS = [
   { id: "email", label: "Email", icon: "mail" },
-  { id: "telegram", label: "Telegram", icon: "chat" },
-  { id: "slack", label: "Slack", icon: "chat" },
-  { id: "discord", label: "Discord", icon: "chat" },
-  { id: "product", label: "In-product", icon: "globe" },
+  { id: "telegram", label: "Intercom", icon: "chat" },
+  { id: "slack", label: "Slack Connect", icon: "chat" },
+  { id: "discord", label: "PostHog", icon: "globe" },
+  { id: "product", label: "Sales call", icon: "globe" },
 ];
 
 // Fast-start connections a user can pick on the magic link.
-// Slack needs a workspace install and in-product needs the SDK — both live on the Pro side.
+// Slack Connect needs a workspace install and sales-call ingest needs the SDK — both live on the Pro side.
 const SS_FAST_CHANNELS = ["email", "telegram"];
 
 // People-first: how the always-on panel is built. Ranked — reach everyone leads.
@@ -81,10 +81,10 @@ const SS_REWARD_TIERS = [
 const SS_DEFAULT_TIER_REWARDS = { bronze: "10% off + early access", silver: "Co-marketing, case study & referral perks", gold: "Advisory seat, roadmap influence & exec relationship" };
 
 const SS_SIGNAL_OPTIONS = [
-  { id: "user_signed_up", label: "user_signed_up" },
-  { id: "export_completed", label: "export_completed" },
+  { id: "user_signed_up", label: "account_activated" },
+  { id: "export_completed", label: "prototype_generated" },
   { id: "feature_opened", label: "feature_opened" },
-  { id: "checkout_abandoned", label: "checkout_abandoned" },
+  { id: "checkout_abandoned", label: "usage_dropped" },
 ];
 
 const SS_SIMULATION_STAGES = [
@@ -137,7 +137,7 @@ function ssInitials(name) {
 
 function ssProductName(workspace, fallback) {
   const raw = (workspace && workspace.companyName || "").trim();
-  return raw || fallback || "Northwind";
+  return raw || fallback || "Magic Patterns";
 }
 
 function ssSlug(value) {
@@ -245,90 +245,92 @@ function ssCreateSetup(workspace) {
 function ssCreatePeople(workspace) {
   return [
     {
-      id: "bright", name: "Maria · Brightline Ops", color: "teal",
-      segment: "Power account", surface: "Email", status: "Healthy",
-      memory: "Ops lead; runs all of her weekly reporting through Northwind for a 40-person team.",
-      last: "Honestly Northwind replaced three spreadsheets — but the new permissions model has me nervous.",
+      id: "bright", name: "Northstar Design Co.", color: "teal",
+      segment: "Power account", surface: "Slack Connect", status: "Healthy",
+      memory: "Design lead champions Magic Patterns daily; the team lives in the shared Slack Connect.",
+      last: "Magic Patterns is how we prototype now — but we're hitting the ceiling on advanced components.",
       profile: {
         since: "Partner 7 months · Strategic partner",
         reward: "Advisory seat + roadmap influence",
         knows: [
-          "Ops lead at a single-team, 40-person company.",
-          "Runs 100% of her weekly reporting through Northwind.",
-          "Most valuable when the dashboard just refreshes without her checking.",
+          "Pro account; the design lead is the champion and daily power user.",
+          "Heavy daily usage — prototypes ship straight from Magic Patterns.",
+          "Most valuable when generated UI is close enough to hand to engineering.",
         ],
         shared: [
-          "“Northwind replaced three spreadsheets.”",
-          "Anxious about the new permissions model — wants to know her team keeps access.",
+          "“Magic Patterns is how we prototype now.”",
+          "Asking for advanced components — a signal they're ready to do more.",
         ],
-        open: ["Would a heads-up when permissions change keep her confident? — awaiting reply"],
+        open: ["Would advanced components open an expansion conversation? — awaiting reply"],
       },
     },
     {
-      id: "cedar", name: "Tom · Cedar Analytics", color: "green",
-      segment: "Newly onboarded", surface: "Email", status: "Onboarding",
-      memory: "Onboarded 3 weeks ago; still learning to trust the auto-refreshed numbers.",
-      last: "Took me a bit to trust the live dashboard — I exported and double-checked everything week one.",
+      id: "cedar", name: "Cedar & Co.", color: "green",
+      segment: "Newly onboarded", surface: "Intercom", status: "Onboarding",
+      memory: "Onboarded 3 weeks ago; unsure yet if the prototyping flow is sticking. No Slack Connect yet.",
+      last: "Took me a bit to trust that what it generates is actually usable — I rebuilt the first few by hand.",
       profile: {
         since: "Partner 3 weeks · Design partner",
         reward: "10% off + early access",
         knows: [
-          "New account, week 3; the data analyst is the daily user.",
-          "Exported and double-checked every dashboard in week one before trusting it.",
+          "New account, week 3; a PM is the daily user.",
+          "Rebuilt the first few generated screens by hand before trusting the output.",
+          "No Slack Connect yet — only reachable through Intercom.",
         ],
-        shared: ["“Took me a bit to trust the live dashboard.”"],
-        open: ["What would have made you trust the dashboards faster?"],
+        shared: ["“Took me a bit to trust that what it generates is actually usable.”"],
+        open: ["What would have made the prototyping flow click faster?"],
       },
     },
     {
-      id: "lakeview", name: "Priya · Lakeview Data Group", color: "blue",
-      segment: "Expansion candidate", surface: "In-product", status: "Expanding",
-      memory: "Growing org running Northwind on 2 of 5 teams.",
-      last: "If this works for the other three teams, that's our whole reporting stack.",
+      id: "lakeview", name: "Vela Robotics", color: "blue",
+      segment: "Expansion candidate", surface: "Sales call", status: "Expanding",
+      memory: "Co-founder is mid-deal; a product signal surfaced on a sales call and risks getting lost in deal talk.",
+      last: "Our engineers don't have the design intuition the founders do — we need the tool to give them that.",
       profile: {
-        since: "Partner 4 months · Reference partner",
+        since: "In sales · Reference partner (pending)",
         reward: "Co-marketing + case study",
         knows: [
-          "5-team org; Northwind live for 2 teams, evaluating the rest.",
-          "Decision hinges on the pilot teams showing real hours saved.",
+          "Enterprise account in an active sales motion; the co-founder is the buyer.",
+          "Real product signal raised on a sales call: engineers need their own design intuition.",
+          "That signal is at risk of being lost inside the deal conversation.",
         ],
-        shared: ["“If this works for the other three teams, that's our whole reporting stack.”"],
-        open: ["What proof from the 2 pilot teams unlocks the other 3?"],
+        shared: ["“Our engineers don't have the design intuition the founders do.”"],
+        open: ["What would let engineers inherit the founders' intuition through Magic Patterns?"],
       },
     },
     {
-      id: "summit", name: "Owen · Summit Data", color: "rust",
-      segment: "At-risk account", surface: "Email", status: "At risk",
-      memory: "Went quiet after a permissions change last month; usage down 40%.",
-      last: "Our dashboards broke after the access change and nobody reached out.",
+      id: "summit", name: "Harbor Labs", color: "rust",
+      segment: "At-risk account", surface: "Intercom", status: "At risk",
+      memory: "Was vocal in Intercom about a bug, then went silent; PostHog shows a usage drop after the pricing change.",
+      last: "We hit a bug, flagged it in Intercom, and then just stopped — wasn't sure it was worth it after the price change.",
       profile: {
         since: "Partner 9 months · was Strategic partner",
         reward: "Advisory seat (lapsing)",
         knows: [
-          "Account admin; was a heavy user until a permissions change broke their dashboards.",
-          "Usage down ~40%; logins sporadic since the change.",
+          "Pro account; was a heavy user until a bug went unresolved and the pricing changed.",
+          "PostHog shows usage down ~40%; logins sporadic since the pricing change.",
         ],
         shared: [
-          "“Our dashboards broke after the access change and nobody reached out.”",
-          "Feels unsupported — not unhappy with the product itself.",
+          "“We hit a bug, flagged it in Intercom, and then just stopped.”",
+          "Went quiet — not loud. The drop-off followed the pricing change.",
         ],
-        open: ["⚠ Churn risk — what would rebuild trust after the broken dashboards?"],
+        open: ["⚠ Churn risk — what would rebuild trust after the bug and the pricing change?"],
       },
     },
     {
-      id: "harbor", name: "Dana · Harbor Insights", color: "gold",
-      segment: "Account admin", surface: "Email", status: "Renewal",
-      memory: "Admin; renewal in 60 days, quietly comparing a competitor.",
-      last: "I need to know my team actually saves time before I re-sign.",
+      id: "harbor", name: "Lumen Studio", color: "gold",
+      segment: "Enterprise (in sales)", surface: "Intercom", status: "Renewal",
+      memory: "Renewal coming up; the champion is happy but an engineer raised a permissions concern in Intercom.",
+      last: "I'm sold — but one of our engineers flagged a permissions worry and I need that settled before we re-sign.",
       profile: {
         since: "Partner 11 months · Reference partner",
         reward: "Co-marketing + referral perks",
         knows: [
-          "Admin; renewal in 60 days. Weighing a cheaper competitor.",
-          "Will re-sign on proof of hours saved, not features.",
+          "Pro account; renewal coming up and the champion is happy.",
+          "An engineer raised a permissions concern in Intercom that's blocking a clean yes.",
         ],
-        shared: ["“I need to know my team actually saves time before I re-sign.”"],
-        open: ["What hours-saved proof would make the renewal a no-brainer?"],
+        shared: ["“One of our engineers flagged a permissions worry and I need that settled before we re-sign.”"],
+        open: ["What would resolve the engineer's permissions concern before renewal?"],
       },
     },
   ];
@@ -337,50 +339,50 @@ function ssCreatePeople(workspace) {
 function ssCreateConversations(workspace) {
   return [
     {
-      id: "summit-voice", userId: "summit", title: "After the broken dashboards — voice interview",
-      state: "Done", mode: "voice", duration: "18 min",
+      id: "summit-voice", userId: "summit", title: "Harbor Labs — why they went quiet after the pricing change",
+      state: "Done", mode: "voice", duration: "18 min", surface: "Intercom",
       messages: [
-        { t: "them", text: "You mentioned your dashboards broke last month — walk me through what happened.", meta: "Observant" },
-        { t: "user", text: "After an access change, a set of dashboards stopped refreshing and we didn't catch it for days. Reporting backed up and I felt blind.", meta: "Owen" },
-        { t: "them", text: "When you realized, what did you need from us that wasn't there?", meta: "Observant" },
-        { t: "user", text: "Someone to reach out. The product's fine — it was the silence. I didn't know if it was me or Northwind.", meta: "Owen" },
-        { t: "them", text: "If Northwind had flagged the broken dashboards and a person had called, would that have changed it?", meta: "Observant" },
-        { t: "user", text: "Completely. I'd still be all-in. Right now I'm quietly looking around.", meta: "Owen" },
+        { t: "them", text: "You flagged a bug in Intercom a few weeks back and then went quiet — walk me through what happened.", meta: "Observant" },
+        { t: "user", text: "We hit a bug, reported it, and never really heard back. Around the same time the pricing changed, so we just... stopped opening it.", meta: "Harbor Labs" },
+        { t: "them", text: "When you went quiet, what would have brought you back?", meta: "Observant" },
+        { t: "user", text: "Someone catching it. The product's fine — it was the silence plus a price bump with no clear reason to keep paying.", meta: "Harbor Labs" },
+        { t: "them", text: "If Magic Patterns had caught the usage drop and a person had reached out, would that have changed it?", meta: "Observant" },
+        { t: "user", text: "Completely. We were happy users. Right now we're quietly evaluating whether to renew.", meta: "Harbor Labs" },
       ],
     },
     {
-      id: "summit", userId: "summit", title: "Quiet since the permissions change", state: "At risk", mode: "chat",
+      id: "summit", userId: "summit", title: "Harbor Labs — usage drop after the pricing change", state: "At risk", mode: "chat", surface: "PostHog",
       messages: [
-        { t: "them", text: "Owen — I noticed logins dropped off after last month. Anything we got wrong?", meta: "Observant - behavior-triggered" },
-        { t: "user", text: "A permissions change broke our dashboards and nobody reached out. Made me wonder if I can rely on this at quarter-close.", meta: "Owen" },
+        { t: "them", text: "PostHog shows your usage down ~40% since the pricing change, and you've gone quiet in Intercom — anything we got wrong?", meta: "Observant - behavior-triggered" },
+        { t: "user", text: "A bug we flagged never got resolved, then the price went up. We weren't sure it was still worth it, so we drifted.", meta: "Harbor Labs" },
       ],
     },
     {
-      id: "lakeview", userId: "lakeview", title: "Rolling out to the other teams", state: "Active", mode: "chat",
+      id: "lakeview", userId: "lakeview", title: "Vela Robotics — product signal from a sales call, routed to the product team", state: "Active", mode: "chat", surface: "Sales call",
       messages: [
-        { t: "them", text: "You're live for 2 of 5 teams — what would it take to bring the other three on?", meta: "Observant" },
-        { t: "user", text: "Proof. Show me the hours the two pilot teams got back and the rollout sells itself internally.", meta: "Priya" },
+        { t: "them", text: "On the last sales call your co-founder said engineers lack the founders' design intuition — that's a product signal, not just a deal note. Tell me more?", meta: "Observant - from sales call" },
+        { t: "user", text: "Exactly. We can prototype because we've built the taste over years. Our engineers haven't. If Magic Patterns gave them that, the whole team moves faster.", meta: "Vela Robotics" },
       ],
     },
     {
-      id: "cedar", userId: "cedar", title: "First 30 days", state: "Onboarding", mode: "chat",
+      id: "cedar", userId: "cedar", title: "Cedar & Co. — first 30 days", state: "Onboarding", mode: "chat", surface: "Intercom",
       messages: [
-        { t: "them", text: "Welcome — three weeks in, what's still taking a second look before you trust it?", meta: "Observant - onboarding" },
-        { t: "user", text: "The live dashboard. I exported and checked it against my own numbers all week one. It's right — I just needed to see it be right.", meta: "Tom" },
+        { t: "them", text: "Welcome — three weeks in, what's still taking a second look before you trust what it generates?", meta: "Observant - onboarding" },
+        { t: "user", text: "Whether the generated UI is actually usable. I rebuilt the first few by hand to check — it held up, I just needed to see it hold up.", meta: "Cedar & Co." },
       ],
     },
     {
-      id: "harbor", userId: "harbor", title: "Renewal in 60 days", state: "Renewal", mode: "chat",
+      id: "harbor", userId: "harbor", title: "Lumen Studio — renewal + an engineer's permissions worry", state: "Renewal", mode: "chat", surface: "Intercom",
       messages: [
-        { t: "them", text: "Your renewal's coming up — what would make it an easy yes?", meta: "Observant - remembered context" },
-        { t: "user", text: "Hours saved, in numbers. A competitor's cheaper, so I need to see my team actually gets time back.", meta: "Dana" },
+        { t: "them", text: "Your renewal's coming up and you're happy — but an engineer raised a permissions concern in Intercom. What would make renewal an easy yes?", meta: "Observant - remembered context" },
+        { t: "user", text: "Settle the permissions question. One of our engineers worries about who can edit shared prototypes. Clear that up and I re-sign tomorrow.", meta: "Lumen Studio" },
       ],
     },
     {
-      id: "bright", userId: "bright", title: "Staying ahead of permissions changes", state: "Active", mode: "chat",
+      id: "bright", userId: "bright", title: "Northstar Design Co. — staying ahead: the expansion ask", state: "Active", mode: "chat", surface: "Slack Connect",
       messages: [
-        { t: "them", text: "You mentioned the new permissions model — what are you worried Northwind might miss?", meta: "Observant" },
-        { t: "user", text: "That access changes and I don't find out until my team loses a dashboard. A heads-up would keep me calm.", meta: "Maria" },
+        { t: "them", text: "You're a daily power account and asking for advanced components — proactively, what would an expansion look like for your team?", meta: "Observant" },
+        { t: "user", text: "Advanced components plus a way to hand cleaner output to engineering. Give us that and we'd happily bring more of the team on.", meta: "Northstar Design Co." },
       ],
     },
   ];
@@ -388,10 +390,10 @@ function ssCreateConversations(workspace) {
 
 function ssCreateEvents(workspace) {
   return [
-    { id: "evt-1", event: "dashboard_refresh_failed", user: "Summit Data", detail: "dashboards stopped refreshing; unflagged 3 days", time: "1d ago", type: "watch", conversationId: "summit" },
-    { id: "evt-2", event: "usage_drop", user: "Summit Data", detail: "logins down 40% since the access change", time: "2d ago", type: "watch", conversationId: "summit" },
-    { id: "evt-3", event: "account_onboarded", user: "Cedar Analytics", detail: "completed onboarding, week 3", time: "1h ago", type: "onboarding", conversationId: "cedar" },
-    { id: "evt-4", event: "renewal_upcoming", user: "Harbor Insights", detail: "renews in 60 days", time: "5h ago", type: "trigger", conversationId: "harbor" },
+    { id: "evt-1", event: "intercom_bug_unresolved", user: "Harbor Labs", detail: "bug flagged in Intercom, then silence", time: "1d ago", type: "watch", conversationId: "summit" },
+    { id: "evt-2", event: "usage_dropped", user: "Harbor Labs", detail: "PostHog usage down 40% since the pricing change", time: "2d ago", type: "watch", conversationId: "summit" },
+    { id: "evt-3", event: "account_onboarded", user: "Cedar & Co.", detail: "completed onboarding, week 3", time: "1h ago", type: "onboarding", conversationId: "cedar" },
+    { id: "evt-4", event: "renewal_upcoming", user: "Lumen Studio", detail: "renewal coming up; engineer's permissions worry open", time: "5h ago", type: "trigger", conversationId: "harbor" },
   ];
 }
 
@@ -401,18 +403,18 @@ function ssCreateInsights(workspace) {
       id: "insight-churn",
       title: "At-risk accounts go quiet before they churn — not loud.",
       metric: "4 / 5",
-      detail: "The pattern before a downgrade: an unresolved breakage (dashboards stop refreshing) → a usage drop → silence. Not a complaint.",
-      evidence: "Grounded across this quarter's churn post-mortems and recent at-risk lines.",
-      next: "Trigger a human outreach the moment dashboards break and usage dips.",
+      detail: "The pattern before a downgrade: an unresolved Intercom bug → a PostHog usage drop after the pricing change → silence. Not a complaint — 'the important things surface themselves' stops working at enterprise scale.",
+      evidence: "Grounded across this quarter's churn post-mortems and Harbor Labs' Intercom + PostHog signals.",
+      next: "Trigger a human outreach the moment an Intercom thread goes unresolved and PostHog usage dips.",
       conversationId: "summit",
     },
     {
       id: "insight-expansion",
-      title: "Expansion is blocked on hours-saved proof from the pilot team.",
+      title: "Product signal is getting lost inside sales calls.",
       metric: "3 accounts",
-      detail: "Growing orgs won't roll out to every team until the pilot teams show real hours back — features don't move them, proof does.",
-      evidence: "Surfaced from expansion-candidate and renewal conversations.",
-      next: "Auto-generate an hours-saved recap per account for the rollout conversation.",
+      detail: "The real product asks — like Vela's engineers needing the founders' design intuition — surface mid-deal on sales calls and never reach the product team. Spreading that founder intuition to engineers is the unlock for expansion.",
+      evidence: "Surfaced from Vela's sales call and Northstar's expansion ask in Slack Connect.",
+      next: "Route the product signal out of every sales call to the product team, attributed to the account.",
       conversationId: "lakeview",
     },
   ];
@@ -420,8 +422,8 @@ function ssCreateInsights(workspace) {
 
 function ssCreateReviews(workspace) {
   return [
-    { id: "rev-1", source: "G2", author: "Ops lead", rating: 4, text: "Replaced three spreadsheets for us. Wish we got a heads-up when permissions change.", status: "open" },
-    { id: "rev-2", source: "Support ticket", author: "Summit Data", rating: null, text: "Our dashboards stopped refreshing after an access change and no one reached out.", status: "open" },
+    { id: "rev-1", source: "Slack Connect", author: "Northstar Design Co.", rating: 4, text: "Magic Patterns is how we prototype now. We're just hitting the ceiling on advanced components.", status: "open" },
+    { id: "rev-2", source: "Intercom", author: "Harbor Labs", rating: null, text: "Flagged a bug here weeks ago and never heard back — then the price went up. Hard to justify staying.", status: "open" },
   ];
 }
 
@@ -431,13 +433,13 @@ function ssCreateDigest(workspace) {
     headline: "Two accounts need a human this week — both went quiet, neither complained.",
     stats: [
       { n: "1", l: "at-risk account" },
-      { n: "3", l: "expansion-ready" },
-      { n: "60d", l: "to Harbor's renewal" },
+      { n: "1", l: "product signal from a sales call" },
+      { n: "1", l: "renewal with an open worry" },
     ],
     items: [
-      "Summit Data went quiet after their dashboards broke — churn-risk, but recoverable with outreach.",
-      "Lakeview is ready to expand if the pilot teams show hours saved.",
-      "Harbor renews in 60 days and wants hours-saved proof, not features.",
+      "Harbor Labs went quiet after a bug and the pricing change — churn-risk, but recoverable with outreach.",
+      "Vela's sales call surfaced a real product signal — engineers need the founders' design intuition; route it to the product team.",
+      "Lumen renews soon but an engineer's permissions worry is blocking a clean yes.",
     ],
     insightId: "insight-churn",
   };
@@ -447,7 +449,7 @@ function ssCreateSlackQA(workspace) {
   return [
     {
       q: "Which accounts are at risk this week?",
-      a: "One clear risk: Summit Data. Their dashboards broke after a permissions change, usage dropped ~40%, and they've gone quiet — the same pattern that preceded 4 of last quarter's 5 churns. It's recoverable: Owen said the product's fine, it was the silence. Suggested move: a human reaches out and owns the broken dashboards.",
+      a: "One clear risk: Harbor Labs. They flagged a bug in Intercom, never heard back, then PostHog showed usage down ~40% after the pricing change — the same quiet drop-off that preceded 4 of last quarter's 5 churns. It's recoverable: they said the product's fine, it was the silence plus the price bump. Suggested move: a human reaches out, owns the bug, and reframes the pricing.",
     },
   ];
 }
@@ -455,11 +457,11 @@ function ssCreateSlackQA(workspace) {
 function ssCreateBriefing(workspace) {
   const product = ssProductName(workspace);
   return {
-    scanned: [workspace.productUrl || "your site", "G2 reviews", "this quarter's churn post-mortems", "the onboarding playbook"],
+    scanned: [workspace.productUrl || "your site", "Intercom threads", "sales-call transcripts", "Slack Connect", "PostHog usage"],
     knows: [
-      product + " is a reporting and analytics tool for ops and data teams.",
-      "Churn pattern: a breakage (dashboards stop refreshing) → usage drop → silence → downgrade.",
-      "Worth talking to: at-risk accounts, expansion candidates, and admins near renewal.",
+      product + " is an AI design tool that generates UI from a description, used by founders, designers, and PMs.",
+      "Churn pattern: an unresolved Intercom bug → PostHog usage drop after the pricing change → silence → downgrade.",
+      "Worth talking to: at-risk accounts, enterprise accounts mid-sale, and accounts near renewal.",
     ],
   };
 }
@@ -469,23 +471,23 @@ function ssCreateLoops() {
     {
       id: "loop-health", name: "Account health & churn signals", status: "Learning", cadence: "Always on",
       people: 712, active: 4, memory: 318,
-      question: "Which accounts are quietly disengaging before they churn?",
+      question: "Which enterprise accounts are quietly at risk before they churn?",
       conversationId: "summit", conversationIds: ["summit", "harbor"], peopleIds: ["summit", "harbor", "bright"],
-      eventIds: ["evt-1", "evt-2"], surfaceIds: ["email", "product"],
+      eventIds: ["evt-1", "evt-2"], surfaceIds: ["telegram", "discord"],
     },
     {
       id: "loop-onboarding", name: "New account onboarding", status: "Learning", cadence: "First 30 days",
       people: 38, active: 1, memory: 74,
-      question: "Where do new accounts lose trust in the first month?",
+      question: "Where do new accounts lose trust in the prototyping flow in the first month?",
       conversationId: "cedar", conversationIds: ["cedar"], peopleIds: ["cedar"],
-      eventIds: ["evt-3"], surfaceIds: ["email", "product"],
+      eventIds: ["evt-3"], surfaceIds: ["telegram", "email"],
     },
     {
-      id: "loop-expansion", name: "Expansion & renewal", status: "Learning", cadence: "Triggered by account stage",
+      id: "loop-expansion", name: "Sales-call product signal & renewal", status: "Learning", cadence: "Triggered by account stage",
       people: 64, active: 2, memory: 51,
-      question: "What unlocks multi-team rollout and renewal?",
+      question: "What product signal is getting lost in sales calls, and what unlocks expansion and renewal?",
       conversationId: "lakeview", conversationIds: ["lakeview", "harbor"], peopleIds: ["lakeview", "harbor"],
-      eventIds: ["evt-4"], surfaceIds: ["email", "product"],
+      eventIds: ["evt-4"], surfaceIds: ["product", "slack"],
     },
   ];
 }
@@ -546,13 +548,13 @@ function ssCreateSampleState(input) {
     slackQA: ssCreateSlackQA(workspace),
     briefing: ssCreateBriefing(workspace),
     unanswered: [
-      "Which churned accounts would have stayed with earlier outreach — needs last quarter's win-back attempts logged.",
-      "Whether the new permissions changes are landing as friction — too few accounts have hit them yet.",
+      "Which quiet accounts would have stayed with earlier outreach — needs last quarter's win-back attempts logged.",
+      "How much product signal is being lost in sales calls — needs the deal-call transcripts ingested.",
     ],
     nextQuestions: [
-      "Which accounts are quietly at risk of churning this month?",
-      "What would get Lakeview to roll out to the other three teams?",
-      "What hours-saved proof would lock in Harbor's renewal?",
+      "Which enterprise accounts are quietly at risk this month?",
+      "What product signal from this week's sales calls should reach the product team?",
+      "What would resolve Lumen's permissions worry before renewal?",
     ],
   };
 }
@@ -998,9 +1000,9 @@ function ssCannedAnswer(state, question) {
   return {
     id: "answer-" + Date.now(),
     question: asked,
-    answer: "Observant is seeing the strongest signal around at-risk accounts going quiet. Accounts aren't complaining loudly; a breakage they never flagged is followed by a usage drop and silence before they churn from " + product + ".",
-    evidence: "Grounded in Maria, Priya, and Owen's private lines plus dashboard_refresh_failed and usage_drop events.",
-    recommendation: "Trigger a human outreach the moment dashboards break and usage dips. Keep the at-risk loop always on.",
+    answer: "Observant is seeing the strongest signal around at-risk accounts going quiet. Accounts aren't complaining loudly; an unresolved Intercom bug is followed by a PostHog usage drop after the pricing change and then silence before they churn from " + product + ".",
+    evidence: "Grounded in Northstar, Vela, and Harbor Labs' private lines plus intercom_bug_unresolved and usage_dropped events.",
+    recommendation: "Trigger a human outreach the moment an Intercom thread goes unresolved and PostHog usage dips. Keep the at-risk loop always on.",
     relatedPersonIds: ["bright", "lakeview", "summit"],
     relatedInsightIds: ["insight-churn"],
   };
