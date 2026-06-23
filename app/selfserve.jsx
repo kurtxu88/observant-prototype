@@ -1,7 +1,7 @@
 /* ============================================================
    OBSERVANT self-serve SaaS prototype
    ============================================================ */
-const { useState: useStateSS, useEffect: useEffectSS } = React;
+const { useState: useStateSS, useEffect: useEffectSS, useRef: useRefSS } = React;
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
@@ -24,6 +24,14 @@ const SS_EMPTY_WORKSPACE_FORM = {
   learningGoal: "",
   context: { goal3mo: "", priorLearning: "", docs: [] },
 };
+
+const SS_ANSWER_STAGES = [
+  { id: "existing", label: "Finding from existing feedback", detail: "Checking prior 1:1 lines, behavior signals, and open loops." },
+  { id: "context", label: "Collecting context", detail: "Pulling the product goal and remembered user context into the answer." },
+  { id: "users", label: "Finding the right users", detail: "Choosing who can add fresh context to this question." },
+  { id: "feedback", label: "Collecting feedback", detail: "Reading new replies and recent user signals as they come in." },
+  { id: "answer", label: "Summarizing answer", detail: "Turning the evidence into a grounded recommendation." },
+];
 
 function ssLoadState() {
   try {
@@ -109,6 +117,10 @@ async function ssPostJson(url, payload) {
   });
   if (!response.ok) throw new Error("Request failed");
   return response.json();
+}
+
+function ssWait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Deep links: /setup always lands on onboarding (clears a launched workspace,
@@ -708,7 +720,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const [slackConnected, setSlackConnected] = useStateSS(false);
   const [navStack, setNavStack] = useStateSS([]);
 
-  const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget }) => {
+  const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
     // remember where we are so any in-app jump is reversible
     setNavStack((st) => st.concat([{
       section: state.section, selectedConversationId: state.selectedConversationId,
@@ -720,6 +732,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       selectedConversationId: conversationId || current.selectedConversationId,
       selectedLoopId: loopId || current.selectedLoopId,
       focusedTarget: focusedTarget || "",
+      pendingInsightQuestion: pendingInsightQuestion !== undefined ? pendingInsightQuestion : current.pendingInsightQuestion,
     }));
   };
 
@@ -784,9 +797,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
               <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
             </div>
           </div>
-          <div className="ss-topbar-actions">
-            {ssWorkspaceIsCustom(state) && <span className="ss-sim-pill" title="The people and replies below are simulated — your real panel fills in after you send invites.">Simulated preview</span>}
-          </div>
+          <div className="ss-topbar-actions" />
         </header>
 
         <main className="ss-app-content">
@@ -841,6 +852,9 @@ function HomeView({ state, patchState, navigate }) {
       {/* 1 — New insights: what Observant has learned, most recent first */}
       <section className="ss-panel">
         <PanelTitle k="Insights" title="New insights" status={state.insights.length ? state.insights.length + " fresh" : "Listening"} />
+        {latestAnswer && (
+          <LatestAnswerCard answer={latestAnswer} onClick={() => navigate({ section: "insights", focusedTarget: "ask-observant" })} />
+        )}
         {state.insights.length ? (
           <div className="ss-home-insights">
             {state.insights.slice(0, 3).map((insight) => (
@@ -852,9 +866,7 @@ function HomeView({ state, patchState, navigate }) {
             ))}
             <button type="button" className="ss-home-seeall" onClick={() => navigate({ section: "insights" })}>See all insights <Icon name="arrow" size={14} /></button>
           </div>
-        ) : latestAnswer ? (
-          <LatestAnswerCard answer={latestAnswer} onClick={() => navigate({ section: "insights", focusedTarget: "insight-export" })} />
-        ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
+        ) : !latestAnswer ? <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." /> : null}
       </section>
 
       {/* 2 — Recently opened chats */}
@@ -867,9 +879,32 @@ function HomeView({ state, patchState, navigate }) {
       <QuestionHistory state={state} />
 
       <div className="ss-dashboard-grid">
-        <AskObservant state={state} patchState={patchState} />
+        <HomeAskEntry navigate={navigate} />
       </div>
     </div>
+  );
+}
+
+function HomeAskEntry({ navigate }) {
+  const [question, setQuestion] = useStateSS("");
+  const submit = () => {
+    const q = question.trim();
+    navigate({ section: "insights", focusedTarget: "ask-observant", pendingInsightQuestion: q || "" });
+  };
+
+  return (
+    <section className="ss-panel">
+      <PanelTitle k="Ask Observant" title="Ask across what it has learned" status="Insights" />
+      <textarea
+        className="textarea"
+        value={question}
+        placeholder="Ask a product question and Observant will pull from feedback, context, and the right users."
+        onChange={(e) => setQuestion(e.target.value)}
+      />
+      <div className="ss-panel-actions">
+        <Btn variant="primary" onClick={submit}><Icon name="spark" size={15} /> Ask in Insights</Btn>
+      </div>
+    </section>
   );
 }
 
@@ -976,7 +1011,7 @@ function ssOpenVoicePreview(product, deepPlan) {
 }
 
 // Redesigned ask experience — applies the conversation logic (C1) inline and
-// sends a REAL test email of the first batch. No simulated thread on the page.
+// Sends a real test email of the first batch. No dashboard thread is created here.
 function AskPanel({ product, state, patchState, navigate }) {
   const [question, setQuestion] = useStateSS("");
   const [wishlist, setWishlist] = useStateSS("");
@@ -1496,7 +1531,12 @@ function InsightsView({ state, patchState, navigate }) {
 
   return (
     <div className="ss-page-stack">
-      <AskObservant state={state} patchState={patchState} />
+      <AskObservant
+        state={state}
+        patchState={patchState}
+        autoQuestion={state.pendingInsightQuestion}
+        focused={state.focusedTarget === "ask-observant"}
+      />
       {latestAnswer && <LatestAnswerCard answer={latestAnswer} />}
       {state.insights.length ? (
         <div className="ss-list-grid">
@@ -1522,6 +1562,33 @@ function InsightsView({ state, patchState, navigate }) {
       ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
     </div>
   );
+}
+
+async function ssBuildObservantAnswer(state, question) {
+  let answer;
+  if (ssWorkspaceIsCustom(state)) {
+    const summary = {
+      workspace: state.workspace,
+      loops: state.loops.map((loop) => ({ id: loop.id, name: loop.name, question: loop.question, status: loop.status })),
+      people: state.people.map((person) => ({ id: person.id, name: person.name, segment: person.segment, memory: person.memory, last: person.last })).slice(0, 8),
+      events: state.events.slice(0, 8),
+      insights: state.insights.slice(0, 6),
+      conversations: state.conversations.slice(0, 6).map((conversation) => ({
+        id: conversation.id,
+        userId: conversation.userId,
+        title: conversation.title,
+        messages: conversation.messages.slice(-4),
+      })),
+    };
+    try {
+      answer = await ssPostJson("/api/selfserve/answer", { question, summary });
+    } catch (err) {
+      answer = SelfServeData.cannedAnswer(state, question);
+    }
+  } else {
+    answer = SelfServeData.cannedAnswer(state, question);
+  }
+  return answer && answer.answer ? answer : SelfServeData.cannedAnswer(state, question);
 }
 
 function LatestAnswerCard({ answer, onClick }) {
@@ -1596,49 +1663,87 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
   );
 }
 
-function AskObservant({ state, patchState }) {
+function AnswerProgressCard({ stageIndex }) {
+  const activeIndex = Math.max(0, Math.min(stageIndex, SS_ANSWER_STAGES.length - 1));
+  const width = ((activeIndex + 1) / SS_ANSWER_STAGES.length) * 100;
+  const active = SS_ANSWER_STAGES[activeIndex];
+
+  return (
+    <div className="ss-progress-card ss-answer-progress" aria-live="polite">
+      <div className="ss-progress-head">
+        <div>
+          <span className="eyebrow no-rule">Answer progress</span>
+          <h3>{active.label}</h3>
+        </div>
+        <em>Working</em>
+      </div>
+      <div className="ss-progress-track"><span style={{ width: width + "%" }} /></div>
+      <ol className="ss-progress-steps">
+        {SS_ANSWER_STAGES.map((stage, index) => (
+          <li key={stage.id} className={index < activeIndex ? "done" : index === activeIndex ? "on" : ""}>
+            <span>{index < activeIndex ? "✓" : index + 1}</span>
+            <div><b>{stage.label}</b><p>{stage.detail}</p></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function AskObservant({ state, patchState, autoQuestion, focused }) {
   const [question, setQuestion] = useStateSS(state.workspace.learningGoal);
   const [asking, setAsking] = useStateSS(false);
+  const [progressStage, setProgressStage] = useStateSS(-1);
+  const inputRef = useRefSS(null);
+  const autoAskedRef = useRefSS("");
 
-  const ask = async () => {
-    if (!question.trim() || asking) return;
+  const ask = async (overrideQuestion) => {
+    const q = String(overrideQuestion !== undefined ? overrideQuestion : question).trim();
+    if (!q || asking) return;
+    setQuestion(q);
     setAsking(true);
-    let answer;
-    if (ssWorkspaceIsCustom(state)) {
-      const summary = {
-        workspace: state.workspace,
-        loops: state.loops.map((loop) => ({ id: loop.id, name: loop.name, question: loop.question, status: loop.status })),
-        people: state.people.map((person) => ({ id: person.id, name: person.name, segment: person.segment, memory: person.memory, last: person.last })).slice(0, 8),
-        events: state.events.slice(0, 8),
-        insights: state.insights.slice(0, 6),
-        conversations: state.conversations.slice(0, 6).map((conversation) => ({
-          id: conversation.id,
-          userId: conversation.userId,
-          title: conversation.title,
-          messages: conversation.messages.slice(-4),
-        })),
-      };
-      try {
-        answer = await ssPostJson("/api/selfserve/answer", { question, summary });
-      } catch (err) {
-        answer = SelfServeData.cannedAnswer(state, question);
-      }
-    } else {
-      answer = SelfServeData.cannedAnswer(state, question);
-    }
-    if (!answer || !answer.answer) answer = SelfServeData.cannedAnswer(state, question);
+    setProgressStage(0);
     patchState((current) => ({
       ...current,
-      answers: [{ id: answer.id || "answer-" + Date.now(), question, ...answer }, ...current.answers],
-      activity: ["Asked Observant: " + question, ...current.activity],
+      pendingInsightQuestion: current.pendingInsightQuestion === q ? "" : current.pendingInsightQuestion,
     }));
+
+    const answerPromise = ssBuildObservantAnswer(state, q);
+    for (let index = 0; index < SS_ANSWER_STAGES.length; index += 1) {
+      setProgressStage(index);
+      await ssWait(index === 0 ? 650 : 900);
+    }
+    const answer = await answerPromise;
+    patchState((current) => ({
+      ...current,
+      pendingInsightQuestion: "",
+      answers: [{ ...answer, id: answer.id || "answer-" + Date.now(), question: q }, ...(current.answers || [])],
+      activity: ["Asked Observant: " + q, ...(current.activity || [])],
+    }));
+    setProgressStage(-1);
     setAsking(false);
   };
 
+  useEffectSS(() => {
+    const q = String(autoQuestion || "").trim();
+    if (!q) {
+      if (focused && inputRef.current) inputRef.current.focus();
+      return;
+    }
+    if (autoAskedRef.current === q) return;
+    autoAskedRef.current = q;
+    ask(q);
+  }, [autoQuestion]);
+
+  useEffectSS(() => {
+    if (focused && !asking && inputRef.current) inputRef.current.focus();
+  }, [focused, asking]);
+
   return (
-    <section className="ss-panel">
+    <section className={"ss-panel" + (focused ? " is-focused" : "")}>
       <PanelTitle k="Ask Observant" title="Ask across what it has learned" status="Grounded" />
-      <textarea className="textarea" value={question} onChange={(e) => setQuestion(e.target.value)} />
+      <textarea ref={inputRef} className="textarea" value={question} onChange={(e) => setQuestion(e.target.value)} disabled={asking} />
+      {asking && <AnswerProgressCard stageIndex={progressStage} />}
       <div className="ss-panel-actions">
         <Btn variant="primary" onClick={ask} disabled={!question.trim() || asking}><Icon name="spark" size={15} /> {asking ? "Thinking" : "Ask Observant"}</Btn>
       </div>

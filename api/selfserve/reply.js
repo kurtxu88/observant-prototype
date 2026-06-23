@@ -75,13 +75,20 @@ module.exports = async function handler(req, res) {
     const emailText = next + footer(answerUrl);
     let sent = false;
     if (process.env.RESEND_API_KEY) {
+      const emailPayload = {
+        from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
+        to: [state.toEmail],
+        subject: "Re: " + (state.subject || "your feedback"),
+        html: htmlEmail(next, answerUrl),
+        text: emailText,
+      };
+      const replyTo = String(process.env.RESEND_REPLY_TO || "").trim();
+      if (replyTo) emailPayload.reply_to = replyTo;
+
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
-          to: [state.toEmail], subject: "Re: " + (state.subject || "your feedback"), html: htmlEmail(next, answerUrl), text: emailText,
-        }),
+        body: JSON.stringify(emailPayload),
       });
       sent = r.ok;
     }

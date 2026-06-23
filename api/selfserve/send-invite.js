@@ -17,10 +17,14 @@ module.exports = async function handler(req, res) {
     const text = body + (joinUrl ? "\n\nJoin here → " + joinUrl : "");
     if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true });
 
+    const emailPayload = { from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>", to: [toEmail], subject: subject, text: text };
+    const replyTo = String(process.env.RESEND_REPLY_TO || "").trim();
+    if (replyTo) emailPayload.reply_to = replyTo;
+
     const send = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>", to: [toEmail], subject: subject, text: text }),
+      body: JSON.stringify(emailPayload),
     });
     if (!send.ok) return res.status(200).json({ ok: false, error: "Resend " + send.status + ": " + (await send.text()).slice(0, 200) });
     return res.status(200).json({ ok: true, to: toEmail });
