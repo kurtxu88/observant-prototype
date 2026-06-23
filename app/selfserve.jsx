@@ -461,8 +461,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
     "",
     route === "inproduct"
-      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. You earn rewards for every minute you participate, tracked automatically."
-      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
+      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. As a design partner you get a product discount, early access, and a real say in what we build."
+      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and as a design partner you get a product discount, early access, and a real say in what we build.",
     "",
     "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
     "",
@@ -540,18 +540,18 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
-                <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> You pay Observant, we pay your participants, and they redeem as they go — like spending down a gift card balance.</p>
+                <p>Partners join for <b>the relationship, not a payout</b> — a product discount, early access, co-marketing, and a say in the roadmap. <b>Observant tracks each partnership and what it's worth to you</b> — design partner, reference partner, strategic partner — and deepens it as the account engages.</p>
 
                 <div className="ss-comp-grid">
                   <article className="ss-comp-card on">
                     <em className="ss-comp-tag active">Active · managed by Observant</em>
                     <b>Cash</b>
-                    <p>Set your rate — we handle payouts and redemption.</p>
+                    <p>Set the design-partner offer — we handle the rest.</p>
                     <div className="ss-comp-rate">
                       <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 2) })} /> / min</span>
                       <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 2))}</b>
                     </div>
-                    <small>Industry guideline: $2 per minute.</small>
+                    <small>For B2B, partnership beats cash — a discount + early access is what accounts actually want.</small>
                   </article>
 
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
@@ -566,7 +566,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   <article className="ss-comp-card">
                     <em className="ss-comp-tag coming">Coming</em>
                     <b>Your product credits</b>
-                    <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
+                    <p>The strongest currency in B2B is the partnership itself — a discount, early access, and a real seat at the table.</p>
                   </article>
                 </div>
               </div>
@@ -592,7 +592,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   k="Compensation"
                   v="Cash — managed by Observant"
                   sub={<>
-                    <span className="ss-review-tier">${setup.rate || 2} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 2))} · redeem as you go</span>
+                    <span className="ss-review-tier">Design partner → reference partner → strategic partner · deeper relationship, more value both ways</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
@@ -1067,7 +1067,7 @@ function AskPanel({ product, state, patchState, navigate }) {
               <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
             </div>
             {tri.estMin > 0 && (
-              <p className="ss-depth-reward">Reward offered: <b>~{tri.estMin} min · ${tri.estMin * rate}</b> per person — paid when their answers pass a quick quality check.</p>
+              <p className="ss-depth-reward">Offered as a <b>design-partner perk</b> — a product discount and early access, not a per-minute payout.</p>
             )}
             <details className="ss-depth-learn">
               <summary>What's light mode vs deep mode?</summary>

@@ -6,19 +6,19 @@ const SS_STORAGE_KEY = "observant.selfserve.v1";
 const SS_STATE_VERSION = 4;
 
 const SS_DEFAULT_WORKSPACE = {
-  founderName: "Maya Chen",
-  email: "maya@northwind.ai",
-  companyName: "Northwind",
-  productUrl: "https://northwind.ai",
-  productDescription: "A reporting and analytics tool for ops and data teams.",
-  userBase: "Ops leads and analysts at 50–500 person B2B companies.",
-  learningGoal: "Learn why power users export data and rebuild reports by hand instead of using our dashboards.",
+  founderName: "Steijn Pelle",
+  email: "steijn@lassie.health",
+  companyName: "Lassie",
+  productUrl: "https://lassie.health",
+  productDescription: "An AI admin worker that runs the dental office — automating insurance AR and payment reconciliation for practices.",
+  userBase: "700+ dental practices across 49 states — office managers, billing leads, and practice owners.",
+  learningGoal: "Stay ahead of which practices are quietly unhappy before they churn — and learn what would get them to expand to more locations.",
   context: {
-    goal3mo: "Get 30% of power users onto live dashboards (off spreadsheet exports) before the Series A raise.",
-    priorLearning: "Support tickets suggest people don't trust auto-refreshed numbers; a few power users said boards 'can't be cut the way I need.' Unverified.",
+    goal3mo: "Cut churn among at-risk practices and open 3 expansion conversations a week, on the way to $100M ARR.",
+    priorLearning: "Support spikes around month-end AR; a couple of practices went quiet after a billing dispute, then downgraded. Unverified which signals actually predict churn.",
     docs: [
-      { id: "doc-prd", name: "Dashboards v2 PRD.pdf", note: "The redesign meant to replace spreadsheet exports." },
-      { id: "doc-icp", name: "ICP & segments.doc", note: "Power users, new analysts, admin/buyers." },
+      { id: "doc-onb", name: "Practice onboarding playbook.pdf", note: "The first 30 days for a new practice." },
+      { id: "doc-churn", name: "Churn post-mortems Q2.doc", note: "Why four practices left last quarter." },
     ],
   },
 };
@@ -35,11 +35,11 @@ const SS_CUSTOM_WORKSPACE_FALLBACK = {
 };
 
 const SS_GROUP_OPTIONS = [
-  { id: "power-users", label: "Power users", text: "Frequent users who already rely on the workflow." },
-  { id: "new-signups", label: "New signups", text: "People still forming their first mental model." },
-  { id: "evaluators", label: "Upgrade evaluators", text: "Teams comparing value, permissions, and trust." },
-  { id: "admins", label: "Workspace admins", text: "Owners who care about rollout and team adoption." },
-  { id: "at-risk", label: "At-risk users", text: "Accounts showing hesitation or stalled progress." },
+  { id: "power", label: "Power practices", text: "Practices that run most of their AR through Lassie." },
+  { id: "onboarding", label: "Newly onboarded", text: "Practices in their first 30 days, still forming habits." },
+  { id: "expansion", label: "Expansion candidates", text: "Multi-location groups that could add more offices." },
+  { id: "owners", label: "Practice owners", text: "Dentists and owners who decide on renewal." },
+  { id: "at-risk", label: "At-risk practices", text: "Accounts gone quiet or trending toward churn." },
 ];
 
 const SS_SURFACE_OPTIONS = [
@@ -61,23 +61,24 @@ const SS_AUDIENCE_OPTIONS = [
   { id: "representative", label: "A representative mix", text: "Reach across your user types for a full picture of who's using your product.", tag: "Full picture" },
 ];
 
-// What you offer people for opting in as a feedback partner (the currency).
+// B2B: the currency is partnership, not cash. You trade product value + status for
+// insight and co-building — a sales-led relationship, not a survey payout.
 const SS_COMPENSATION_OPTIONS = [
-  { id: "giftcard", label: "Gift cards", text: "A simple thank-you. Universal and easy.", tag: "Default" },
-  { id: "productcredits", label: "Your product credits", text: "Credit inside your own product.", tag: "In-product" },
-  { id: "accountcredits", label: "Account credits", text: "Apply credit toward their plan or usage." },
-  { id: "cash", label: "Cash / PayPal", text: "Direct payment for deeper or recurring time." },
+  { id: "discount", label: "Product discount", text: "A discount on their plan for being a design partner.", tag: "Default" },
+  { id: "earlyaccess", label: "Early access & influence", text: "First look at new features and a real say in the roadmap.", tag: "Most valued" },
+  { id: "comarketing", label: "Co-marketing", text: "Case study, logo, and referral perks." },
+  { id: "advisory", label: "Advisory relationship", text: "A direct line to the team; an advisory seat for key accounts." },
 ];
 
-// One model: status tiers by participated minutes (text, voice, calls). Observant audits the minutes.
-// `cash` = redeem-as-you-go conversion baseline; `reward` = the team's default tier reward (customizable).
+// Partnership tiers by depth of the relationship, not minutes. The deeper the
+// partnership, the more the account gets — and the more the team learns.
 const SS_REWARD_TIERS = [
-  { id: "bronze", name: "Bronze", min: 30, cash: 30, reward: "$30 gift card", color: "gold" },
-  { id: "silver", name: "Silver", min: 100, cash: 90, reward: "6 months free subscription", color: "teal" },
-  { id: "gold", name: "Gold", min: 200, cash: 150, reward: "In-person event invite, early access & perks", color: "rust" },
+  { id: "bronze", name: "Design partner", min: 1, cash: 0, reward: "10% off + early access", color: "teal" },
+  { id: "silver", name: "Reference partner", min: 3, cash: 0, reward: "Co-marketing, case study & referral perks", color: "gold" },
+  { id: "gold", name: "Strategic partner", min: 6, cash: 0, reward: "Advisory seat, roadmap influence & exec relationship", color: "rust" },
 ];
 
-const SS_DEFAULT_TIER_REWARDS = { bronze: "$30 gift card", silver: "6 months free subscription", gold: "In-person event invite, early access & perks" };
+const SS_DEFAULT_TIER_REWARDS = { bronze: "10% off + early access", silver: "Co-marketing, case study & referral perks", gold: "Advisory seat, roadmap influence & exec relationship" };
 
 const SS_SIGNAL_OPTIONS = [
   { id: "user_signed_up", label: "user_signed_up" },
@@ -208,259 +209,211 @@ function ssCreateSetup(workspace) {
 }
 
 function ssCreatePeople(workspace) {
-  const product = ssProductName(workspace);
   return [
     {
-      id: "dana",
-      name: "Dana K.",
-      color: "rust",
-      segment: "Power user",
-      surface: "In-product",
-      status: "Active now",
-      memory: "Exports every Monday and rebuilds the report for her team.",
-      last: "A live dashboard is exactly the thing I keep wishing existed.",
+      id: "bright", name: "Maria · Bright Smiles Dental", color: "teal",
+      segment: "Power practice", surface: "Email", status: "Healthy",
+      memory: "Office manager; runs all month-end AR through Lassie at a 4-chair practice.",
+      last: "Honestly Lassie saved us a hire — but the new payer rules have me nervous.",
       profile: {
-        since: "On the panel 6 weeks · 41 min",
-        reward: "Silver — 6 months free",
+        since: "Partner 7 months · Strategic partner",
+        reward: "Advisory seat + roadmap influence",
         knows: [
-          "Ops lead; owns the weekly report her team reads.",
-          "Exports every Monday, then rebuilds a pivot by hand (~20 min/week).",
-          "Her team has no seats — the CSV is really a sharing workaround.",
+          "Office manager at a single-location, 4-chair practice.",
+          "Runs 100% of month-end insurance AR through Lassie.",
+          "Most valuable when reconciliation just clears without her checking.",
         ],
         shared: [
-          "“Give me a read-only link and I’d never export again.”",
-          "Trusts the numbers; it’s the presentation that’s the work.",
+          "“Lassie saved us a hire.”",
+          "Anxious about new payer rules — wants to know Lassie keeps up.",
         ],
-        open: ["Would a shareable live dashboard replace the export? — awaiting reply"],
+        open: ["Would a heads-up when payer rules change keep her confident? — awaiting reply"],
       },
     },
     {
-      id: "marcus",
-      name: "Marcus T.",
-      color: "green",
-      segment: "Power user",
-      surface: "Telegram",
-      status: "Active now",
-      memory: "Uses " + product + " for weekly ops reporting and wants share links.",
-      last: "I need a link my ops lead can read, not another CSV.",
+      id: "cedar", name: "Tom · Cedar Family Dentistry", color: "green",
+      segment: "Newly onboarded", surface: "Email", status: "Onboarding",
+      memory: "Onboarded 3 weeks ago; still learning to trust the auto-reconciliation.",
+      last: "Took me a bit to trust the auto-match — I double-checked everything week one.",
       profile: {
-        since: "On the panel 5 weeks · 33 min",
-        reward: "Bronze — $30 gift card",
+        since: "Partner 3 weeks · Design partner",
+        reward: "10% off + early access",
         knows: [
-          "Runs weekly ops reporting; reports up to an ops lead without a seat.",
-          "Opened reporting settings 3× after export, hunting for a share link.",
+          "New practice, week 3; the billing lead is the daily user.",
+          "Double-checked every auto-match in week one before trusting it.",
         ],
-        shared: ["“I need a link my ops lead can read, not another CSV.”"],
-        open: ["Would per-report share links (no seat needed) unblock you?"],
+        shared: ["“Took me a bit to trust the auto-match.”"],
+        open: ["What would have made you trust the reconciliation faster?"],
       },
     },
     {
-      id: "priya",
-      name: "Priya S.",
-      color: "blue",
-      segment: "New customer",
-      surface: "Email",
-      status: "Async",
-      memory: "Joined this week and shares reporting updates from email.",
-      last: "I forwarded the CSV because I could not find the dashboard sharing flow.",
+      id: "lakeview", name: "Priya · Lakeview Dental Group", color: "blue",
+      segment: "Expansion candidate", surface: "In-product", status: "Expanding",
+      memory: "Multi-location group running Lassie at 2 of 5 offices.",
+      last: "If this works at the other three, that's our whole back office.",
       profile: {
-        since: "Joined this week · 8 min",
-        reward: "Just started accruing",
+        since: "Partner 4 months · Reference partner",
+        reward: "Co-marketing + case study",
         knows: [
-          "New this week; still forming her mental model of " + product + ".",
-          "Couldn’t find the dashboard-sharing flow, so she emailed a CSV.",
+          "5-location group; Lassie live at 2 offices, evaluating the rest.",
+          "Decision hinges on the pilot offices showing real hours saved.",
         ],
-        shared: ["“I need a clean update I can send from email without rebuilding the export.”"],
-        open: ["Where did the sharing flow break down in your first week?"],
+        shared: ["“If this works at the other three, that's our whole back office.”"],
+        open: ["What proof from the 2 pilot offices unlocks the other 3?"],
       },
     },
     {
-      id: "owen",
-      name: "Owen R.",
-      color: "gold",
-      segment: "API-heavy account",
-      surface: "In-product",
-      status: "Watching",
-      memory: "Builds internal dashboards on top of the API.",
-      last: "The API is the whole reason I am here.",
+      id: "summit", name: "Dr. Okafor · Summit Dental", color: "rust",
+      segment: "At-risk practice", surface: "Email", status: "At risk",
+      memory: "Went quiet after a billing dispute last month; usage down 40%.",
+      last: "We had a claim batch go sideways and nobody reached out.",
       profile: {
-        since: "On the panel 9 weeks · 22 min",
-        reward: "Bronze — $30 gift card",
+        since: "Partner 9 months · was Strategic partner",
+        reward: "Advisory seat (lapsing)",
         knows: [
-          "Builds the exec-facing internal dashboard on top of the API.",
-          "Exports, then rebuilds outside the product to match exec expectations.",
+          "Owner-dentist; was a heavy user until a month-end claim batch failed.",
+          "Usage down ~40%; logins sporadic since the dispute.",
         ],
-        shared: ["“The API is the whole reason I am here.”"],
-        open: ["What would the in-product dashboard need to replace your internal one?"],
+        shared: [
+          "“A claim batch went sideways and nobody reached out.”",
+          "Feels unsupported — not unhappy with the product itself.",
+        ],
+        open: ["⚠ Churn risk — what would rebuild trust after the failed batch?"],
       },
     },
     {
-      id: "leah",
-      name: "Leah M.",
-      color: "rust",
-      segment: "Upgrade evaluator",
-      surface: "Telegram",
-      status: "Watching",
-      memory: "Paused on the upgrade page after comparing reporting permissions.",
-      last: "I need to know whether the team can see this before we upgrade.",
+      id: "harbor", name: "Dr. Reyes · Harbor Orthodontics", color: "gold",
+      segment: "Practice owner", surface: "Email", status: "Renewal",
+      memory: "Owner; renewal in 60 days, quietly comparing a competitor.",
+      last: "I need to know my team actually saves time before I re-sign.",
       profile: {
-        since: "On the panel 2 weeks · 12 min",
-        reward: "Just started accruing",
+        since: "Partner 11 months · Reference partner",
+        reward: "Co-marketing + referral perks",
         knows: [
-          "Evaluating an upgrade; paused on the page after checking reporting permissions.",
-          "Blocker is team visibility, not price.",
+          "Owner; renewal in 60 days. Weighing a cheaper competitor.",
+          "Will re-sign on proof of hours saved, not features.",
         ],
-        shared: ["“I need to know whether the team can see this before we upgrade.”"],
-        open: ["What proof of safe team sharing would let you upgrade?"],
+        shared: ["“I need to know my team actually saves time before I re-sign.”"],
+        open: ["What hours-saved proof would make the renewal a no-brainer?"],
       },
     },
   ];
 }
 
 function ssCreateConversations(workspace) {
-  const product = ssProductName(workspace);
   return [
     {
-      id: "dana-voice",
-      userId: "dana",
-      title: "Export workflow — voice interview",
-      state: "Done",
-      mode: "voice",
-      duration: "26 min",
+      id: "summit-voice", userId: "summit", title: "After the failed claim batch — voice interview",
+      state: "Done", mode: "voice", duration: "18 min",
       messages: [
-        { t: "them", text: "You said Mondays are export day — walk me through what happens after you hit export.", meta: "Observant" },
-        { t: "user", text: "I pull the CSV, drop it into Sheets, and rebuild the pivot my team expects. Maybe twenty minutes of cleanup — every single week.", meta: "Dana" },
-        { t: "them", text: "If the dashboard gave you that view directly, what would still be missing?", meta: "Observant" },
-        { t: "user", text: "Sharing. My team doesn't have seats, so even a perfect dashboard dies at the paywall. The CSV is really a sharing workaround.", meta: "Dana" },
-        { t: "them", text: "So the export is less about the data and more about access.", meta: "Observant" },
-        { t: "user", text: "Exactly. Give me a read-only link and I'd never export again.", meta: "Dana" },
+        { t: "them", text: "You mentioned a claim batch went sideways last month — walk me through what happened.", meta: "Observant" },
+        { t: "user", text: "Month-end, a batch of claims didn't reconcile and we didn't catch it for days. AR backed up and I felt blind.", meta: "Dr. Okafor" },
+        { t: "them", text: "When you realized, what did you need from us that wasn't there?", meta: "Observant" },
+        { t: "user", text: "Someone to reach out. The product's fine — it was the silence. I didn't know if it was me or Lassie.", meta: "Dr. Okafor" },
+        { t: "them", text: "If Lassie had flagged the batch and a person had called, would that have changed it?", meta: "Observant" },
+        { t: "user", text: "Completely. I'd still be all-in. Right now I'm quietly looking around.", meta: "Dr. Okafor" },
       ],
     },
     {
-      id: "dana",
-      userId: "dana",
-      title: "Weekly export workflow",
-      state: "Active",
-      mode: "chat",
+      id: "summit", userId: "summit", title: "Quiet since the dispute", state: "At risk", mode: "chat",
       messages: [
-        { t: "them", text: "Hi Dana - I noticed you finished another weekly export in " + product + ". What happens after it leaves the app?", meta: "Observant - behavior-triggered" },
-        { t: "user", text: "I paste it into a sheet and rebuild half of it by hand.", meta: "Dana" },
-        { t: "them", text: "Is the data wrong, or is the output missing a version your team can read without translation?", meta: "Observant" },
-        { t: "user", text: "The second one. The numbers are fine. The presentation is the work.", meta: "Dana" },
+        { t: "them", text: "Dr. Okafor — I noticed logins dropped off after last month. Anything we got wrong?", meta: "Observant - behavior-triggered" },
+        { t: "user", text: "A claim batch failed and nobody reached out. Made me wonder if I can rely on this at month-end.", meta: "Dr. Okafor" },
       ],
     },
     {
-      id: "marcus",
-      userId: "marcus",
-      title: "Shareable reporting",
-      state: "Active",
+      id: "lakeview", userId: "lakeview", title: "Rolling out to the other offices", state: "Active", mode: "chat",
       messages: [
-        { t: "them", text: "You opened reporting settings three times after export. Were you trying to share the report?", meta: "Observant - remembered context" },
-        { t: "user", text: "Yes. I needed a link my ops lead could read, not another CSV.", meta: "Marcus" },
+        { t: "them", text: "You're live at 2 of 5 offices — what would it take to bring the other three on?", meta: "Observant" },
+        { t: "user", text: "Proof. Show me the hours the two pilot offices got back and the rollout sells itself internally.", meta: "Priya" },
       ],
     },
     {
-      id: "priya",
-      userId: "priya",
-      title: "First reporting setup",
-      state: "Async",
+      id: "cedar", userId: "cedar", title: "First 30 days", state: "Onboarding", mode: "chat",
       messages: [
-        { t: "them", text: "Welcome to " + product + ". What are you hoping the reporting view helps you do this week?", meta: "Observant - onboarding" },
-        { t: "user", text: "I need a clean update I can send from email without rebuilding the export.", meta: "Priya" },
+        { t: "them", text: "Welcome — three weeks in, what's still taking a second look before you trust it?", meta: "Observant - onboarding" },
+        { t: "user", text: "The auto-match. I checked every one in week one. It's right — I just needed to see it be right.", meta: "Tom" },
       ],
     },
     {
-      id: "owen",
-      userId: "owen",
-      title: "API reporting handoff",
-      state: "Watching",
+      id: "harbor", userId: "harbor", title: "Renewal in 60 days", state: "Renewal", mode: "chat",
       messages: [
-        { t: "them", text: "You opened the API docs after exporting from " + product + ". Are you rebuilding the dashboard outside the product?", meta: "Observant - behavior-triggered" },
-        { t: "user", text: "Yes. The API lets us make the internal view our exec team already expects.", meta: "Owen" },
+        { t: "them", text: "Your renewal's coming up — what would make it an easy yes?", meta: "Observant - remembered context" },
+        { t: "user", text: "Hours saved, in numbers. A competitor's cheaper, so I need to see my team actually gets time back.", meta: "Dr. Reyes" },
       ],
     },
     {
-      id: "leah",
-      userId: "leah",
-      title: "Upgrade hesitation",
-      state: "Watching",
+      id: "bright", userId: "bright", title: "Staying ahead of payer rules", state: "Active", mode: "chat",
       messages: [
-        { t: "them", text: "You paused on the upgrade page after checking reporting permissions. What did you need to know?", meta: "Observant - remembered context" },
-        { t: "user", text: "Whether the dashboard can be shared safely with the team before we commit.", meta: "Leah" },
+        { t: "them", text: "You mentioned the new payer rules — what are you worried Lassie might miss?", meta: "Observant" },
+        { t: "user", text: "That the rules change and I don't find out until a batch fails. A heads-up would keep me calm.", meta: "Maria" },
       ],
     },
   ];
 }
 
 function ssCreateEvents(workspace) {
-  const product = ssProductName(workspace);
   return [
-    { id: "evt-1", event: "export_completed", user: "Dana K.", detail: "third weekly export finished", time: "2m ago", type: "trigger", conversationId: "dana" },
-    { id: "evt-2", event: "feature_opened", user: "Marcus T.", detail: "reporting settings opened 3 times", time: "18m ago", type: "trigger", conversationId: "marcus" },
-    { id: "evt-3", event: "user_signed_up", user: "Priya S.", detail: "joined " + product + " from referral", time: "1h ago", type: "onboarding", conversationId: "priya" },
-    { id: "evt-4", event: "checkout_abandoned", user: "Leah M.", detail: "left upgrade page after price reveal", time: "3h ago", type: "watch", conversationId: "leah" },
+    { id: "evt-1", event: "claim_batch_failed", user: "Summit Dental", detail: "month-end batch didn't reconcile; unflagged 3 days", time: "1d ago", type: "watch", conversationId: "summit" },
+    { id: "evt-2", event: "usage_drop", user: "Summit Dental", detail: "logins down 40% since the dispute", time: "2d ago", type: "watch", conversationId: "summit" },
+    { id: "evt-3", event: "practice_onboarded", user: "Cedar Family Dentistry", detail: "completed onboarding, week 3", time: "1h ago", type: "onboarding", conversationId: "cedar" },
+    { id: "evt-4", event: "renewal_upcoming", user: "Harbor Orthodontics", detail: "renews in 60 days", time: "5h ago", type: "trigger", conversationId: "harbor" },
   ];
 }
 
 function ssCreateInsights(workspace) {
-  const product = ssProductName(workspace);
   return [
     {
-      id: "insight-export",
-      title: "Power users want a live, shareable dashboard.",
-      metric: "61%",
-      detail: "The export works. The recurring pain is turning the CSV into a team-readable view after it leaves " + product + ".",
-      evidence: "Grounded in 252 remembered moments and 18 recent private lines.",
-      next: "Ship a live dashboard link; keep CSV as secondary.",
-      conversationId: "dana",
+      id: "insight-churn",
+      title: "At-risk practices go quiet before they churn — not loud.",
+      metric: "4 / 5",
+      detail: "The pattern before a downgrade: an unresolved billing event (a failed batch) → a usage drop → silence. Not a complaint.",
+      evidence: "Grounded across this quarter's churn post-mortems and recent at-risk lines.",
+      next: "Trigger a human outreach the moment a batch fails and usage dips.",
+      conversationId: "summit",
     },
     {
-      id: "insight-onboarding",
-      title: "New customers need reporting language earlier.",
-      metric: "34%",
-      detail: "New users describe the same reporting job in different words, then search for settings later.",
-      evidence: "Surfaced from onboarding lines and feature_opened events.",
-      next: "Add reporting intent to first-run setup.",
-      conversationId: "priya",
+      id: "insight-expansion",
+      title: "Expansion is blocked on hours-saved proof from the pilot office.",
+      metric: "3 accounts",
+      detail: "Multi-location groups won't roll out to every office until the pilot offices show real hours back — features don't move them, proof does.",
+      evidence: "Surfaced from expansion-candidate and renewal conversations.",
+      next: "Auto-generate an hours-saved recap per account for the rollout conversation.",
+      conversationId: "lakeview",
     },
   ];
 }
 
 function ssCreateReviews(workspace) {
-  const product = ssProductName(workspace);
   return [
-    { id: "rev-1", source: "App Store", author: "ops_nerd", rating: 2, text: "Love the data but I export to a spreadsheet every week just to share it with my team. Why no read-only link?", status: "open" },
-    { id: "rev-2", source: "Reddit", author: "u/dashboards4life", rating: null, text: "Anyone else rebuilding " + product + " reports by hand for execs? Feels like the dashboard stops one step short.", status: "open" },
-    { id: "rev-3", source: "Support ticket", author: "Priya S.", rating: null, text: "Couldn’t find how to share a dashboard with a teammate who doesn’t have a login.", status: "open" },
-    { id: "rev-4", source: "G2", author: "Verified user", rating: 4, text: "Solid for analysts. Sharing with non-users is the one rough edge.", status: "open" },
+    { id: "rev-1", source: "G2", author: "Office manager", rating: 4, text: "Saves us a back-office hire. Wish we got a heads-up when payer rules change.", status: "open" },
+    { id: "rev-2", source: "Support ticket", author: "Summit Dental", rating: null, text: "A claim batch failed at month-end and no one reached out.", status: "open" },
   ];
 }
 
 function ssCreateDigest(workspace) {
-  const product = ssProductName(workspace);
   return {
     period: "This week",
-    headline: "Sharing — not the data — is what keeps pulling power users out of " + product + ".",
+    headline: "Two practices need a human this week — both went quiet, neither complained.",
     stats: [
-      { n: "18", l: "private lines active" },
-      { n: "3", l: "new partners joined" },
-      { n: "61%", l: "named a sharing gap" },
+      { n: "1", l: "at-risk practice" },
+      { n: "3", l: "expansion-ready" },
+      { n: "60d", l: "to Harbor's renewal" },
     ],
     items: [
-      "Power users export weekly only to rebuild a team-readable view — the CSV is a sharing workaround.",
-      "New customers can’t find the dashboard-sharing flow in their first week.",
-      "Upgrade evaluators are blocked on team-visibility proof, not price.",
+      "Summit Dental went quiet after a failed claim batch — churn-risk, but recoverable with outreach.",
+      "Lakeview is ready to expand if the pilot offices show hours saved.",
+      "Harbor renews in 60 days and wants hours-saved proof, not features.",
     ],
-    insightId: "insight-export",
+    insightId: "insight-churn",
   };
 }
 
 function ssCreateSlackQA(workspace) {
-  const product = ssProductName(workspace);
   return [
     {
-      q: "What are users saying about sharing this week?",
-      a: "61% of active partners raised a sharing gap. The pattern: the dashboard is trusted, but teammates have no seats — so people export a CSV to share. Dana, Marcus, and Owen all described the same workaround. Suggested next step: a read-only dashboard link (no seat).",
+      q: "Which practices are at risk this week?",
+      a: "One clear risk: Summit Dental. A month-end claim batch failed, usage dropped ~40%, and they've gone quiet — the same pattern that preceded 4 of last quarter's 5 churns. It's recoverable: Dr. Okafor said the product's fine, it was the silence. Suggested move: a human reaches out and owns the failed batch.",
     },
   ];
 }
@@ -468,11 +421,11 @@ function ssCreateSlackQA(workspace) {
 function ssCreateBriefing(workspace) {
   const product = ssProductName(workspace);
   return {
-    scanned: [workspace.productUrl || "your product site", "App Store + G2 reviews", "Reddit mentions", "uploaded docs"],
+    scanned: [workspace.productUrl || "your site", "G2 reviews", "this quarter's churn post-mortems", "the onboarding playbook"],
     knows: [
-      product + " is a reporting/analytics tool for ops and data teams.",
-      "Key flow: export → rebuild → share. Sharing is the recurring friction.",
-      "Worth talking to: weekly exporters, new customers in week one, upgrade evaluators.",
+      product + " is an AI admin worker that runs insurance AR and reconciliation for dental practices.",
+      "Churn pattern: a failed or late batch → usage drop → silence → downgrade.",
+      "Worth talking to: at-risk practices, expansion candidates, and owners near renewal.",
     ],
   };
 }
@@ -480,49 +433,25 @@ function ssCreateBriefing(workspace) {
 function ssCreateLoops() {
   return [
     {
-      id: "loop-export",
-      name: "Export and reporting workflow",
-      status: "Learning",
-      cadence: "Always on",
-      people: 128,
-      active: 3,
-      memory: 252,
-      question: "Why do power users rebuild reports outside the product?",
-      conversationId: "dana",
-      conversationIds: ["dana", "marcus", "owen"],
-      peopleIds: ["dana", "marcus", "owen"],
-      eventIds: ["evt-1", "evt-2"],
-      surfaceIds: ["email", "telegram"],
+      id: "loop-health", name: "Account health & churn signals", status: "Learning", cadence: "Always on",
+      people: 712, active: 4, memory: 318,
+      question: "Which practices are quietly unhappy before they churn?",
+      conversationId: "summit", conversationIds: ["summit", "harbor"], peopleIds: ["summit", "harbor", "bright"],
+      eventIds: ["evt-1", "evt-2"], surfaceIds: ["email", "product"],
     },
     {
-      id: "loop-onboarding",
-      name: "New customer onboarding",
-      status: "Learning",
-      cadence: "First 14 days",
-      people: 74,
-      active: 1,
-      memory: 96,
-      question: "What brought new users here, and where do they get stuck?",
-      conversationId: "priya",
-      conversationIds: ["priya"],
-      peopleIds: ["priya"],
-      eventIds: ["evt-3"],
-      surfaceIds: ["product", "email"],
+      id: "loop-onboarding", name: "New practice onboarding", status: "Learning", cadence: "First 30 days",
+      people: 38, active: 1, memory: 74,
+      question: "Where do new practices lose trust in the first month?",
+      conversationId: "cedar", conversationIds: ["cedar"], peopleIds: ["cedar"],
+      eventIds: ["evt-3"], surfaceIds: ["email", "product"],
     },
     {
-      id: "loop-upgrade",
-      name: "Upgrade hesitation",
-      status: "Watching",
-      cadence: "Triggered by behavior",
-      people: 42,
-      active: 0,
-      memory: 51,
-      question: "What makes teams pause before upgrading?",
-      conversationId: "leah",
-      conversationIds: ["leah"],
-      peopleIds: ["leah"],
-      eventIds: ["evt-4"],
-      surfaceIds: ["telegram"],
+      id: "loop-expansion", name: "Expansion & renewal", status: "Learning", cadence: "Triggered by account stage",
+      people: 64, active: 2, memory: 51,
+      question: "What unlocks multi-location rollout and renewal?",
+      conversationId: "lakeview", conversationIds: ["lakeview", "harbor"], peopleIds: ["lakeview", "harbor"],
+      eventIds: ["evt-4"], surfaceIds: ["email", "product"],
     },
   ];
 }
@@ -571,8 +500,8 @@ function ssCreateSampleState(input) {
   const product = ssProductName(workspace);
   return {
     ...ssBaseState(workspace, "sample"),
-    selectedLoopId: "loop-export",
-    selectedConversationId: "dana",
+    selectedLoopId: "loop-health",
+    selectedConversationId: "summit",
     people: ssCreatePeople(workspace),
     conversations: ssCreateConversations(workspace),
     events: ssCreateEvents(workspace),
@@ -583,13 +512,13 @@ function ssCreateSampleState(input) {
     slackQA: ssCreateSlackQA(workspace),
     briefing: ssCreateBriefing(workspace),
     unanswered: [
-      "Why churned users left — no churned users are on the panel yet (recruit from cancellations).",
-      "Mobile-specific friction — too few mobile sessions in the lines so far.",
+      "Which churned practices would have stayed with earlier outreach — needs last quarter's win-back attempts logged.",
+      "Whether new payer-rule changes are landing as friction — too few practices have hit them yet.",
     ],
     nextQuestions: [
-      "Would a live, shareable dashboard replace your weekly export cleanup?",
-      "Which part of " + product + " still makes you leave the product?",
-      "What should Observant watch after the next release?",
+      "Which practices are quietly at risk of churning this month?",
+      "What would get Lakeview to roll out to the other three offices?",
+      "What hours-saved proof would lock in Harbor's renewal?",
     ],
   };
 }
