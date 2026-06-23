@@ -1298,6 +1298,10 @@ function PeopleView({ state, patchState }) {
   const personConversations = state.conversations.filter((item) => item.userId === person.id || item.id === person.id);
   const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
   const voiceConversations = personConversations.filter((item) => item.mode === "voice");
+  // Account → people-by-role: only when the seeded account carries the new model.
+  const hasRelationship = !!(person.relationshipMemory && (person.people || []).length);
+  const conversationsById = {};
+  (state.conversations || []).forEach((c) => { conversationsById[c.id] = c; });
 
   const setSelected = (conversationId) => {
     const conversation = state.conversations.find((item) => item.id === conversationId);
@@ -1386,6 +1390,21 @@ function PeopleView({ state, patchState }) {
           </div>
           <span className="ss-via">via Observant over {person.surface}</span>
         </div>
+        {hasRelationship ? (
+          <>
+            <p className="ss-relay-note">This is the account's relationship memory — Observant holds a separate 1:1 line with each person at {person.name} and keeps per-person and per-account memory.</p>
+            <RelationshipMemory account={person} conversationsById={conversationsById} />
+            <details className="ss-rmem-rawsources">
+              <summary><Icon name="chat" size={14} /> Raw sources — every 1:1 chat, voice interview &amp; sales-call transcript</summary>
+              <div className="ss-rmem-rawsources-body">
+                {personConversations.length ? personConversations.map((conversation) => (
+                  <SourceThread conversation={conversation} key={conversation.id} />
+                )) : <EmptyState title="No threads yet" text="Conversations across this account will collect here." />}
+              </div>
+            </details>
+          </>
+        ) : (
+        <>
         <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
         <PartnerMemory person={person} />
         <div className="ss-mode-tabs">
@@ -1409,6 +1428,8 @@ function PeopleView({ state, patchState }) {
               </div>
             )) : <EmptyState title="No voice interviews yet" text={"When " + person.name.split(" ")[0] + " takes a focused voice interview, the full transcript lands here."} />}
           </div>
+        )}
+        </>
         )}
         <div className="ss-chat-actions">
           <Btn variant="primary" size="sm" onClick={() => setFollowUpOpen(true)}><Icon name="relay" size={15} /> Follow up with a question</Btn>
@@ -1446,6 +1467,122 @@ function PeopleView({ state, patchState }) {
 }
 
 // ---- Bucket A: relationship-frame surfaces ----
+
+// Account → people-by-role → relationship-memory page.
+// Additive: only renders when the account carries `relationshipMemory`; otherwise
+// PeopleView falls back to the original single-thread view. Guarded throughout
+// with `(account.people || [])` so a missing field never breaks the render.
+function ssThreadModeLabel(conversation) {
+  if (!conversation) return "1:1 chat";
+  if (conversation.mode === "voice") return "Voice interview";
+  if (conversation.mode === "sales") return "Sales call";
+  return "1:1 chat";
+}
+function ssThreadIcon(conversation) {
+  if (!conversation) return "chat";
+  if (conversation.mode === "voice") return "phone";
+  if (conversation.mode === "sales") return "video";
+  return "chat";
+}
+
+// Renders one source thread (chat / voice / sales-call) as a transcript-style block.
+function SourceThread({ conversation }) {
+  if (!conversation) return null;
+  const isTranscript = conversation.mode === "voice" || conversation.mode === "sales";
+  return (
+    <div className="ss-rmem-source">
+      <div className="ss-rmem-source-head">
+        <span className="ss-rmem-source-tag"><Icon name={ssThreadIcon(conversation)} size={13} /> {ssThreadModeLabel(conversation)}</span>
+        <b>{conversation.title}</b>
+        {conversation.duration && <span className="ss-rmem-source-dur">{conversation.duration}</span>}
+      </div>
+      {isTranscript ? (
+        <div className="ss-transcript">
+          {(conversation.messages || []).map((message, i) => (
+            <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
+          ))}
+        </div>
+      ) : (
+        <div className="ss-chat-body">
+          {(conversation.messages || []).map((message, i) => <ChatMessage key={i} message={message} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RelationshipMemory({ account, conversationsById, openThread }) {
+  const rm = account.relationshipMemory || {};
+  const roster = account.people || [];
+  const [openPersonId, setOpenPersonId] = useStateSS(roster[0] ? roster[0].id : "");
+  const byRole = rm.byRole || {};
+  const orgMemory = rm.orgMemory || [];
+
+  const openPerson = roster.find((p) => p.id === openPersonId) || roster[0] || null;
+  const openThreads = (openPerson && (openPerson.threads || [])
+    .map((id) => conversationsById[id])
+    .filter(Boolean)) || [];
+
+  return (
+    <div className="ss-rmem">
+      {/* Header — synthesized relationship state */}
+      <div className="ss-rmem-head">
+        <span className="eyebrow no-rule">Relationship memory</span>
+        {rm.health && <em className="ss-rmem-health">{rm.health}</em>}
+      </div>
+      {rm.state && <p className="ss-rmem-state">{rm.state}</p>}
+
+      {/* People, by role — clicking a row reveals that person's thread */}
+      {roster.length > 0 && (
+        <div className="ss-rmem-people">
+          <span className="ss-rmem-sublabel">People at {account.name} · each assigned a role at onboarding, each on their own 1:1 line</span>
+          {roster.map((p) => {
+            const isOpen = openPerson && p.id === openPerson.id;
+            return (
+              <div className={"ss-rmem-person" + (isOpen ? " on" : "")} key={p.id}>
+                <button type="button" className="ss-rmem-person-row" onClick={() => setOpenPersonId(isOpen ? "" : p.id)}>
+                  <Avatar name={p.name} color={account.color} cls="ss-profile-avatar" />
+                  <div className="ss-rmem-person-copy">
+                    <b>{p.name} <em className="ss-rmem-role">{p.role}</em></b>
+                    {p.usage && <span className="ss-rmem-usage">{p.usage}</span>}
+                    {p.summary && <p className="ss-rmem-summary">{p.summary}</p>}
+                    {byRole[p.role] && <span className="ss-rmem-needs"><b>Needs:</b> {byRole[p.role]}</span>}
+                  </div>
+                  <div className="ss-rmem-person-meta">
+                    {p.status && <em className="ss-rmem-status">{p.status}</em>}
+                    {p.lastContact && <span className="ss-rmem-last">{p.lastContact}</span>}
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="ss-rmem-threads">
+                    {openThreads.length ? openThreads.map((c) => (
+                      <details className="ss-rmem-fold" key={c.id}>
+                        <summary><Icon name={ssThreadIcon(c)} size={13} /> {ssThreadModeLabel(c)} — {c.title}</summary>
+                        <SourceThread conversation={c} />
+                      </details>
+                    )) : <p className="ss-rmem-empty">No thread for {p.name.split(" ")[0]} yet.</p>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Org memory / standing timeline */}
+      {orgMemory.length > 0 && (
+        <div className="ss-rmem-org">
+          <span className="ss-rmem-sublabel">Org memory — what Observant has accrued about {account.name}</span>
+          <ol className="ss-rmem-timeline">
+            {orgMemory.map((note, i) => <li key={i}>{note}</li>)}
+          </ol>
+        </div>
+      )}
+
+      <p className="ss-rmem-foot">Observant follows up with each person individually and keeps both per-person and per-account memory — so the team inherits the whole relationship, not just the last reply.</p>
+    </div>
+  );
+}
 
 // Per-partner living memory — the company side of the relationship, made visible.
 function PartnerMemory({ person }) {

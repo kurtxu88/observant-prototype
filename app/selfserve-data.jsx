@@ -263,6 +263,44 @@ function ssCreatePeople(workspace) {
         ],
         open: ["Would advanced components open an expansion conversation? — awaiting reply"],
       },
+      people: [
+        {
+          id: "bright-design", name: "Priya Nadar", role: "Design Lead",
+          usage: "Lives in Magic Patterns daily — every prototype starts here.",
+          status: "Power user", lastContact: "2 days ago",
+          summary: "Magic Patterns is the center of how I work now. I prototype here before anything else. The only thing slowing me down is hitting the ceiling on advanced components.",
+          threads: ["bright", "bright-design-voice"],
+        },
+        {
+          id: "bright-eng", name: "Marco Vidal", role: "Engineer",
+          usage: "Takes the generated UI into the codebase; wants cleaner handoff.",
+          status: "Cautious", lastContact: "5 days ago",
+          summary: "The output gets us most of the way, but I end up rewriting chunks before it's production-ready. I don't have the design instinct Priya does — I'm reacting to what she hands me.",
+          threads: ["bright-eng-chat"],
+        },
+        {
+          id: "bright-admin", name: "Dana Okoro", role: "Admin / Renewal owner",
+          usage: "Owns the contract and seat count; not a daily user.",
+          status: "Happy", lastContact: "1 week ago",
+          summary: "The team clearly loves it, so renewal is easy for me. If advanced components land, I'd green-light more seats without much fuss.",
+          threads: ["bright-admin-chat"],
+        },
+      ],
+      relationshipMemory: {
+        state: "Design Lead is an all-in champion; the Engineer is getting value but still rewrites output by hand; the renewal owner is happy and ready to add seats once advanced components ship.",
+        health: "Healthy · expansion-ready",
+        byRole: {
+          "Design Lead": "Advanced components so prototypes don't hit a ceiling.",
+          "Engineer": "Cleaner, closer-to-production handoff from generated UI.",
+          "Admin / Renewal owner": "A clear reason to justify more seats.",
+        },
+        orgMemory: [
+          "Onboarded 7 months ago; became a daily-driver account within the first month.",
+          "Design Lead drove adoption; the whole design team now prototypes in Magic Patterns.",
+          "Advanced-components ask first surfaced in Slack Connect ~3 weeks ago and keeps recurring.",
+          "Renewal owner has signaled openness to more seats, gated on the components ask.",
+        ],
+      },
     },
     {
       id: "cedar", name: "Cedar & Co.", color: "green",
@@ -280,6 +318,44 @@ function ssCreatePeople(workspace) {
         shared: ["“Took me a bit to trust that what it generates is actually usable.”"],
         open: ["What would have made the prototyping flow click faster?"],
       },
+      people: [
+        {
+          id: "cedar-pm", name: "Jules Hart", role: "Product Lead",
+          usage: "The daily user; driving the trial inside the team.",
+          status: "Warming up", lastContact: "3 days ago",
+          summary: "I rebuilt the first few generated screens by hand before I trusted the output — it held up, I just needed to see it hold up. I'm sold now, but I'm still the only one really using it.",
+          threads: ["cedar", "cedar-pm-voice"],
+        },
+        {
+          id: "cedar-eng", name: "Theo Lin", role: "Engineer",
+          usage: "Has tried it twice; not yet convinced it saves time.",
+          status: "Skeptical", lastContact: "1 week ago",
+          summary: "Jules keeps sending me prototypes from it. They're fine, but I haven't felt the moment where it's obviously faster than just building. I'd need to see it click on something real.",
+          threads: ["cedar-eng-chat"],
+        },
+        {
+          id: "cedar-admin", name: "Renee Cho", role: "Admin / Buyer",
+          usage: "Approved the trial; watching whether it sticks.",
+          status: "Watching", lastContact: "2 weeks ago",
+          summary: "I signed off on the trial because Jules pushed for it. Whether we keep it past 30 days depends on whether more than one person ends up depending on it.",
+          threads: ["cedar-admin-chat"],
+        },
+      ],
+      relationshipMemory: {
+        state: "The Product Lead has come around and now trusts the output, but adoption is still one-person-deep; the Engineer is unconvinced and the buyer is waiting to see it spread before committing.",
+        health: "Onboarding · single-threaded",
+        byRole: {
+          "Product Lead": "A way to get teammates to feel the value, not just her.",
+          "Engineer": "One real moment where it's obviously faster than building by hand.",
+          "Admin / Buyer": "Proof that adoption goes beyond a single champion before day 30.",
+        },
+        orgMemory: [
+          "Started the trial 3 weeks ago via Intercom; no Slack Connect yet.",
+          "Product Lead rebuilt early screens by hand to verify output, then trusted it.",
+          "Engineer has logged in twice; no aha moment recorded yet.",
+          "Buyer's renewal decision is gated on adoption spreading past one person.",
+        ],
+      },
     },
     {
       id: "lakeview", name: "Vela Robotics", color: "blue",
@@ -296,6 +372,45 @@ function ssCreatePeople(workspace) {
         ],
         shared: ["“Our engineers don't have the design intuition the founders do.”"],
         open: ["What would let engineers inherit the founders' intuition through Magic Patterns?"],
+      },
+      people: [
+        {
+          id: "lakeview-founder", name: "Sasha Vela", role: "Co-founder / Buyer",
+          usage: "Champions it across the deal; sees it as a team-wide bet.",
+          status: "Enthusiast", lastContact: "1 day ago",
+          summary: "We can prototype because we built the taste over years — our engineers haven't. If Magic Patterns gives them that intuition, the whole team moves faster. That's why I want this rolled out, not just trialed.",
+          threads: ["lakeview", "lakeview-founder-voice"],
+        },
+        {
+          id: "lakeview-eng", name: "Hadi Rahman", role: "Lead Engineer",
+          usage: "Will own rollout; wants proof before committing the team.",
+          status: "Cautious", lastContact: "4 days ago",
+          summary: "I like where this is going, but I've seen tools promise to make engineers 'designers' before. Before I put my team on it, I want to know it actually closes the intuition gap rather than just generating more to review.",
+          threads: ["lakeview-eng-chat"],
+        },
+        {
+          id: "lakeview-design", name: "Bea Knox", role: "Design Lead",
+          usage: "Early hands-on user; already prototyping with it.",
+          status: "Power user", lastContact: "2 days ago",
+          summary: "I'm already using it daily and it's great for me. The real unlock would be if it lifted the engineers' instincts too — that's the thing Sasha keeps pushing for and I think it's right.",
+          threads: ["lakeview-design-chat"],
+        },
+      ],
+      relationshipMemory: {
+        state: "The co-founder is an enthusiast pushing a team-wide rollout; the Design Lead is already a power user; the Lead Engineer is cautious and wants proof it closes the intuition gap before committing his team. The real product signal — engineers needing the founders' intuition — surfaced on a sales call and is at risk of being lost in deal talk.",
+        health: "Expanding · in active sales",
+        byRole: {
+          "Co-founder / Buyer": "A team-wide rollout that spreads the founders' intuition.",
+          "Lead Engineer": "Proof it lifts engineers' instincts, not just adds output to review.",
+          "Design Lead": "Continued depth plus the team-wide unlock she already believes in.",
+        },
+        orgMemory: [
+          "Enterprise account; in an active sales motion led by the co-founder.",
+          "Product signal — 'engineers need the founders' design intuition' — raised on a sales call, routed to the product team.",
+          "Design Lead already a daily power user during the trial.",
+          "Lead Engineer is the rollout gatekeeper; needs proof on the intuition gap.",
+          "Expansion hinges on framing the deal around the intuition unlock, not just seats.",
+        ],
       },
     },
     {
@@ -316,6 +431,45 @@ function ssCreatePeople(workspace) {
         ],
         open: ["⚠ Churn risk — what would rebuild trust after the bug and the pricing change?"],
       },
+      people: [
+        {
+          id: "summit-design", name: "Owen Pratt", role: "Design Lead",
+          usage: "Was the daily user; has mostly stopped opening it.",
+          status: "Quiet · frustrated", lastContact: "3 weeks ago",
+          summary: "We hit a bug, flagged it in Intercom, and never really heard back. Around the same time the price went up, so we just... stopped opening it. The product's fine — it was the silence plus a price bump with no clear reason to keep paying.",
+          threads: ["summit", "summit-voice"],
+        },
+        {
+          id: "summit-eng", name: "Lena Fox", role: "Engineer",
+          usage: "Lightly used; drifted off after the bug went unresolved.",
+          status: "Disengaged", lastContact: "1 month ago",
+          summary: "Honestly I'd half-forgotten about it. The bug Owen flagged was the kind of thing that made me not trust it for anything load-bearing, so I went back to building by hand.",
+          threads: ["summit-eng-chat"],
+        },
+        {
+          id: "summit-admin", name: "Raj Mehta", role: "Admin / Renewal owner",
+          usage: "Holds the contract; quietly evaluating whether to renew.",
+          status: "At risk", lastContact: "2 weeks ago",
+          summary: "We were happy users. Right now I'm quietly evaluating whether to renew — the team stopped using it and the price went up, so I need a reason to stay.",
+          threads: ["summit-admin-chat"],
+        },
+      ],
+      relationshipMemory: {
+        state: "Design Lead loved it, then went quiet after a bug went unresolved and the price rose; the Engineer has disengaged entirely; the renewal owner is quietly evaluating whether to churn. Nobody complained loudly — the whole account drifted into silence.",
+        health: "At risk · recoverable",
+        byRole: {
+          "Design Lead": "Acknowledgement of the bug and a reason to come back.",
+          "Engineer": "Trust that core flows are reliable enough to depend on.",
+          "Admin / Renewal owner": "A clear reason the new price is worth it.",
+        },
+        orgMemory: [
+          "Was a strategic-tier account for ~9 months; heavy daily usage.",
+          "Bug flagged in Intercom went unresolved; that's where trust started slipping.",
+          "Pricing change landed around the same time, removing the reason to push through.",
+          "PostHog shows usage down ~40%; logins sporadic since the pricing change.",
+          "Went quiet rather than loud — the same pattern that preceded 4 of 5 churns last quarter.",
+        ],
+      },
     },
     {
       id: "harbor", name: "Lumen Studio", color: "gold",
@@ -331,6 +485,45 @@ function ssCreatePeople(workspace) {
         ],
         shared: ["“One of our engineers flagged a permissions worry and I need that settled before we re-sign.”"],
         open: ["What would resolve the engineer's permissions concern before renewal?"],
+      },
+      people: [
+        {
+          id: "harbor-design", name: "Iris Vance", role: "Design Lead / Champion",
+          usage: "Daily user and the internal advocate for renewing.",
+          status: "Happy", lastContact: "2 days ago",
+          summary: "I'm sold — this is part of how we work now. The only thing in the way is one of our engineers' permissions worry, and I need that settled before we re-sign.",
+          threads: ["harbor", "harbor-design-voice"],
+        },
+        {
+          id: "harbor-eng", name: "Sam Doyle", role: "Engineer",
+          usage: "Uses shared prototypes; raised the permissions blocker.",
+          status: "Blocking", lastContact: "4 days ago",
+          summary: "My worry is who can edit shared prototypes — right now it feels like anyone with the link can change things. Clear up the permissions model and I've got no objection.",
+          threads: ["harbor-eng-chat"],
+        },
+        {
+          id: "harbor-admin", name: "Nora Beck", role: "Admin / Renewal owner",
+          usage: "Owns the renewal; wants the blocker closed before re-signing.",
+          status: "Renewal pending", lastContact: "1 week ago",
+          summary: "The champion is happy and that's most of the battle. On a renewal call our sales contact mentioned the permissions worry — I just need it resolved so I can re-sign cleanly.",
+          threads: ["harbor-admin-sales"],
+        },
+      ],
+      relationshipMemory: {
+        state: "The Design Lead champion is happy and wants to renew; an Engineer has raised a permissions worry that's blocking a clean yes; the renewal owner is ready to re-sign the moment that's settled. The blocker also came up on a renewal/sales call — easy to lose if it isn't routed back to product.",
+        health: "Renewal · one open blocker",
+        byRole: {
+          "Design Lead / Champion": "Keep the workflow she relies on; clear the renewal blocker.",
+          "Engineer": "A clear permissions model for who can edit shared prototypes.",
+          "Admin / Renewal owner": "The permissions worry resolved so renewal is a clean yes.",
+        },
+        orgMemory: [
+          "Reference-tier account ~11 months; champion is a daily power user.",
+          "Renewal coming up; champion is the internal advocate.",
+          "Engineer raised a permissions concern in Intercom about editing shared prototypes.",
+          "Same worry resurfaced on a renewal/sales call — risk of it being lost in deal talk.",
+          "Renewal owner will re-sign as soon as the permissions question is resolved.",
+        ],
       },
     },
   ];
@@ -383,6 +576,120 @@ function ssCreateConversations(workspace) {
       messages: [
         { t: "them", text: "You're a daily power account and asking for advanced components — proactively, what would an expansion look like for your team?", meta: "Observant" },
         { t: "user", text: "Advanced components plus a way to hand cleaner output to engineering. Give us that and we'd happily bring more of the team on.", meta: "Northstar Design Co." },
+      ],
+    },
+
+    /* ---- Per-person threads (account → people-by-role) ---- */
+
+    // Northstar — Priya (Design Lead), Marco (Engineer), Dana (Renewal owner)
+    {
+      id: "bright-design-voice", userId: "bright", title: "Priya Nadar (Design Lead) — how she actually works in it", state: "Done", mode: "voice", duration: "12 min", surface: "Slack Connect",
+      messages: [
+        { t: "them", text: "Walk me through a normal day — where does Magic Patterns sit in your flow?", meta: "Observant" },
+        { t: "user", text: "It's the first thing I open. Every prototype starts here before I touch anything else.", meta: "Priya Nadar" },
+        { t: "them", text: "Where does it stop being enough?", meta: "Observant" },
+        { t: "user", text: "Advanced components. I hit a ceiling when the design gets real — that's the one thing holding me back.", meta: "Priya Nadar" },
+      ],
+    },
+    {
+      id: "bright-eng-chat", userId: "bright", title: "Marco Vidal (Engineer) — the handoff gap", state: "Active", mode: "chat", surface: "Slack Connect",
+      messages: [
+        { t: "them", text: "When Priya hands you a generated prototype, how close is it to something you can ship?", meta: "Observant - 1:1" },
+        { t: "user", text: "Most of the way, but I rewrite chunks before it's production-ready. I don't have her design instinct — I'm just reacting to what she gives me.", meta: "Marco Vidal" },
+      ],
+    },
+    {
+      id: "bright-admin-chat", userId: "bright", title: "Dana Okoro (Renewal owner) — seats & renewal", state: "Active", mode: "chat", surface: "Email",
+      messages: [
+        { t: "them", text: "Renewal's a few months out — anything you'd want to see to add more seats?", meta: "Observant - 1:1" },
+        { t: "user", text: "The team loves it, so renewal's easy. If advanced components land, I'd green-light more seats without much fuss.", meta: "Dana Okoro" },
+      ],
+    },
+
+    // Cedar — Jules (Product Lead), Theo (Engineer), Renee (Buyer)
+    {
+      id: "cedar-pm-voice", userId: "cedar", title: "Jules Hart (Product Lead) — first 30 days, in her words", state: "Done", mode: "voice", duration: "9 min", surface: "Intercom",
+      messages: [
+        { t: "them", text: "Three weeks in — what finally made you trust the output?", meta: "Observant" },
+        { t: "user", text: "I rebuilt the first few screens by hand to check. They held up. I just needed to see it hold up before I relied on it.", meta: "Jules Hart" },
+        { t: "them", text: "What's the hard part now?", meta: "Observant" },
+        { t: "user", text: "I'm the only one really using it. I need a way to get the rest of the team to feel what I feel.", meta: "Jules Hart" },
+      ],
+    },
+    {
+      id: "cedar-eng-chat", userId: "cedar", title: "Theo Lin (Engineer) — not convinced yet", state: "Active", mode: "chat", surface: "Intercom",
+      messages: [
+        { t: "them", text: "Jules has been sending you prototypes from Magic Patterns — what's your read so far?", meta: "Observant - 1:1" },
+        { t: "user", text: "They're fine. But I haven't hit the moment where it's obviously faster than just building. I'd need to see it click on something real.", meta: "Theo Lin" },
+      ],
+    },
+    {
+      id: "cedar-admin-chat", userId: "cedar", title: "Renee Cho (Buyer) — will it stick past day 30?", state: "Active", mode: "chat", surface: "Email",
+      messages: [
+        { t: "them", text: "You approved the trial — what would make you keep it past 30 days?", meta: "Observant - 1:1" },
+        { t: "user", text: "I signed off because Jules pushed for it. Whether we keep it depends on more than one person ending up depending on it.", meta: "Renee Cho" },
+      ],
+    },
+
+    // Vela — Sasha (Co-founder/Buyer), Hadi (Lead Engineer), Bea (Design Lead)
+    {
+      id: "lakeview-founder-voice", userId: "lakeview", title: "Sasha Vela (Co-founder) — why she wants a team-wide rollout", state: "Done", mode: "voice", duration: "15 min", surface: "Sales call",
+      messages: [
+        { t: "them", text: "On the deal call you said engineers lack the founders' intuition — say more about what a rollout would do?", meta: "Observant - from sales call" },
+        { t: "user", text: "We can prototype because we built the taste over years. Our engineers haven't. If Magic Patterns gives them that, the whole team moves faster. That's why I want this rolled out, not just trialed.", meta: "Sasha Vela" },
+      ],
+    },
+    {
+      id: "lakeview-eng-chat", userId: "lakeview", title: "Hadi Rahman (Lead Engineer) — the rollout gatekeeper", state: "Active", mode: "chat", surface: "Email",
+      messages: [
+        { t: "them", text: "Sasha wants to roll this out to your team. As the one who'd own it — what would you need to see first?", meta: "Observant - 1:1" },
+        { t: "user", text: "I've seen tools promise to make engineers 'designers' before. Before I put my team on it, I want proof it closes the intuition gap instead of just generating more for me to review.", meta: "Hadi Rahman" },
+      ],
+    },
+    {
+      id: "lakeview-design-chat", userId: "lakeview", title: "Bea Knox (Design Lead) — already a power user", state: "Active", mode: "chat", surface: "Slack Connect",
+      messages: [
+        { t: "them", text: "You're already in it daily — where's the biggest upside for the wider team?", meta: "Observant - 1:1" },
+        { t: "user", text: "It's great for me already. The real unlock is if it lifts the engineers' instincts too — that's what Sasha keeps pushing for, and I think she's right.", meta: "Bea Knox" },
+      ],
+    },
+
+    // Harbor (at-risk) — Owen (Design Lead), Lena (Engineer), Raj (Renewal owner)
+    {
+      id: "summit-eng-chat", userId: "summit", title: "Lena Fox (Engineer) — drifted off", state: "At risk", mode: "chat", surface: "Intercom",
+      messages: [
+        { t: "them", text: "We noticed you've gone quiet — what happened from your side?", meta: "Observant - behavior-triggered" },
+        { t: "user", text: "Honestly I'd half-forgotten about it. The bug Owen flagged made me not trust it for anything load-bearing, so I went back to building by hand.", meta: "Lena Fox" },
+      ],
+    },
+    {
+      id: "summit-admin-chat", userId: "summit", title: "Raj Mehta (Renewal owner) — quietly evaluating", state: "At risk", mode: "chat", surface: "Email",
+      messages: [
+        { t: "them", text: "Renewal's coming up and usage has dropped — where's your head at?", meta: "Observant - 1:1" },
+        { t: "user", text: "We were happy users. Right now I'm quietly evaluating whether to renew — the team stopped using it and the price went up, so I need a reason to stay.", meta: "Raj Mehta" },
+      ],
+    },
+
+    // Lumen (renewal) — Iris (Champion), Sam (Engineer), Nora (Renewal owner, sales call)
+    {
+      id: "harbor-design-voice", userId: "harbor", title: "Iris Vance (Champion) — ready to renew", state: "Renewal", mode: "voice", duration: "8 min", surface: "Slack Connect",
+      messages: [
+        { t: "them", text: "Renewal's coming up — how solid is Magic Patterns in your workflow now?", meta: "Observant" },
+        { t: "user", text: "I'm sold — it's part of how we work. The only thing in the way is one engineer's permissions worry; settle that and I re-sign.", meta: "Iris Vance" },
+      ],
+    },
+    {
+      id: "harbor-eng-chat", userId: "harbor", title: "Sam Doyle (Engineer) — the permissions blocker", state: "Renewal", mode: "chat", surface: "Intercom",
+      messages: [
+        { t: "them", text: "You raised a permissions concern — what exactly worries you?", meta: "Observant - 1:1" },
+        { t: "user", text: "Who can edit shared prototypes. Right now it feels like anyone with the link can change things. Clear up the permissions model and I've got no objection.", meta: "Sam Doyle" },
+      ],
+    },
+    {
+      id: "harbor-admin-sales", userId: "harbor", title: "Lumen Studio — permissions worry raised on the renewal call", state: "Renewal", mode: "sales", surface: "Sales call",
+      messages: [
+        { t: "them", text: "On the renewal call, Nora flagged an engineer's permissions worry as the one open blocker — that's a product signal, not just a deal note. Capturing it for the product team?", meta: "Observant - from sales call" },
+        { t: "user", text: "Yes — the champion's happy, I just need the permissions question resolved so I can re-sign cleanly. That's the whole holdup.", meta: "Nora Beck (Lumen Studio)" },
       ],
     },
   ];
