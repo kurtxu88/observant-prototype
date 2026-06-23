@@ -3254,3 +3254,45 @@
 .ss-rmem-rawsources > summary::-webkit-details-marker { display: none; }
 .ss-rmem-rawsources[open] > summary { color: var(--text-primary); margin-bottom: .7rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); }
 .ss-rmem-rawsources-body { display: flex; flex-direction: column; gap: .9rem; }
+
+/* ============================================================
+   Full-width account page (B2B relationship memory v2)
+   Additive — replaces the cramped in-panel layout with a page.
+   Reuses .ss-panel / .ss-rmem-timeline / .ss-transcript / .ss-turn.
+   ============================================================ */
+.ss-account-page { max-width: 920px; }
+.ss-account-backlink { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-secondary); padding: .2rem 0; margin-bottom: .2rem; }
+.ss-account-backlink:hover, .ss-account-backlink:focus-visible { color: var(--text-primary); }
+
+.ss-account-hero-head { display: flex; align-items: center; gap: .85rem; margin-bottom: .9rem; }
+.ss-account-avatar { width: 2.6rem; height: 2.6rem; font-size: 1rem; }
+.ss-account-hero-id { flex: 1; }
+.ss-account-hero-id h2 { font-size: 1.35rem; line-height: 1.2; margin: 0; }
+.ss-account-hero-id span { font-size: .85rem; color: var(--text-secondary); }
+.ss-account-health { font-style: normal; font-size: .78rem; font-family: var(--font-mono); color: var(--success); white-space: nowrap; }
+.ss-account-state { font-size: 1.02rem; line-height: 1.55; color: var(--text-primary); margin: 0 0 .85rem; }
+.ss-account-note { font-size: .85rem; line-height: 1.5; color: var(--text-secondary); margin: 0; padding-top: .8rem; border-top: 1px solid var(--border); }
+
+.ss-account-people { display: flex; flex-direction: column; gap: 1.1rem; }
+.ss-account-person { border: 1px solid var(--border); border-radius: 14px; background: oklch(0.99 0.004 80 / .5); padding: 1.1rem 1.15rem; }
+.ss-account-person-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .6rem; }
+.ss-account-person-id { flex: 1; }
+.ss-account-person-id b { display: block; font-size: 1.02rem; line-height: 1.25; }
+.ss-account-role { font-size: .78rem; color: var(--text-secondary); }
+.ss-account-status { font-style: normal; font-size: .72rem; font-family: var(--font-mono); color: var(--text-secondary); white-space: nowrap; }
+.ss-account-summary { font-size: .92rem; line-height: 1.55; color: var(--text-primary); margin: 0 0 .6rem; }
+.ss-account-needs { font-size: .86rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .85rem; }
+.ss-account-needs b { display: inline-block; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-right: .45rem; }
+.ss-account-threads { display: flex; flex-direction: column; gap: .15rem; border-top: 1px solid var(--border); padding-top: .55rem; }
+
+/* Quiet icon-led conversation rows (chat / voice / sales) */
+.ss-rmem-fold { border-radius: 9px; }
+.ss-rmem-fold > summary { cursor: pointer; display: flex; align-items: center; gap: .55rem; padding: .5rem .55rem; list-style: none; border-radius: 9px; }
+.ss-rmem-fold > summary::-webkit-details-marker { display: none; }
+.ss-rmem-fold > summary:hover, .ss-rmem-fold > summary:focus-visible { background: var(--accent-tint); }
+.ss-rmem-fold-ic { display: inline-flex; color: var(--text-muted); flex: none; }
+.ss-rmem-fold-snip { flex: 1; font-size: .88rem; color: var(--text-secondary); line-height: 1.4; }
+.ss-rmem-fold[open] > summary .ss-rmem-fold-snip { color: var(--text-primary); }
+.ss-rmem-fold-dur { font-size: .7rem; font-family: var(--font-mono); color: var(--text-muted); flex: none; }
+.ss-rmem-fold-body { padding: .25rem .55rem .7rem; }
+.ss-rmem-empty { font-size: .84rem; color: var(--text-muted); padding: .35rem .55rem; }

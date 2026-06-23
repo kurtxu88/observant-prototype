@@ -713,8 +713,12 @@ function ReviewRowSS({ k, v, sub }) {
 }
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop" }; // non-nav pages
+  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop", account: "Account" }; // non-nav pages
   const section = (SS_SECTIONS.some((item) => item.id === state.section) || EXTRA_SECTIONS[state.section]) ? state.section : "home";
+  // Full-width account page: resolve the account from the carried conversation id.
+  const accountForPage = section === "account"
+    ? ssPersonForConversation(state, state.conversations.find((c) => c.id === state.selectedConversationId)) || state.people.find((p) => p.id === state.selectedConversationId)
+    : null;
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
@@ -793,8 +797,8 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           <div className="ss-topbar-lead">
             {navStack.length > 0 && <button type="button" className="ss-back-btn" onClick={goBack}><Icon name="back" size={15} /> Back</button>}
             <div>
-              <span className="ss-breadcrumb">{product}</span>
-              <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
+              <span className="ss-breadcrumb">{section === "account" ? product + " · Feedback partners" : product}</span>
+              <h1>{section === "account" && accountForPage ? accountForPage.name : ((SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home")}</h1>
             </div>
           </div>
           <div className="ss-topbar-actions" />
@@ -804,6 +808,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "home" && <HomeView state={state} patchState={patchState} navigate={navigate} />}
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "account" && <AccountPage state={state} account={accountForPage} patchState={patchState} navigate={navigate} goBack={goBack} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
           {section === "compose" && <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>}
           {section === "context" && <ContextView state={state} patchState={patchState} />}
@@ -1278,7 +1283,7 @@ function QuestionHistory({ state }) {
   );
 }
 
-function PeopleView({ state, patchState }) {
+function PeopleView({ state, patchState, navigate }) {
   const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
   const person = ssPersonForConversation(state, selected);
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
@@ -1366,15 +1371,19 @@ function PeopleView({ state, patchState }) {
         <div className="ss-table-list">
           {state.people.map((rowPerson) => {
             const conversationId = ssConversationIdForPerson(state, rowPerson.id);
+            // Accounts with the relationship model open their own full-width page.
+            const rowHasRelationship = !!(rowPerson.relationshipMemory && (rowPerson.people || []).length);
             return (
               <PersonLine
                 key={rowPerson.id}
                 person={rowPerson}
                 meta={rowPerson.segment + " · " + rowPerson.surface}
                 body={rowPerson.last}
-                selected={selected.id === conversationId}
+                selected={!rowHasRelationship && selected.id === conversationId}
                 focused={state.focusedTarget === "person-" + rowPerson.id}
-                onClick={() => setSelected(conversationId)}
+                onClick={() => rowHasRelationship && navigate
+                  ? navigate({ section: "account", conversationId: rowPerson.id, focusedTarget: "account-" + rowPerson.id })
+                  : setSelected(conversationId)}
               />
             );
           })}
@@ -1468,118 +1477,179 @@ function PeopleView({ state, patchState }) {
 
 // ---- Bucket A: relationship-frame surfaces ----
 
-// Account → people-by-role → relationship-memory page.
-// Additive: only renders when the account carries `relationshipMemory`; otherwise
-// PeopleView falls back to the original single-thread view. Guarded throughout
-// with `(account.people || [])` so a missing field never breaks the render.
-function ssThreadModeLabel(conversation) {
-  if (!conversation) return "1:1 chat";
-  if (conversation.mode === "voice") return "Voice interview";
-  if (conversation.mode === "sales") return "Sales call";
-  return "1:1 chat";
-}
+// Account → people-by-role → relationship-memory FULL PAGE.
+// Additive: only reached when an account carries `relationshipMemory`; accounts
+// without it stay on the original split list+panel view. Guarded throughout with
+// `(account.people || [])` so a missing field never breaks the render.
+
+// Modality is a quiet ICON only — never a spelled-out, repeated label.
 function ssThreadIcon(conversation) {
   if (!conversation) return "chat";
   if (conversation.mode === "voice") return "phone";
   if (conversation.mode === "sales") return "video";
   return "chat";
 }
+// A short title snippet: strip the leading "Name (Role) — " or "Account — "
+// prefix, since the page already shows whose account and whose row this is.
+function ssThreadSnippet(conversation) {
+  if (!conversation) return "";
+  const title = String(conversation.title || "");
+  const idx = title.indexOf(" — ");
+  return idx >= 0 ? title.slice(idx + 3).trim() : title;
+}
 
-// Renders one source thread (chat / voice / sales-call) as a transcript-style block.
+// One conversation, opened inline with room: a quiet icon + snippet header, then
+// the transcript / chat body. No account/person/role chrome — that's on the page.
 function SourceThread({ conversation }) {
   if (!conversation) return null;
   const isTranscript = conversation.mode === "voice" || conversation.mode === "sales";
   return (
-    <div className="ss-rmem-source">
-      <div className="ss-rmem-source-head">
-        <span className="ss-rmem-source-tag"><Icon name={ssThreadIcon(conversation)} size={13} /> {ssThreadModeLabel(conversation)}</span>
-        <b>{conversation.title}</b>
-        {conversation.duration && <span className="ss-rmem-source-dur">{conversation.duration}</span>}
+    <details className="ss-rmem-fold">
+      <summary>
+        <span className="ss-rmem-fold-ic"><Icon name={ssThreadIcon(conversation)} size={14} /></span>
+        <span className="ss-rmem-fold-snip">{ssThreadSnippet(conversation)}</span>
+        {conversation.duration && <span className="ss-rmem-fold-dur">{conversation.duration}</span>}
+      </summary>
+      <div className="ss-rmem-fold-body">
+        {isTranscript ? (
+          <div className="ss-transcript">
+            {(conversation.messages || []).map((message, i) => (
+              <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
+            ))}
+          </div>
+        ) : (
+          <div className="ss-chat-body">
+            {(conversation.messages || []).map((message, i) => <ChatMessage key={i} message={message} />)}
+          </div>
+        )}
       </div>
-      {isTranscript ? (
-        <div className="ss-transcript">
-          {(conversation.messages || []).map((message, i) => (
-            <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
-          ))}
+    </details>
+  );
+}
+
+// The full-width account page: synthesized state + org timeline up top, then
+// people-by-role rows with room, each opening their own conversations inline.
+function AccountPage({ state, account, navigate, goBack }) {
+  if (!account) {
+    return (
+      <div className="ss-page-stack">
+        <section className="ss-panel"><p className="mut">Account not found.</p></section>
+      </div>
+    );
+  }
+  const conversationsById = {};
+  (state.conversations || []).forEach((c) => { conversationsById[c.id] = c; });
+  const rm = account.relationshipMemory || {};
+  const roster = account.people || [];
+  const byRole = rm.byRole || {};
+  const orgMemory = rm.orgMemory || [];
+
+  return (
+    <div className="ss-page-stack ss-account-page">
+      <button type="button" className="ss-account-backlink" onClick={() => (goBack ? goBack() : navigate({ section: "people" }))}>
+        <Icon name="back" size={14} /> All feedback partners
+      </button>
+
+      {/* Header — synthesized relationship state, with room */}
+      <section className="ss-panel ss-account-hero">
+        <div className="ss-account-hero-head">
+          <Avatar name={account.name} color={account.color} cls="ss-account-avatar" />
+          <div className="ss-account-hero-id">
+            <h2>{account.name}</h2>
+            <span>{account.segment}{account.surface ? " · " + account.surface : ""}</span>
+          </div>
+          {rm.health && <em className="ss-account-health">{rm.health}</em>}
         </div>
-      ) : (
-        <div className="ss-chat-body">
-          {(conversation.messages || []).map((message, i) => <ChatMessage key={i} message={message} />)}
-        </div>
+        {rm.state && <p className="ss-account-state">{rm.state}</p>}
+        <p className="ss-account-note">Each person is assigned a role at onboarding. Observant follows up with each of them individually and keeps per-person and per-account memory — so the team inherits the whole relationship, not just the last reply.</p>
+      </section>
+
+      {/* Org memory / standing timeline — up top, with space */}
+      {orgMemory.length > 0 && (
+        <section className="ss-panel">
+          <PanelTitle k="Org memory" title="What Observant has accrued about this account" status="Always on" />
+          <ol className="ss-rmem-timeline">
+            {orgMemory.map((note, i) => <li key={i}>{note}</li>)}
+          </ol>
+        </section>
+      )}
+
+      {/* People, by role — each with breathing room */}
+      {roster.length > 0 && (
+        <section className="ss-panel">
+          <PanelTitle k="People" title="By role" status={roster.length + " people"} />
+          <div className="ss-account-people">
+            {roster.map((p) => {
+              const threads = (p.threads || []).map((id) => conversationsById[id]).filter(Boolean);
+              return (
+                <article className="ss-account-person" key={p.id}>
+                  <div className="ss-account-person-head">
+                    <Avatar name={p.name} color={account.color} cls="ss-profile-avatar" />
+                    <div className="ss-account-person-id">
+                      <b>{p.name}</b>
+                      <span className="ss-account-role">{p.role}</span>
+                    </div>
+                    {p.status && <em className="ss-account-status">{p.status}</em>}
+                  </div>
+                  {p.summary && <p className="ss-account-summary">{p.summary}</p>}
+                  {byRole[p.role] && <p className="ss-account-needs"><b>Needs</b> {byRole[p.role]}</p>}
+                  <div className="ss-account-threads">
+                    {threads.length
+                      ? threads.map((c) => <SourceThread conversation={c} key={c.id} />)
+                      : <p className="ss-rmem-empty">No conversation with {p.name.split(" ")[0]} yet.</p>}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
     </div>
   );
 }
 
-function RelationshipMemory({ account, conversationsById, openThread }) {
+// Compact in-panel relationship memory — kept as a defensive fallback for any
+// place still rendering an account inside the split view (full page is primary).
+function RelationshipMemory({ account, conversationsById }) {
   const rm = account.relationshipMemory || {};
   const roster = account.people || [];
-  const [openPersonId, setOpenPersonId] = useStateSS(roster[0] ? roster[0].id : "");
   const byRole = rm.byRole || {};
   const orgMemory = rm.orgMemory || [];
-
-  const openPerson = roster.find((p) => p.id === openPersonId) || roster[0] || null;
-  const openThreads = (openPerson && (openPerson.threads || [])
-    .map((id) => conversationsById[id])
-    .filter(Boolean)) || [];
-
   return (
     <div className="ss-rmem">
-      {/* Header — synthesized relationship state */}
       <div className="ss-rmem-head">
         <span className="eyebrow no-rule">Relationship memory</span>
         {rm.health && <em className="ss-rmem-health">{rm.health}</em>}
       </div>
       {rm.state && <p className="ss-rmem-state">{rm.state}</p>}
-
-      {/* People, by role — clicking a row reveals that person's thread */}
       {roster.length > 0 && (
         <div className="ss-rmem-people">
-          <span className="ss-rmem-sublabel">People at {account.name} · each assigned a role at onboarding, each on their own 1:1 line</span>
           {roster.map((p) => {
-            const isOpen = openPerson && p.id === openPerson.id;
+            const threads = (p.threads || []).map((id) => (conversationsById || {})[id]).filter(Boolean);
             return (
-              <div className={"ss-rmem-person" + (isOpen ? " on" : "")} key={p.id}>
-                <button type="button" className="ss-rmem-person-row" onClick={() => setOpenPersonId(isOpen ? "" : p.id)}>
+              <div className="ss-rmem-person on" key={p.id}>
+                <div className="ss-rmem-person-row" style={{ cursor: "default" }}>
                   <Avatar name={p.name} color={account.color} cls="ss-profile-avatar" />
                   <div className="ss-rmem-person-copy">
                     <b>{p.name} <em className="ss-rmem-role">{p.role}</em></b>
-                    {p.usage && <span className="ss-rmem-usage">{p.usage}</span>}
                     {p.summary && <p className="ss-rmem-summary">{p.summary}</p>}
                     {byRole[p.role] && <span className="ss-rmem-needs"><b>Needs:</b> {byRole[p.role]}</span>}
                   </div>
-                  <div className="ss-rmem-person-meta">
-                    {p.status && <em className="ss-rmem-status">{p.status}</em>}
-                    {p.lastContact && <span className="ss-rmem-last">{p.lastContact}</span>}
-                  </div>
-                </button>
-                {isOpen && (
-                  <div className="ss-rmem-threads">
-                    {openThreads.length ? openThreads.map((c) => (
-                      <details className="ss-rmem-fold" key={c.id}>
-                        <summary><Icon name={ssThreadIcon(c)} size={13} /> {ssThreadModeLabel(c)} — {c.title}</summary>
-                        <SourceThread conversation={c} />
-                      </details>
-                    )) : <p className="ss-rmem-empty">No thread for {p.name.split(" ")[0]} yet.</p>}
-                  </div>
-                )}
+                  {p.status && <em className="ss-rmem-status">{p.status}</em>}
+                </div>
+                <div className="ss-rmem-threads">
+                  {threads.map((c) => <SourceThread conversation={c} key={c.id} />)}
+                </div>
               </div>
             );
           })}
         </div>
       )}
-
-      {/* Org memory / standing timeline */}
       {orgMemory.length > 0 && (
         <div className="ss-rmem-org">
-          <span className="ss-rmem-sublabel">Org memory — what Observant has accrued about {account.name}</span>
-          <ol className="ss-rmem-timeline">
-            {orgMemory.map((note, i) => <li key={i}>{note}</li>)}
-          </ol>
+          <ol className="ss-rmem-timeline">{orgMemory.map((note, i) => <li key={i}>{note}</li>)}</ol>
         </div>
       )}
-
-      <p className="ss-rmem-foot">Observant follows up with each person individually and keeps both per-person and per-account memory — so the team inherits the whole relationship, not just the last reply.</p>
     </div>
   );
 }

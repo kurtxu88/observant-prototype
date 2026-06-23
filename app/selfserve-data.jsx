@@ -279,7 +279,7 @@ function ssCreatePeople(workspace) {
           threads: ["bright-eng-chat"],
         },
         {
-          id: "bright-admin", name: "Dana Okoro", role: "Admin / Renewal owner",
+          id: "bright-admin", name: "Dana Okoro", role: "Renewal owner",
           usage: "Owns the contract and seat count; not a daily user.",
           status: "Happy", lastContact: "1 week ago",
           summary: "The team clearly loves it, so renewal is easy for me. If advanced components land, I'd green-light more seats without much fuss.",
@@ -292,7 +292,7 @@ function ssCreatePeople(workspace) {
         byRole: {
           "Design Lead": "Advanced components so prototypes don't hit a ceiling.",
           "Engineer": "Cleaner, closer-to-production handoff from generated UI.",
-          "Admin / Renewal owner": "A clear reason to justify more seats.",
+          "Renewal owner": "A clear reason to justify more seats.",
         },
         orgMemory: [
           "Onboarded 7 months ago; became a daily-driver account within the first month.",
@@ -334,7 +334,7 @@ function ssCreatePeople(workspace) {
           threads: ["cedar-eng-chat"],
         },
         {
-          id: "cedar-admin", name: "Renee Cho", role: "Admin / Buyer",
+          id: "cedar-admin", name: "Renee Cho", role: "Buyer",
           usage: "Approved the trial; watching whether it sticks.",
           status: "Watching", lastContact: "2 weeks ago",
           summary: "I signed off on the trial because Jules pushed for it. Whether we keep it past 30 days depends on whether more than one person ends up depending on it.",
@@ -347,7 +347,7 @@ function ssCreatePeople(workspace) {
         byRole: {
           "Product Lead": "A way to get teammates to feel the value, not just her.",
           "Engineer": "One real moment where it's obviously faster than building by hand.",
-          "Admin / Buyer": "Proof that adoption goes beyond a single champion before day 30.",
+          "Buyer": "Proof that adoption goes beyond a single champion before day 30.",
         },
         orgMemory: [
           "Started the trial 3 weeks ago via Intercom; no Slack Connect yet.",
@@ -375,7 +375,7 @@ function ssCreatePeople(workspace) {
       },
       people: [
         {
-          id: "lakeview-founder", name: "Sasha Vela", role: "Co-founder / Buyer",
+          id: "lakeview-founder", name: "Sasha Vela", role: "Co-founder",
           usage: "Champions it across the deal; sees it as a team-wide bet.",
           status: "Enthusiast", lastContact: "1 day ago",
           summary: "We can prototype because we built the taste over years — our engineers haven't. If Magic Patterns gives them that intuition, the whole team moves faster. That's why I want this rolled out, not just trialed.",
@@ -400,7 +400,7 @@ function ssCreatePeople(workspace) {
         state: "The co-founder is an enthusiast pushing a team-wide rollout; the Design Lead is already a power user; the Lead Engineer is cautious and wants proof it closes the intuition gap before committing his team. The real product signal — engineers needing the founders' intuition — surfaced on a sales call and is at risk of being lost in deal talk.",
         health: "Expanding · in active sales",
         byRole: {
-          "Co-founder / Buyer": "A team-wide rollout that spreads the founders' intuition.",
+          "Co-founder": "A team-wide rollout that spreads the founders' intuition.",
           "Lead Engineer": "Proof it lifts engineers' instincts, not just adds output to review.",
           "Design Lead": "Continued depth plus the team-wide unlock she already believes in.",
         },
@@ -447,7 +447,7 @@ function ssCreatePeople(workspace) {
           threads: ["summit-eng-chat"],
         },
         {
-          id: "summit-admin", name: "Raj Mehta", role: "Admin / Renewal owner",
+          id: "summit-admin", name: "Raj Mehta", role: "Renewal owner",
           usage: "Holds the contract; quietly evaluating whether to renew.",
           status: "At risk", lastContact: "2 weeks ago",
           summary: "We were happy users. Right now I'm quietly evaluating whether to renew — the team stopped using it and the price went up, so I need a reason to stay.",
@@ -460,7 +460,7 @@ function ssCreatePeople(workspace) {
         byRole: {
           "Design Lead": "Acknowledgement of the bug and a reason to come back.",
           "Engineer": "Trust that core flows are reliable enough to depend on.",
-          "Admin / Renewal owner": "A clear reason the new price is worth it.",
+          "Renewal owner": "A clear reason the new price is worth it.",
         },
         orgMemory: [
           "Was a strategic-tier account for ~9 months; heavy daily usage.",
@@ -488,7 +488,7 @@ function ssCreatePeople(workspace) {
       },
       people: [
         {
-          id: "harbor-design", name: "Iris Vance", role: "Design Lead / Champion",
+          id: "harbor-design", name: "Iris Vance", role: "Champion",
           usage: "Daily user and the internal advocate for renewing.",
           status: "Happy", lastContact: "2 days ago",
           summary: "I'm sold — this is part of how we work now. The only thing in the way is one of our engineers' permissions worry, and I need that settled before we re-sign.",
@@ -502,7 +502,7 @@ function ssCreatePeople(workspace) {
           threads: ["harbor-eng-chat"],
         },
         {
-          id: "harbor-admin", name: "Nora Beck", role: "Admin / Renewal owner",
+          id: "harbor-admin", name: "Nora Beck", role: "Renewal owner",
           usage: "Owns the renewal; wants the blocker closed before re-signing.",
           status: "Renewal pending", lastContact: "1 week ago",
           summary: "The champion is happy and that's most of the battle. On a renewal call our sales contact mentioned the permissions worry — I just need it resolved so I can re-sign cleanly.",
@@ -513,9 +513,9 @@ function ssCreatePeople(workspace) {
         state: "The Design Lead champion is happy and wants to renew; an Engineer has raised a permissions worry that's blocking a clean yes; the renewal owner is ready to re-sign the moment that's settled. The blocker also came up on a renewal/sales call — easy to lose if it isn't routed back to product.",
         health: "Renewal · one open blocker",
         byRole: {
-          "Design Lead / Champion": "Keep the workflow she relies on; clear the renewal blocker.",
+          "Champion": "Keep the workflow she relies on; clear the renewal blocker.",
           "Engineer": "A clear permissions model for who can edit shared prototypes.",
-          "Admin / Renewal owner": "The permissions worry resolved so renewal is a clean yes.",
+          "Renewal owner": "The permissions worry resolved so renewal is a clean yes.",
         },
         orgMemory: [
           "Reference-tier account ~11 months; champion is a daily power user.",
@@ -1156,7 +1156,7 @@ function ssNormalizeSection(section) {
   if (section === "loops" || section === "install") return "learning";
   if (section === "conversations") return "people";
   if (section === "learned") return "insights";
-  if (["home", "learning", "people", "insights", "context", "compose", "settings"].includes(section)) return section;
+  if (["home", "learning", "people", "insights", "context", "compose", "settings", "account"].includes(section)) return section;
   return "home";
 }
 
