@@ -951,10 +951,38 @@
 }
 .ss-progress-track span {
   display: block;
+  position: relative;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover), var(--accent));
+  background-size: 190% 100%;
   transition: width .35s ease;
+  animation: ss-progress-flow 1.8s linear infinite;
+}
+.ss-progress-track span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / .32), transparent);
+  transform: translateX(-120%);
+  animation: ss-progress-glint 1.45s ease-in-out infinite;
+}
+@keyframes ss-progress-flow {
+  to { background-position: 190% 0; }
+}
+@keyframes ss-progress-glint {
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-progress-track span {
+    animation: none;
+  }
+  .ss-progress-track span::after {
+    display: none;
+    animation: none;
+  }
 }
 .ss-progress-steps {
   list-style: none;
@@ -988,6 +1016,24 @@
   background: var(--accent);
   border-color: var(--accent);
   color: oklch(0.99 0.01 70);
+}
+.ss-progress-steps li.on {
+  color: var(--text-primary);
+}
+.ss-progress-steps li.on > span {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-tint);
+  animation: ss-stage-pulse 1.35s ease-in-out infinite;
+}
+@keyframes ss-stage-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-tint); }
+  50% { box-shadow: 0 0 0 8px oklch(0.92 0.055 48 / .55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-progress-steps li.on > span {
+    animation: none;
+  }
 }
 .ss-progress-steps b,
 .ss-progress-steps p {
@@ -1023,6 +1069,9 @@
   margin-top: 0.8rem;
   color: var(--accent-hover);
   font-weight: 700;
+}
+.ss-answer-progress {
+  margin-top: 0.9rem;
 }
 .ss-loop-card,
 .ss-insight-card {
@@ -2178,22 +2227,6 @@
 }
 .ss-advice-foot b { color: var(--text-primary); }
 
-/* Simulated-preview pill (custom workspaces — data is synthetic until real users join) */
-.ss-sim-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.7rem;
-  border: 1px dashed var(--border-strong);
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: var(--surface);
-  cursor: help;
-}
-
 /* Upsell variant that fills a panel body (e.g. Home triggers panel) */
 .ss-upsell-fill {
   flex-direction: column;
@@ -2994,6 +3027,7 @@
 
 /* Home — new insights highlight row */
 .ss-home-insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ss-answer-card + .ss-home-insights { margin-top: 12px; }
 .ss-home-insight { text-align: left; border: 1px solid var(--border,#e6e3dd); background: #fff; border-radius: 12px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s, box-shadow .15s; }
 .ss-home-insight:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,.04); }
 .ss-home-insight-metric { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }

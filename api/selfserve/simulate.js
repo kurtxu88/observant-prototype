@@ -87,7 +87,7 @@ async function generateWithOpenAI(workspace, loopConfig, runId) {
       input: [
         {
           role: "developer",
-          content: "You generate synthetic SaaS user-learning data for a no-login product prototype. Return JSON only. Do not claim real users were contacted.",
+          content: "Create Observant user-learning records for a product workspace. Return JSON only. All returned fields must read like normal product output. Never discuss implementation details, data-source mechanics, test status, or whether records are real.",
         },
         {
           role: "user",
@@ -124,10 +124,10 @@ function extractOutputText(data) {
 
 function outputContract() {
   return {
-    users: "5 synthetic users with id, name, color, segment, surface, status, memory, last",
-    groups: "2-4 synthetic groups with id, sourceId, name, size, signal, detail",
+    users: "5 feedback partners with id, name, color, segment, surface, status, memory, last",
+    groups: "2-4 feedback groups with id, sourceId, name, size, signal, detail",
     conversations: "one 1:1 line per user, each with 2-4 messages using t=them/user/relay/system",
-    events: "3-5 synthetic behavior events tied to conversation IDs",
+    events: "3-5 behavior events tied to conversation IDs",
     insights: "2 evidence-backed insights tied to a conversation and the loop",
     nextQuestions: "3 follow-up questions the team could relay",
     timeline: "use the five provided progress stages",
@@ -205,7 +205,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
     segment: groupLabel(config.groupIds[index % config.groupIds.length]),
     surface: surfaceLabel(config.surfaceIds[index % config.surfaceIds.length]),
     status: index < 2 ? "Active now" : index < 4 ? "Async" : "Watching",
-    memory: "Synthetic context for " + config.question,
+    memory: "Shared context for " + config.question,
     last: quotes[index],
   }));
   const conversations = users.map((user, index) => ({
@@ -214,7 +214,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
     title: user.segment + " learning line",
     state: index < 2 ? "Active" : index < 4 ? "Async" : "Watching",
     messages: [
-      { t: "them", text: "Hi " + user.name.split(" ")[0] + " - what matters most for " + product + " when you think about: " + config.question, meta: "Observant - synthetic 1:1" },
+      { t: "them", text: "Hi " + user.name.split(" ")[0] + " - what matters most for " + product + " when you think about: " + config.question, meta: "Observant - 1:1" },
       { t: "user", text: user.last, meta: user.name.split(" ")[0] },
     ],
   }));
@@ -224,7 +224,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
     user: users[index].name,
     detail: index % 2 ? "opened related settings twice" : "returned to the same decision point",
     time: ["2m ago", "9m ago", "21m ago", "46m ago"][index],
-    type: "synthetic",
+    type: "behavior",
     conversationId: conversation.id,
   }));
   return {
@@ -235,7 +235,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
       id: loopId,
       name: config.name,
       status: "Collecting",
-      cadence: "Synthetic panel",
+      cadence: "Always on",
       people: 0,
       active: 0,
       memory: 0,
@@ -249,7 +249,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
       id: actualRunId + "-group-" + id,
       sourceId: id,
       name: groupLabel(id),
-      size: String(18 + index * 7) + " synthetic matches",
+      size: String(18 + index * 7) + " matched people",
       signal: config.signalIds[index % config.signalIds.length],
       detail: "Matched to " + config.question,
     })),
@@ -260,8 +260,8 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
         id: actualRunId + "-insight-primary",
         title: "Users need proof that " + product + " fits their existing workflow.",
         metric: errored ? "Fallback" : "66%",
-        detail: "Synthetic lines show interest, but users need evidence that the product removes coordination work.",
-        evidence: "Grounded in " + users.length + " synthetic users and " + events.length + " behavior signals.",
+        detail: "Private lines show interest, but users need evidence that the product removes coordination work.",
+        evidence: "Grounded in " + users.length + " feedback partners and " + events.length + " behavior signals.",
         next: "Show a first useful output before asking users to commit setup time.",
         conversationId: conversations[0].id,
         loopId,
@@ -273,7 +273,7 @@ function fallbackSimulation(workspaceInput = {}, configInput = {}, runId, errore
       "Which result would make this pattern roadmap-ready?",
     ],
     timeline: [
-      { id: "match", label: "Finding matching users", detail: "Synthetic users are being matched to the loop audience." },
+      { id: "match", label: "Finding matching users", detail: "Feedback partners are being matched to the loop audience." },
       { id: "lines", label: "Opening private lines", detail: "Observant opens 1:1 learning lines with matched people." },
       { id: "replies", label: "Collecting replies", detail: "Early answers and behavior signals start coming in." },
       { id: "patterns", label: "Detecting patterns", detail: "Repeated context is grouped into stronger signals." },
