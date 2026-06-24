@@ -1262,11 +1262,14 @@ function AskPanel({ product, state, patchState, navigate }) {
               <p className="ss-review2-sub">It runs as a real, live ~10-minute AI voice interview — preview it below exactly the way your user would.</p>
             )}
 
-            {/* Two working previews, side by side. */}
+            {/* Preview what a partner gets. Light = async email only; Deep = the
+                live voice interview is the artifact, so show that preview. */}
             <span className="ss-review2-label">Preview what a partner gets</span>
             <div className="ss-preview-actions">
               <Btn variant="ghost" size="sm" onClick={() => setEmailPreviewOpen((v) => !v)}><Icon name="mail" size={15} /> Preview the email</Btn>
-              <Btn variant="ghost" size="sm" onClick={() => ssOpenVoicePreview(product, tri.deepPlan || { essence: (plan && plan.essence) || question, threads: (plan && plan.questions) || [] })}><Icon name="phone" size={15} /> Preview the voice interview</Btn>
+              {isDeep && (
+                <Btn variant="ghost" size="sm" onClick={() => ssOpenVoicePreview(product, tri.deepPlan || { essence: (plan && plan.essence) || question, threads: (plan && plan.questions) || [] })}><Icon name="phone" size={15} /> Preview the voice interview</Btn>
+              )}
             </div>
 
             {emailPreviewOpen && (
