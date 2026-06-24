@@ -487,8 +487,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "",
     "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
     "",
-    "Join here: [your magic link — generated in the last step]",
-    "",
     "You can opt out anytime, in one tap.",
     "",
     "— The " + product + " team",
