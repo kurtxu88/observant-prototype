@@ -232,7 +232,7 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
         <div className="jn-rate-card">
           <b>Feedback partner — {benefit}</b>
           <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
-          <p className="jn-rate-perks">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
+          <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
         </div>
       </section>
 

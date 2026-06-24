@@ -485,7 +485,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
       ? "The one-on-ones reach you right inside " + product + " while you're using it — a couple of messages, sometimes a short voice chat."
       : "The one-on-ones come to you over " + channelPhrase + " — a couple of messages, sometimes a short voice chat — and you say yes or no each time.",
     "",
-    "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
+    "And it only gets better the longer you're in — the " + product + " team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.",
     "",
     "You can opt out anytime, in one tap.",
     "",
@@ -608,7 +608,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   v="Partnership — managed by Observant"
                   sub={<>
                     <span className="ss-review-tier">Feedback partner — {designReward}</span>
-                    <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
+                    <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>
                   </>}
                 />
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />

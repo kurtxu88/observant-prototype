@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
     body = stripSubjectLine((turn && turn.message) || lightMessageFromPlan(product, plan));
     const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
     emailText = body + lightFooterText(manageUrl);
-    html = lightInlineHtml(body, manageUrl);
+    html = lightInlineHtml(body, manageUrl, product);
     if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true, mode, subject, body: emailText, to: toEmail });
     // Thread state for inbound replies: the assistant's opening is the last message,
     // so inbound.js can append the user's reply and run the same continuation.
@@ -124,12 +124,12 @@ function lightFooterText(manageUrl) {
   return "\n\n———\nJust reply to this email with your answers — write right under each question. And this is a two-way line: reply anytime something goes wrong or you want to share feedback, not only when we ask. As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap." +
     (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
 }
-function lightInlineHtml(body, manageUrl) {
+function lightInlineHtml(body, manageUrl, product) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return shell(
     bodyHtml +
     '<div style="margin:20px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answers — write right under each question.<br><span style="color:#8a857c">It\'s a two-way line — reach out anytime something breaks or you have feedback, not only when we ask.</span></div>' +
-    rewardNote() + manageLink(manageUrl)
+    rewardNote(product) + manageLink(manageUrl)
   );
 }
 
@@ -150,7 +150,7 @@ function deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl) {
     '<div style="margin:22px 0"><a href="' + esc(introUrl) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Start the conversation →</a></div>' +
     '<p style="margin:0 0 14px;font-size:14px;color:#5a5347">Short on time? <a href="' + esc(answerUrl) + '" style="color:#b4532a">Answer a few quick questions async instead →</a></p>' +
     '<p style="margin:0 0 6px;font-size:13px;color:#8a857c">And it\'s a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask.</p>' +
-    rewardNote() + manageLink(manageUrl)
+    rewardNote(product) + manageLink(manageUrl)
   );
 }
 function manageLink(manageUrl) {
@@ -158,8 +158,9 @@ function manageLink(manageUrl) {
   return '<p style="font-size:12px;color:#8a857c;margin:14px 0 0;border-top:1px solid #eee7da;padding-top:10px"><a href="' + esc(manageUrl) + '" style="color:#8a857c">Change how often, pause, or opt out</a></p>';
 }
 
-function rewardNote() {
-  return '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap. Long-time partners get extra perks — events and time with the founding team.</p>';
+function rewardNote(product) {
+  const p = product || "the";
+  return '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap. And it only gets better the longer you\'re in — the ' + esc(p) + ' team brings long-time partners in close: first look at what\'s coming, invites to in-person events, and real time with the founders building it.</p>';
 }
 function shell(inner) {
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + inner + '</div>';
