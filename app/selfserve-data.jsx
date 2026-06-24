@@ -738,11 +738,6 @@ function ssCreateDigest(workspace) {
   return {
     period: "This week",
     headline: "Two accounts need a human this week — both went quiet, neither complained.",
-    stats: [
-      { n: "1", l: "at-risk account" },
-      { n: "1", l: "product signal from a sales call" },
-      { n: "1", l: "renewal with an open worry" },
-    ],
     items: [
       "Harbor Labs went quiet after a bug and the pricing change — churn-risk, but recoverable with outreach.",
       "Vela's sales call surfaced a real product signal — engineers need the founders' design intuition; route it to the product team.",
