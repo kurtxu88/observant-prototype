@@ -3296,3 +3296,20 @@
 .ss-rmem-fold-dur { font-size: .7rem; font-family: var(--font-mono); color: var(--text-muted); flex: none; }
 .ss-rmem-fold-body { padding: .25rem .55rem .7rem; }
 .ss-rmem-empty { font-size: .84rem; color: var(--text-muted); padding: .35rem .55rem; }
+
+/* ============================================================
+   Home "Connect your sources" panel (work-on-top-of-your-stack)
+   Additive — reuses .ss-panel; quiet, consistent with dashboard.
+   ============================================================ */
+.ss-sources-lead { font-size: .9rem; line-height: 1.5; color: var(--text-secondary); margin: -.2rem 0 .9rem; }
+.ss-sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: .6rem; }
+.ss-source-tile { display: flex; align-items: center; gap: .65rem; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: .72rem .8rem; }
+.ss-source-ic { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 9px; background: var(--accent-tint); color: var(--accent, var(--text-secondary)); flex: none; }
+.ss-source-copy { flex: 1; min-width: 0; }
+.ss-source-copy b { display: block; font-size: .9rem; line-height: 1.25; }
+.ss-source-copy span { display: block; font-size: .78rem; color: var(--text-muted); line-height: 1.35; margin-top: .12rem; }
+.ss-source-state { display: inline-flex; align-items: center; gap: .2rem; font-style: normal; font-size: .7rem; font-family: var(--font-mono); color: var(--success); white-space: nowrap; flex: none; }
+.ss-source-add { cursor: pointer; border-style: dashed; border-color: var(--border-strong); }
+.ss-source-add:hover, .ss-source-add:focus-visible { background: var(--accent-tint); border-color: var(--accent-soft); }
+.ss-source-add .ss-source-ic { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-secondary); }
+.ss-source-cta { font-style: normal; font-size: .76rem; font-weight: 600; color: var(--accent, var(--text-secondary)); white-space: nowrap; flex: none; }

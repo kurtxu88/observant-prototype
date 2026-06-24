@@ -819,6 +819,47 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   );
 }
 
+// "Connect your sources" — the work-on-top-of-your-existing-tools thesis, made
+// visible. Demo: the first set reads as already connected (the seeded accounts
+// carry Intercom / Sales call / Slack Connect / PostHog data); "Add a source"
+// is the connect affordance only (non-functional in the demo).
+const SS_SOURCE_TILES = [
+  { id: "intercom", name: "Intercom", icon: "chat", desc: "Support chats", state: "Connected" },
+  { id: "salescalls", name: "Sales calls", icon: "video", desc: "Gong / Chorus / Fireflies transcripts", state: "Connected" },
+  { id: "slack", name: "Slack Connect", icon: "chat", desc: "Customer channels", state: "Connected" },
+  { id: "posthog", name: "PostHog", icon: "bolt", desc: "Product analytics & usage triggers", state: "Connected" },
+  { id: "native", name: "Email & 1:1 chat / voice", icon: "mail", desc: "Observant's own channels", state: "Native" },
+];
+
+function SourcesPanel() {
+  return (
+    <section className="ss-panel ss-sources">
+      <PanelTitle k="Sources" title="Pour all your product feedback into Observant" status="On top of your stack" />
+      <p className="ss-sources-lead">Observant works on top of the tools you already use — connect them and it analyzes everything in one place, per account.</p>
+      <div className="ss-sources-grid">
+        {SS_SOURCE_TILES.map((s) => (
+          <div className="ss-source-tile" key={s.id}>
+            <span className="ss-source-ic"><Icon name={s.icon} size={17} /></span>
+            <div className="ss-source-copy">
+              <b>{s.name}</b>
+              <span>{s.desc}</span>
+            </div>
+            <em className="ss-source-state"><Icon name="check" size={12} sw={2.6} /> {s.state}</em>
+          </div>
+        ))}
+        <button type="button" className="ss-source-tile ss-source-add" aria-label="Add a source">
+          <span className="ss-source-ic"><Icon name="plus" size={17} /></span>
+          <div className="ss-source-copy">
+            <b>Add a source</b>
+            <span>CRM, Zendesk, anywhere feedback lives</span>
+          </div>
+          <em className="ss-source-cta">Connect</em>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function HomeView({ state, patchState, navigate }) {
   const readiness = SelfServeData.readiness(state.setup);
   const product = SelfServeData.productName(state.workspace);
@@ -841,6 +882,8 @@ function HomeView({ state, patchState, navigate }) {
           <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning" })} />
         </div>
       </section>
+
+      <SourcesPanel />
 
       <WeeklyDigest state={state} navigate={navigate} />
 
