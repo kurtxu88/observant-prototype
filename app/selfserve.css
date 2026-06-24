@@ -3413,3 +3413,19 @@
 /* Intro-questions preview — user-facing questions translated from founder intent */
 .ss-introq-list { margin: 0; padding-left: 1.1rem; }
 .ss-introq-list li { margin: .2rem 0; line-height: 1.5; }
+
+/* Loop composer · Step 2 (review) — one quiet unified section, minimal color */
+.ss-review2 { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 1rem 1.1rem; margin-top: .5rem; }
+.ss-review2-head b { font-size: .98rem; }
+.ss-review2-head > span { display: block; font-size: .9rem; line-height: 1.5; color: var(--text-secondary); margin-top: .2rem; }
+.ss-review2-learn { margin-top: .5rem; }
+.ss-review2-learn > summary { cursor: pointer; font-size: .82rem; color: var(--text-muted); list-style: none; }
+.ss-review2-learn > summary::-webkit-details-marker { display: none; }
+.ss-review2-learn[open] > summary { color: var(--text-secondary); margin-bottom: .35rem; }
+.ss-review2-learn p { font-size: .85rem; line-height: 1.55; color: var(--text-secondary); margin: 0; }
+.ss-review2-label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 1rem 0 .4rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.ss-review2-qs { margin: 0; padding-left: 1.15rem; }
+.ss-review2-qs li { margin: .3rem 0; line-height: 1.5; font-size: .92rem; }
+.ss-review2-note { font-size: .85rem; line-height: 1.55; color: var(--text-secondary); margin: .7rem 0 0; }
+.ss-review2-voice { }
+.ss-review2-sub { font-size: .88rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .7rem; }

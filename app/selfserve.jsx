@@ -1213,38 +1213,38 @@ function AskPanel({ product, state, patchState, navigate }) {
       {page === 1 && tri && (
         <div className="ss-step-block">
           <span className="ss-step-tag">Step 2 · What Observant will do</span>
-          <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
-            <div className="ss-depth-head">
-              <span className="ss-depth-badge">{isDeep ? "Deep mode — 10-minute AI-guided conversation" : "Light mode — a couple of quick questions"}</span>
-              <span className="ss-depth-sub">{isDeep ? "Observant will invite them to a ~10-minute voice interview." : "Observant will ask in-channel; at most one follow-up."}</span>
+
+          {/* One quiet, unified section: the mode + the questions it will ask. */}
+          <section className="ss-review2">
+            <div className="ss-review2-head">
+              <b>{isDeep ? "Deep mode" : "Light mode"}</b>
+              <span>{isDeep
+                ? "Observant invites them to a ~10-minute AI-guided conversation."
+                : "A quick exchange, usually one or two rounds, asked right in their channel."}</span>
+              <details className="ss-review2-learn">
+                <summary>Light vs deep?</summary>
+                <p><b>Light</b> — a quick async exchange in their channel, best for tactical, recallable things. <b>Deep</b> — a ~10-minute AI-guided conversation for questions whose real answer only comes out through back-and-forth.</p>
+              </details>
             </div>
-            {tri.estMin > 0 && (
-              <p className="ss-depth-reward">Offered as a <b>design-partner perk</b> — a product discount and early access, not a per-minute payout.</p>
+
+            {!isDeep && (
+              <>
+                <span className="ss-review2-label">The questions it'll ask</span>
+                <ol className="ss-review2-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
+                {(plan.questions || []).length >= 3 && (
+                  <p className="ss-review2-note">Grouping these in one loop keeps it to a single touch for your partners — good for busy B2B users.{(plan.questions || []).length >= 4 ? " Covering a lot? Switch to deep mode so the conversation has room for all of it." : ""}</p>
+                )}
+              </>
             )}
-            <details className="ss-depth-learn">
-              <summary>What's light mode vs deep mode?</summary>
-              <p><b>Light</b> — a couple of quick questions answered async in their inbox or chat, with at most one follow-up. Best for tactical, recallable things.<br /><b>Deep</b> — a ~10-minute AI-guided voice interview for questions whose real answer only comes out through back-and-forth. If someone doesn't have time, they're offered the light version instead.</p>
-            </details>
-          </div>
 
-          {isDeep && (
-            <div className="ss-voice-preview">
-              <span className="ss-result-label">The 10-minute voice interview</span>
-              <p className="ss-result-help">This runs a real, live AI voice interview on the question above — try it exactly the way your user would.</p>
-              <Btn variant="primary" onClick={() => ssOpenVoicePreview(product, tri.deepPlan)}><Icon name="phone" size={15} /> Preview the voice interview</Btn>
-            </div>
-          )}
-
-          {tri.split && tri.split.recommend && (
-            <div className="ss-split-note"><Icon name="spark" size={15} /> <span><b>These span a few themes — consider sending them as separate loops.</b> {tri.split.note}</span></div>
-          )}
-
-          {!isDeep && (
-            <div style={{ marginTop: 14 }}>
-              <span className="ss-result-label">The questions it'll ask</span>
-              <ol className="ss-result-qs">{(plan.questions || []).map((q, i) => <li key={i}>{q}</li>)}</ol>
-            </div>
-          )}
+            {isDeep && (
+              <div className="ss-review2-voice">
+                <span className="ss-review2-label">The ~10-minute conversation</span>
+                <p className="ss-review2-sub">A real, live AI voice interview on this — try it exactly the way your user would.</p>
+                <Btn variant="ghost" size="sm" onClick={() => ssOpenVoicePreview(product, tri.deepPlan)}><Icon name="phone" size={15} /> Preview the conversation</Btn>
+              </div>
+            )}
+          </section>
 
           <div className="ss-wiz-nav">
             <button type="button" className="ss-linklike" onClick={() => setPage(0)}><Icon name="back" size={14} /> Back to edit</button>
