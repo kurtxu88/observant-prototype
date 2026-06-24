@@ -496,15 +496,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "",
     "Hi there,",
     "",
-    "The team at " + product + " is inviting a small group of their most engaged users to become feedback partners. They're building " + product + " around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands."
+    "The " + product + " team is inviting a few of its most engaged users to become feedback partners — the occasional quick one-on-one about how " + product + " works for you, on your time."
       + (partnershipOn ? " As a feedback partner, your team gets " + designReward + " and a real say in the roadmap." : " As a feedback partner, you get a real say in the roadmap.")
       + (cashOn ? " You also accrue minutes for your time that you can redeem." : ""),
-    "",
-    route === "inproduct"
-      ? "The one-on-ones reach you right inside " + product + " while you're using it — a couple of messages, sometimes a short voice chat."
-      : "The one-on-ones come to you over " + channelPhrase + " — a couple of messages, sometimes a short voice chat — and you say yes or no each time.",
-    "",
-    partnershipOn ? "And it only gets better the longer you're in — the " + product + " team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it." : "",
     "",
     "You can opt out anytime, in one tap.",
     "",
