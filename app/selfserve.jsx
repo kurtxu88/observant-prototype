@@ -563,9 +563,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
                 <div className="ss-comp-grid">
                   <article className="ss-comp-card on">
-                    <em className="ss-comp-tag active">Active · managed by Observant</em>
                     <b>Partnership</b>
-                    <p>Partners trade a product discount and early access for being a feedback partner — no cash, no per-minute payout.</p>
+                    <p>Partners trade a product discount and early access for being a feedback partner.</p>
                     <div className="ss-comp-tiers">
                       <label className="ss-comp-tier ss-comp-tier-edit">
                         <b>Feedback partner</b>
@@ -578,16 +577,15 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
                     onClick={() => patchSetup({ perks: !setup.perks })}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); patchSetup({ perks: !setup.perks }); } }}>
-                    <em className="ss-comp-tag rec">Recommended add-on</em>
                     <b>Additional perks {setup.perks ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
-                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
+                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team.</p>
                     <small>{setup.perks ? "✓ Included — mention this in your invitation" : "Tap to include"}</small>
                   </article>
                 </div>
               </div>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">2</span> Your invitation</h3>
-                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
+                <p><b>You send the invite</b> under your own brand. People opt in as a <b>feedback partner</b> — and can opt out anytime, in one tap. Here's the draft — make it yours.</p>
                 <div className="ss-invite-copyblock">
                   <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
                   <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
