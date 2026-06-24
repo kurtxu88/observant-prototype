@@ -475,11 +475,6 @@ function ssCreateDigest(workspace) {
   return {
     period: "This week",
     headline: "Sharing — not the data — is what keeps pulling power users out of " + product + ".",
-    stats: [
-      { n: "18", l: "private lines active" },
-      { n: "3", l: "new partners joined" },
-      { n: "61%", l: "named a sharing gap" },
-    ],
     items: [
       "Power users export weekly only to rebuild a team-readable view — the CSV is a sharing workaround.",
       "New customers can’t find the dashboard-sharing flow in their first week.",
