@@ -204,14 +204,14 @@ async function callSelf(base, body) {
 }
 
 function footer(answerUrl) {
-  return "\n\n———\nPrefer a form? Answer here → " + answerUrl + "\n\nAs a design partner, your team gets a product discount, early access, and a real say in the roadmap.";
+  return "\n\n———\nPrefer a form? Answer here → " + answerUrl + "\n\nAs a feedback partner, your team gets a product discount, early access, and a real say in the roadmap.";
 }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function htmlEmail(body, answerUrl) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
     '<div style="margin:22px 0"><a href="' + esc(answerUrl) + '" style="display:inline-block;background:#b4532a;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Prefer a form? Answer here →</a></div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:0">As a design partner, your team gets a product discount, early access, and a real say in the roadmap.</p></div>';
+    '<p style="font-size:13px;color:#8a857c;margin:0">As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap.</p></div>';
 }
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }
 async function readJson(req) { if (req.body) return typeof req.body === "string" ? JSON.parse(req.body) : req.body; let b = ""; for await (const c of req) { b += c; if (b.length > 200000) throw new Error("too large"); } return b ? JSON.parse(b) : {}; }

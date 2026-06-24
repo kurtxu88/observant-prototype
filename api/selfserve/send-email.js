@@ -121,7 +121,7 @@ function lightMessageFromPlan(product, plan) {
 
 /* ---- LIGHT: answer by replying inline ---- */
 function lightFooterText(manageUrl) {
-  return "\n\n———\nJust reply to this email with your answers — write right under each question. And this is a two-way line: reply anytime something goes wrong or you want to share feedback, not only when we ask. As a design partner, your team gets a product discount, early access, and a real say in the roadmap." +
+  return "\n\n———\nJust reply to this email with your answers — write right under each question. And this is a two-way line: reply anytime something goes wrong or you want to share feedback, not only when we ask. As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap." +
     (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
 }
 function lightInlineHtml(body, manageUrl) {
@@ -139,7 +139,7 @@ function deepInviteText(product, essence, introUrl, answerUrl, manageUrl) {
     "The " + product + " team would love to go a little deeper on something — a short conversation, about 10 minutes, guided by our AI interviewer, whenever suits you. No prep needed; you can use voice or just type.\n\n" +
     "▶ Start the conversation: " + introUrl + "\n\n" +
     "Short on time? You can answer a few quick questions async instead:\n→ " + answerUrl + "\n\n" +
-    "As a design partner, your team gets a product discount, early access, and a real say in the roadmap — this is about the relationship, not a payout.\n\n" +
+    "As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap — this is about the relationship, not a payout.\n\n" +
     "And this is a two-way line: reach out anytime something goes wrong or you've got product feedback — not just when we ask." +
     (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
 }
@@ -159,7 +159,7 @@ function manageLink(manageUrl) {
 }
 
 function rewardNote() {
-  return '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">As a design partner, your team gets a product discount, early access, and a real say in the roadmap. Long-time partners get extra perks — events and time with the founding team.</p>';
+  return '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">As a feedback partner, your team gets a product discount, early access, and a real say in the roadmap. Long-time partners get extra perks — events and time with the founding team.</p>';
 }
 function shell(inner) {
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + inner + '</div>';

@@ -479,11 +479,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "",
     "Hi there,",
     "",
-    "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
+    "The team at " + product + " is inviting a small group of their most engaged users to become feedback partners. They're building " + product + " around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. As a feedback partner, your team gets " + designReward + " and a real say in the roadmap.",
     "",
     route === "inproduct"
-      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. As a design partner you get a product discount, early access, and a real say in what we build."
-      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and as a design partner you get a product discount, early access, and a real say in what we build.",
+      ? "The one-on-ones reach you right inside " + product + " while you're using it — a couple of messages, sometimes a short voice chat."
+      : "The one-on-ones come to you over " + channelPhrase + " — a couple of messages, sometimes a short voice chat — and you say yes or no each time.",
     "",
     "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
     "",
@@ -492,8 +492,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "— The " + product + " team",
   ].join("\n");
   const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
-  // Surface-route changes rewrite the invitation, so the copy always matches the setup.
-  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product]);
+  // Surface-route / product / reward changes rewrite the invitation, so the copy always matches the setup.
+  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product, designReward]);
   async function sendInvitePreview() {
     if (!previewEmail.includes("@") || previewSending) return;
     setPreviewSending(true); setPreviewErr("");
@@ -565,11 +565,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   <article className="ss-comp-card on">
                     <em className="ss-comp-tag active">Active · managed by Observant</em>
                     <b>Partnership</b>
-                    <p>Partners trade a product discount and early access for being a design partner — no cash, no per-minute payout.</p>
+                    <p>Partners trade a product discount and early access for being a feedback partner — no cash, no per-minute payout.</p>
                     <div className="ss-comp-tiers">
                       <label className="ss-comp-tier ss-comp-tier-edit">
-                        <b>Design partner</b>
-                        <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="5% discount + early access" aria-label="Design partner reward" />
+                        <b>Feedback partner</b>
+                        <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="5% discount + early access" aria-label="Feedback partner reward" />
                       </label>
                     </div>
                     <small>Partners can choose how often they'd like to be contacted — set later.</small>
@@ -607,28 +607,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   k="Compensation"
                   v="Partnership — managed by Observant"
                   sub={<>
-                    <span className="ss-review-tier">Design partner — {designReward}</span>
+                    <span className="ss-review-tier">Feedback partner — {designReward}</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
-                <ReviewRowSS
-                  k="Invitation to users"
-                  v={previewSentTo
-                    ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Preview sent to {previewSentTo} <button type="button" className="ss-doc-link ss-row-cta" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></span>
-                    : <button type="button" className="ss-doc-link ss-row-cta" onClick={() => setSendPreviewOpen((v) => !v)}>Preview the invitation email →</button>}
-                  sub="The text you wrote in Step 1 — we'll email you a preview, exactly as your users receive it."
-                />
               </div>
-              {sendPreviewOpen && !previewSentTo && (
-                <div className="ss-sendpreview">
-                  <Field label="What's your email address?">
-                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) sendInvitePreview(); }} />
-                  </Field>
-                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@") || previewSending} onClick={sendInvitePreview}>{previewSending ? "Sending…" : "Send me the preview"}</Btn>
-                  {previewErr && <p style={{ color: "#b4291f", fontSize: ".82rem", marginTop: 6 }}>{previewErr}</p>}
-                </div>
-              )}
 
               <div className="ss-program-block">
                 <h3>Your magic link</h3>
@@ -650,22 +634,25 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                       <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
                       <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
                     </div>
-                    {isChatChannel && (
-                      <div className="ss-slackthread ss-preview-thread">
-                        <div className="ss-slackthread-head"><Icon name="chat" size={13} /> #{product.toLowerCase().replace(/[^a-z0-9]+/g, "-")} · what your people see</div>
-                        <div className="ss-slackmsg ss-slackmsg-team">
-                          <Avatar name={product} color="teal" cls="ss-slackmsg-ava" />
-                          <div>
-                            <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
-                            <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Design partners get {designReward}.</p>
-                          </div>
+
+                    {/* Test the actual invitation email people receive. */}
+                    <div className="ss-magiclink-test">
+                      {previewSentTo ? (
+                        <p className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Sent to {previewSentTo} · <button type="button" className="ss-linklike" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></p>
+                      ) : sendPreviewOpen ? (
+                        <div className="ss-sendpreview">
+                          <Field label="Send the real invitation email to:">
+                            <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) sendInvitePreview(); }} />
+                          </Field>
+                          <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@") || previewSending} onClick={sendInvitePreview}><Icon name="mail" size={15} /> {previewSending ? "Sending…" : "Send me a test email"}</Btn>
+                          {previewErr && <p style={{ color: "#b4291f", fontSize: ".82rem", marginTop: 6 }}>{previewErr}</p>}
                         </div>
-                        <div className="ss-slackmsg ss-slackmsg-bot">
-                          <span className="ss-slackmsg-who">Observant</span>
-                          <p>Thanks for joining 🙌 To start — what's the one thing you'd most want the {product} team to fix or build next?</p>
-                        </div>
-                      </div>
-                    )}
+                      ) : (
+                        <Btn variant="ghost" size="sm" onClick={() => setSendPreviewOpen(true)}><Icon name="mail" size={15} /> Send me a test email</Btn>
+                      )}
+                      <p className="ss-magiclink-test-note">The exact invitation email people receive — test it yourself before you share the link.</p>
+                    </div>
+
                     <div className="ss-golive-actions">
                       <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
                     </div>
@@ -1219,7 +1206,7 @@ function AskPanel({ product, state, patchState, navigate }) {
                   <Avatar name={product} color="teal" cls="ss-slackmsg-ava" />
                   <div>
                     <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
-                    <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Design partners get {designReward}.</p>
+                    <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Feedback partners get {designReward}.</p>
                   </div>
                 </div>
                 <div className="ss-slackmsg ss-slackmsg-bot">
@@ -1662,14 +1649,14 @@ function ssSlackChannel(product, account) {
 function SlackConnectInvite({ product, account }) {
   const roster = account.people || [];
   const channel = ssSlackChannel(product, account);
-  // Reuse the partnership rewards we already offer design partners.
+  // Reuse the partnership rewards we already offer feedback partners.
   const tierReward = (typeof SS_REWARD_TIERS !== "undefined" && SS_REWARD_TIERS[0] && SS_REWARD_TIERS[0].reward) || "";
   const benefit = (account.profile && account.profile.reward) || tierReward
     || "a product discount, early access, and a real say in the roadmap";
   const defaultInvite = [
     "Hey all 👋 — quick one from the " + product + " team.",
     "",
-    "We're picking a few people we'd love to learn directly from. If you're up for a short 1:1 (a couple of messages or a quick voice chat, whenever suits you), we'll set you up as a design partner — " + benefit + ", plus a real say in what we build next.",
+    "We're picking a few people we'd love to learn directly from. If you're up for a short 1:1 (a couple of messages or a quick voice chat, whenever suits you), we'll set you up as a feedback partner — " + benefit + ", plus a real say in what we build next.",
     "",
     "React 👋 or reply and we'll find a time. No pressure either way 🙏",
   ].join("\n");

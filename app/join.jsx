@@ -1,8 +1,8 @@
 /* ============================================================
    OBSERVANT magic-link experience — what a user sees when they
    open the invite link a team sent them.
-   Participant-facing: the page speaks in the cliednt's brand,
-   with Observant as the feedback partner running the program.
+   Participant-facing: the page speaks in the client's brand,
+   with Observant as the user-learning platform running the program.
    ============================================================ */
 const { useState: useStateJN } = React;
 
@@ -200,16 +200,12 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
 
 function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
   const benefit = partnerBenefit || "5% discount + early access";
-  const channelPhrase = channels.map((c) => c === "slack" ? "Slack" : "email").join(" or ");
-  const reachLine = route === "inproduct"
-    ? <>It reaches you right inside {product}, at the moment you're using it</>
-    : <>You choose where it reaches you — {channelPhrase}</>;
   return (
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're invited</span>
         <h1>Help shape {product}.</h1>
-        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>design partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. As a design partner, your team gets {benefit} and a real say in the roadmap.</p>
+        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. As a feedback partner, your team gets {benefit} and a real say in the roadmap.</p>
       </section>
 
       <section className="jn-block">
@@ -217,15 +213,15 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
         <ol className="jn-steps">
           <li>
             <b>Opt in, then a quick hello</b>
-            <p>Joining takes a minute, then a short ~10-minute intro chat so the {product} team gets to know how you actually use it — that way everything they ask later is tailored to you. Pause or leave anytime.</p>
+            <p>A minute to join, then a short intro chat so the team learns how you use it. Leave anytime.</p>
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Usually a few messages or a short voice chat with the {product} team's AI interviewer; once in a while, the product folks themselves may ask for a live video call. {reachLine}, and you say yes or no each time — it remembers your context, so you never repeat yourself.</p>
+            <p>A few messages or a short voice chat — email or Slack, your call. It remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
-            <b>A real say — and a line that's always open</b>
-            <p>Being a design partner means you help steer what {product} builds next. It's a two-way line, too: message the team anytime something goes wrong or you want to share feedback, not just when they ask.</p>
+            <b>A real say — and an open line</b>
+            <p>You help steer what {product} builds next — and the line's open anytime, not just when they ask.</p>
           </li>
         </ol>
       </section>
@@ -234,8 +230,8 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
         <h2>What you get</h2>
         <p className="jn-block-lead">This is about the relationship, not a payout.</p>
         <div className="jn-rate-card">
-          <b>Design partner — {benefit}</b>
-          <p>As a {product} design partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
+          <b>Feedback partner — {benefit}</b>
+          <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
           <p className="jn-rate-perks">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
         </div>
       </section>
@@ -248,11 +244,11 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
         <h2>Common questions</h2>
         <details>
           <summary>Who is Observant, and why am I hearing from them?</summary>
-          <p>Observant is {product}'s feedback partner — it runs these one-on-one conversations on {product}'s behalf. {route === "inproduct" ? "You'll hear from Observant right inside " + product + " while you're using it." : "So the emails or Slack messages asking about " + product + " will come from Observant."} The invitation comes from {product}; the conversations are run by Observant, for the {product} team only.</p>
+          <p>Observant is the user-learning platform {product} uses to stay close to its users — it runs these one-on-one conversations on {product}'s behalf. So the emails or Slack messages asking about {product} come from Observant. The invitation comes from {product}; the conversations are run by Observant, for the {product} team only.</p>
         </details>
         <details>
           <summary>What do I get out of it?</summary>
-          <p>As a {product} design partner, your team gets {benefit} and a real say in what they build next. You're always in control of when and how much you participate, and the team builds around what you actually tell them.</p>
+          <p>As a {product} feedback partner, your team gets {benefit} and a real say in what they build next. You're always in control of when and how much you participate, and the team builds around what you actually tell them.</p>
         </details>
         <details>
           <summary>What about my privacy — who sees my responses?</summary>
@@ -297,7 +293,7 @@ function JoinWelcome({ product, channel, contactEmail, cadence, onBack }) {
         <section className="jn-hero">
           <span className="eyebrow">You're all set</span>
           <h1>You're in — no intro needed.</h1>
-          <p>The {product} team will reach out with their first question by {reachWord} when they have one. You're a design partner from your very first reply. Want to do the intro after all? <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>It's still here.</button></p>
+          <p>The {product} team will reach out with their first question by {reachWord} when they have one. You're a feedback partner from your very first reply. Want to do the intro after all? <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>It's still here.</button></p>
         </section>
       )}
 
