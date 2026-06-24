@@ -462,7 +462,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   // Slack-style "share a magic link in your channel", not an email test.
   const primaryChannel = (SS_FAST_CHANNELS && SS_FAST_CHANNELS[0]) || "";
   const isChatChannel = route !== "inproduct" && (primaryChannel === "slack" || primaryChannel === "discord");
-  const chatChannelLabel = ssSurfaceLabel(primaryChannel) || "Slack";
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -635,20 +634,20 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               )}
 
               <div className="ss-program-block">
-                <h3>{isChatChannel ? "Your magic link for " + chatChannelLabel : "Your magic link"}</h3>
+                <h3>Your magic link</h3>
                 {!linkGenerated ? (
                   <>
                     <p>{isChatChannel
-                      ? "Generate a magic link to share in your " + chatChannelLabel + " channel — people opt in and start a 1:1 right there. Preview exactly what they'll see once you generate it."
+                      ? "Generate a magic link to share however you like — drop it in Slack, email it, or mention it on a sales call. People opt in and start a 1:1. Preview exactly what they'll see once you generate it."
                       : <>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</>}</p>
                     <div className="ss-golive-actions">
-                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> {isChatChannel ? "Generate a magic link to share in " + chatChannelLabel : "Generate my magic link"}</Btn>
+                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate a magic link</Btn>
                     </div>
                   </>
                 ) : (
                   <>
                     <p>{isChatChannel
-                      ? <>Live and ready — <b>share this link in your {chatChannelLabel} channel</b>. People opt in and start a 1:1 right there.</>
+                      ? <>Live and ready — <b>share this link however you like</b>: drop it in Slack, email it, or mention it on a sales call. People opt in and start a 1:1.</>
                       : <>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</>}</p>
                     <div className="ss-magiclink">
                       <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
