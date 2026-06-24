@@ -1947,6 +1947,68 @@ function ssDefaultIntroText(product) {
   ].join("\n");
 }
 
+// Team settings — the company's OWN people accessing Observant (distinct from
+// feedback partners, who are the company's end users). Ties to shared account
+// memory: the whole team — not just the admin — sees every account.
+// Demo/Wizard-of-Oz: invite is a non-functional affordance; members persist in
+// state.team for the session.
+function ssSeedTeam(state) {
+  const admin = (state.workspace && state.workspace.founderName) || "Teddy";
+  const adminEmail = (state.workspace && state.workspace.email) || "teddy@magicpatterns.com";
+  return [
+    { id: "tm-admin", name: admin, email: adminEmail, role: "Admin" },
+    { id: "tm-eng", name: "Sam Rivera", email: "sam@magicpatterns.com", role: "Member" },
+    { id: "tm-pm", name: "Dana Liu", email: "dana@magicpatterns.com", role: "Member" },
+  ];
+}
+
+function TeamSettings({ state, patchState }) {
+  const product = SelfServeData.productName(state.workspace);
+  const team = Array.isArray(state.team) && state.team.length ? state.team : ssSeedTeam(state);
+  const [email, setEmail] = useStateSS("");
+  const [invited, setInvited] = useStateSS("");
+  const valid = email.includes("@") && email.includes(".");
+
+  const sendInvite = () => {
+    if (!valid) return;
+    const addr = email.trim();
+    patchState((cur) => {
+      const base = Array.isArray(cur.team) && cur.team.length ? cur.team : ssSeedTeam(cur);
+      if (base.some((m) => (m.email || "").toLowerCase() === addr.toLowerCase())) return cur;
+      const member = { id: "tm-" + Date.now(), name: addr.split("@")[0], email: addr, role: "Member", pending: true };
+      return { ...cur, team: [...base, member], activity: ["Invited " + addr + " to the " + product + " workspace.", ...(cur.activity || [])] };
+    });
+    setInvited(addr);
+    setEmail("");
+  };
+
+  return (
+    <section className="ss-panel ss-team-panel">
+      <PanelTitle k="Team" title="Invite your team to Observant" status={team.length + " members"} />
+      <p className="ss-step-lead">Everyone sees the same account memory, so the whole team stays close to your users — not just you. This is your own team at {product}, separate from your feedback partners.</p>
+
+      <div className="ss-team-invite">
+        <input className="input" type="email" value={email} placeholder="teammate@company.com" onChange={(e) => { setEmail(e.target.value); setInvited(""); }} onKeyDown={(e) => { if (e.key === "Enter" && valid) sendInvite(); }} />
+        <Btn variant="primary" disabled={!valid} onClick={sendInvite}><Icon name="mail" size={15} /> Send invite</Btn>
+      </div>
+      {invited && <p className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Invited {invited}</p>}
+
+      <div className="ss-team-list">
+        {team.map((m) => (
+          <div className="ss-team-member" key={m.id}>
+            <Avatar name={m.name} color="teal" cls="ss-profile-avatar" />
+            <div className="ss-team-member-id">
+              <b>{m.name}{m.pending ? <em className="ss-team-pending"> · invited</em> : null}</b>
+              <span>{m.email}</span>
+            </div>
+            <em className={"ss-team-role" + (m.role === "Admin" ? " admin" : "")}>{m.role}</em>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function SettingsViewSS({ state, patchState, resetWorkspace }) {
   const updateWorkspace = (field, value) => {
     patchState((current) => ({ ...current, workspace: { ...current.workspace, [field]: value } }));
@@ -1992,6 +2054,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
         <Btn variant="ghost" onClick={ssLogout}>Log out</Btn>
       </div>
     </section>
+    <TeamSettings state={state} patchState={patchState} />
     <Integrations state={state} />
     </div>
   );

@@ -3382,3 +3382,16 @@
 
 /* Compensation: cash caveat (compliance) */
 .ss-comp-caveat { color: var(--text-secondary); }
+
+/* Team settings — the company's own people on Observant (not feedback partners) */
+.ss-team-invite { display: flex; gap: .5rem; align-items: center; margin: .25rem 0 .6rem; }
+.ss-team-invite .input { flex: 1; }
+.ss-team-list { display: flex; flex-direction: column; gap: .1rem; margin-top: .5rem; }
+.ss-team-member { display: flex; align-items: center; gap: .65rem; padding: .6rem .55rem; border-top: 1px solid var(--border); }
+.ss-team-member:first-child { border-top: none; }
+.ss-team-member-id { flex: 1; min-width: 0; }
+.ss-team-member-id b { display: block; font-size: .92rem; line-height: 1.25; }
+.ss-team-member-id span { display: block; font-size: .8rem; color: var(--text-muted); }
+.ss-team-pending { font-style: normal; font-size: .72rem; color: var(--text-muted); font-weight: 400; }
+.ss-team-role { font-style: normal; font-size: .7rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: 999px; padding: .12rem .5rem; white-space: nowrap; }
+.ss-team-role.admin { color: var(--accent, var(--text-secondary)); border-color: var(--accent-soft, var(--border-strong)); }
