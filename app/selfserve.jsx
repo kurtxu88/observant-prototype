@@ -243,7 +243,7 @@ function SelfServeApp() {
         startStep={0}
         onLogin={() => setShowLogin(true)}
         onSample={() => { if (!authed) { ssSetAuth({ name: "Demo workspace", email: "demo@observant.dev" }); setAuthed(true); } setState({ ...SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE), launched: true, section: "home" }); }}
-        onSubmit={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } setState({ ...SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE), launched: true, section: "home" }); }}
+        onSubmit={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } setState({ ...SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE), launched: false }); }}
       />
     );
   }
