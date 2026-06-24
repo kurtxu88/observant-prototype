@@ -1960,7 +1960,7 @@ function SettingsViewSS({ state, patchState, resetWorkspace }) {
       <Field label="Company or product name">
         <input className="input" value={state.workspace.companyName} onChange={(e) => updateWorkspace("companyName", e.target.value)} />
       </Field>
-      <Field label="Founder name">
+      <Field label="Admin name">
         <input className="input" value={state.workspace.founderName} onChange={(e) => updateWorkspace("founderName", e.target.value)} />
       </Field>
       <Field label="Work email">
