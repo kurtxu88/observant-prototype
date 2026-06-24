@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const payload = await readJson(req);
-    const action = ["translate", "triage", "synthesize", "describe", "quality"].includes(payload.action) ? payload.action : "turn";
+    const action = ["translate", "introquestions", "triage", "synthesize", "describe", "quality"].includes(payload.action) ? payload.action : "turn";
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(200).json(noKeyStub(action, payload));
@@ -40,6 +40,10 @@ module.exports = async function handler(req, res) {
     if (action === "translate") {
       const plan = await translate(payload);
       return res.status(200).json({ ok: true, plan });
+    }
+    if (action === "introquestions") {
+      const questions = await introQuestions(payload);
+      return res.status(200).json({ ok: true, questions });
     }
     if (action === "synthesize") {
       const memory = await synthesize(payload);
@@ -196,6 +200,43 @@ async function translate(payload) {
     questions: ["What's something you ran into with this recently — maybe today? What happened?"],
     subject: "A quick question about your experience",
   });
+}
+
+/* ---------- INTRO QUESTIONS: 3-4 polished, user-facing intro questions ----------
+   Context-setting openers a good researcher would lead with (grounded in the
+   entered product), blended with the founder's translated research intent.
+   Uses the C1 question-translator skill craft. Never echoes the raw framing. */
+async function introQuestions(payload) {
+  const product = limit(payload.product, 100) || "the product";
+  const intent = limit(payload.question || payload.learningGoal, 600);
+  const context = limit(payload.context, 2000);
+  const userBase = limit(payload.userBase, 400);
+  const system = readPrompt("C1-question-translator.md");
+  const user =
+    "PRODUCT: " + product + "\n" +
+    (context ? "CONTEXT: " + context + "\n" : "") +
+    (userBase ? "WHO USES IT: " + userBase + "\n" : "") +
+    (intent ? "TEAM'S RESEARCH INTENT (their framing — NEVER show this verbatim; translate it into a natural user-facing question): \"" + intent + "\"\n" : "") +
+    "\nTask: write the opening question set for a short ~10-minute intro conversation with a brand-new " + product + " user, so the team gets to know who they are and how they use it.\n" +
+    "Return JSON only: {\"questions\": [string, ...]}. Rules:\n" +
+    "- 3 to 4 questions total, MOST IMPORTANT FIRST.\n" +
+    "- Open with CONTEXT-SETTING questions a good researcher leads with — grounded in " + product + " specifically: what got them using it and what they mainly use it for; their role / the context they're using it in; how it fits into their day; what matters most / what's felt frustrating lately.\n" +
+    (intent ? "- Then WEAVE IN the team's research intent as ONE natural, user-facing, behavioral question (anchored on what actually happened — never the raw framing, never a closed 'is there anything').\n" : "") +
+    "- Natural, warm, conversational; no jargon; never parrot the product context back; never a bare 'tell me about yourself'.";
+  const text = await callClaude(system, [{ role: "user", content: user }], 600, FAST_MODEL);
+  const parsed = parseJson(text, null);
+  let qs = parsed && Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed) ? parsed : []);
+  qs = qs.map((q) => limit(q, 240)).filter(Boolean).slice(0, 4);
+  if (qs.length < 2) return defaultIntroQuestions(product);
+  return qs;
+}
+function defaultIntroQuestions(product) {
+  return [
+    "What got you using " + product + ", and what do you mainly use it for?",
+    "What's your role, and the context you're using " + product + " in?",
+    "How does " + product + " fit into your day right now?",
+    "What matters most to you about it — and what's felt frustrating lately?",
+  ];
 }
 
 /* ---------- C4: synthesize a per-person memory from the intro conversation ---------- */
@@ -381,6 +422,9 @@ function noKeyStub(action, payload) {
         subject: "(set ANTHROPIC_API_KEY)",
       },
     };
+  }
+  if (action === "introquestions") {
+    return { ok: true, stub: true, questions: defaultIntroQuestions(limit(payload.product, 100) || "the product") };
   }
   return {
     ok: true,

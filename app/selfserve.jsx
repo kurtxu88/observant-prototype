@@ -453,6 +453,34 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const [previewSentTo, setPreviewSentTo] = useStateSS("");
   const [previewSending, setPreviewSending] = useStateSS(false);
   const [previewErr, setPreviewErr] = useStateSS("");
+  // INTRO QUESTIONS preview: the founder's raw intent (learningGoal) is their
+  // editable input; here we show 3-4 polished USER-FACING questions, generated
+  // by the real C1/interviewer skill (action: "introquestions"), product-grounded.
+  const [introQs, setIntroQs] = useStateSS(null);     // null = not loaded; [] = none
+  const [introQsLoading, setIntroQsLoading] = useStateSS(false);
+  const learningGoalKey = String(state.workspace.learningGoal || "");
+  useEffectSS(() => {
+    if (step !== 2) return;                            // only on the Preview step
+    let cancelled = false;
+    setIntroQsLoading(true);
+    (async () => {
+      try {
+        const r = await ssPostJson("/api/selfserve/interview", {
+          action: "introquestions",
+          product,
+          question: learningGoalKey,
+          userBase: state.workspace.userBase || "",
+          context: SelfServeData.contextSummary(state.workspace),
+        });
+        if (!cancelled && r && Array.isArray(r.questions) && r.questions.length) setIntroQs(r.questions);
+        else if (!cancelled) setIntroQs([]);           // fall back to raw text in render
+      } catch (e) {
+        if (!cancelled) setIntroQs([]);
+      }
+      if (!cancelled) setIntroQsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [step, product, learningGoalKey]);
 
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const setAudience = (id) => patchSetup({ audienceMode: id });
@@ -639,7 +667,15 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     {partnershipOn && <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>}
                   </>}
                 />
-                <ReviewRowSS k="Intro questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub={"Some questions you'd like to ask your users in an introductory chat — so Observant learns who they are and how they use " + product + ". Edit or add anytime."} />
+                <ReviewRowSS
+                  k="Intro questions"
+                  v={introQsLoading && !(introQs && introQs.length)
+                    ? <span className="ss-asking"><span className="ss-spinner" /> Translating into user-facing questions…</span>
+                    : (introQs && introQs.length)
+                      ? <ol className="ss-introq-list">{introQs.map((q, i) => <li key={i}>{q}</li>)}</ol>
+                      : (state.workspace.learningGoal || "None yet — that's fine")}
+                  sub={"Observant turns your intent into a few user-facing questions for the intro chat — context-setting plus what you want to learn, grounded in " + product + ". Edit your intent anytime on the Product step."}
+                />
               </div>
 
               <div className="ss-program-block">
