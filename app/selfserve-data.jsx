@@ -73,12 +73,10 @@ const SS_COMPENSATION_OPTIONS = [
 // Partnership tiers by depth of the relationship, not minutes. The deeper the
 // partnership, the more the account gets — and the more the team learns.
 const SS_REWARD_TIERS = [
-  { id: "bronze", name: "Design partner", min: 1, cash: 0, reward: "10% off + early access", color: "teal" },
-  { id: "silver", name: "Reference partner", min: 3, cash: 0, reward: "Co-marketing, case study & referral perks", color: "gold" },
-  { id: "gold", name: "Strategic partner", min: 6, cash: 0, reward: "Advisory seat, roadmap influence & exec relationship", color: "rust" },
+  { id: "bronze", name: "Design partner", min: 1, cash: 0, reward: "5% discount + early access", color: "teal" },
 ];
 
-const SS_DEFAULT_TIER_REWARDS = { bronze: "10% off + early access", silver: "Co-marketing, case study & referral perks", gold: "Advisory seat, roadmap influence & exec relationship" };
+const SS_DEFAULT_TIER_REWARDS = { bronze: "5% discount + early access" };
 
 const SS_SIGNAL_OPTIONS = [
   { id: "user_signed_up", label: "account_activated" },
@@ -250,8 +248,8 @@ function ssCreatePeople(workspace) {
       memory: "Design lead champions Magic Patterns daily; the team lives in the shared Slack Connect.",
       last: "Magic Patterns is how we prototype now — but we're hitting the ceiling on advanced components.",
       profile: {
-        since: "Partner 7 months · Strategic partner",
-        reward: "Advisory seat + roadmap influence",
+        since: "Partner 7 months · Design partner",
+        reward: "5% discount + early access",
         knows: [
           "Pro account; the design lead is the champion and daily power user.",
           "Heavy daily usage — prototypes ship straight from Magic Patterns.",
@@ -309,7 +307,7 @@ function ssCreatePeople(workspace) {
       last: "Took me a bit to trust that what it generates is actually usable — I rebuilt the first few by hand.",
       profile: {
         since: "Partner 3 weeks · Design partner",
-        reward: "10% off + early access",
+        reward: "5% discount + early access",
         knows: [
           "New account, week 3; a PM is the daily user.",
           "Rebuilt the first few generated screens by hand before trusting the output.",
@@ -363,8 +361,8 @@ function ssCreatePeople(workspace) {
       memory: "Co-founder is mid-deal; a product signal surfaced on a sales call and risks getting lost in deal talk.",
       last: "Our engineers don't have the design intuition the founders do — we need the tool to give them that.",
       profile: {
-        since: "In sales · Reference partner (pending)",
-        reward: "Co-marketing + case study",
+        since: "In sales · Design partner (pending)",
+        reward: "5% discount + early access",
         knows: [
           "Enterprise account in an active sales motion; the co-founder is the buyer.",
           "Real product signal raised on a sales call: engineers need their own design intuition.",
@@ -419,8 +417,8 @@ function ssCreatePeople(workspace) {
       memory: "Was vocal in Intercom about a bug, then went silent; PostHog shows a usage drop after the pricing change.",
       last: "We hit a bug, flagged it in Intercom, and then just stopped — wasn't sure it was worth it after the price change.",
       profile: {
-        since: "Partner 9 months · was Strategic partner",
-        reward: "Advisory seat (lapsing)",
+        since: "Partner 9 months · Design partner",
+        reward: "5% discount + early access (lapsing)",
         knows: [
           "Pro account; was a heavy user until a bug went unresolved and the pricing changed.",
           "PostHog shows usage down ~40%; logins sporadic since the pricing change.",
@@ -477,8 +475,8 @@ function ssCreatePeople(workspace) {
       memory: "Renewal coming up; the champion is happy but an engineer raised a permissions concern in Intercom.",
       last: "I'm sold — but one of our engineers flagged a permissions worry and I need that settled before we re-sign.",
       profile: {
-        since: "Partner 11 months · Reference partner",
-        reward: "Co-marketing + referral perks",
+        since: "Partner 11 months · Design partner",
+        reward: "5% discount + early access",
         knows: [
           "Pro account; renewal coming up and the champion is happy.",
           "An engineer raised a permissions concern in Intercom that's blocking a clean yes.",

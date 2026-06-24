@@ -552,7 +552,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
-                <p>Partners join for <b>the relationship, not a payout</b> — a product discount, early access, co-marketing, and a say in the roadmap. <b>Observant tracks each partnership and what it's worth to you</b> — design partner, reference partner, strategic partner — and deepens it as the account engages.</p>
+                <p>Partners join for <b>the relationship, not a payout</b> — a product discount, early access, and a say in the roadmap.</p>
 
                 <div className="ss-comp-grid">
                   <article className="ss-comp-card on">
@@ -560,11 +560,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     <b>Partnership</b>
                     <p>Partners trade a product discount and early access for being a design partner — no cash, no per-minute payout.</p>
                     <div className="ss-comp-tiers">
-                      <span className="ss-comp-tier"><b>Design partner</b> — 10% off + early access</span>
-                      <span className="ss-comp-tier"><b>Reference partner</b> — co-marketing + case study</span>
-                      <span className="ss-comp-tier"><b>Strategic partner</b> — advisory seat + roadmap influence</span>
+                      <span className="ss-comp-tier"><b>Design partner</b> — 5% discount + early access</span>
                     </div>
-                    <small>Observant tracks each partnership and deepens it as the account engages.</small>
+                    <small>Partners can choose how often they'd like to be contacted — set later.</small>
                   </article>
 
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
@@ -574,12 +572,6 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     <b>Additional perks {setup.perks ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
                     <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
                     <small>{setup.perks ? "✓ Included — mention this in your invitation" : "Tap to include"}</small>
-                  </article>
-
-                  <article className="ss-comp-card">
-                    <em className="ss-comp-tag coming">Coming</em>
-                    <b>Your product credits</b>
-                    <p>Soon: redeem partner perks as credit inside your own product — another way to make the partnership tangible.</p>
                   </article>
                 </div>
               </div>
@@ -605,7 +597,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   k="Compensation"
                   v="Partnership — managed by Observant"
                   sub={<>
-                    <span className="ss-review-tier">Design partner → reference partner → strategic partner · deeper relationship, more value both ways</span>
+                    <span className="ss-review-tier">Design partner — 5% discount + early access</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
