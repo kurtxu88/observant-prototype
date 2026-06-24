@@ -3355,3 +3355,12 @@
 
 /* Slack-styled preview inside the magic-link / loop-test step */
 .ss-preview-thread { margin-top: .85rem; }
+
+/* Join flow: clickable stepper-back + how-it-works + step-back link (B2B) */
+.jn-progress-hit { display: inline-flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: default; }
+.jn-progress-step.clickable .jn-progress-hit { cursor: pointer; }
+.jn-progress-step.clickable .jn-progress-hit:hover .jn-progress-label,
+.jn-progress-step.clickable .jn-progress-hit:focus-visible .jn-progress-label { text-decoration: underline; }
+.jn-progress-hit:disabled { cursor: default; }
+.jn-howitworks { font-size: .9rem; line-height: 1.55; color: var(--text-secondary); background: var(--accent-tint, #f4efe6); border: 1px solid var(--accent-soft, #e6ddcb); border-radius: 11px; padding: .7rem .85rem; margin: .2rem 0 1rem; }
+.jn-step-back { margin: 0 0 .6rem; }

@@ -22,7 +22,8 @@ function jnContext() {
   let rate = 2;
   // B2B partnership benefit (single Design-partner tier) — replaces cash/minutes.
   let partnerBenefit = "5% discount + early access";
-  let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "telegram"].includes(c));
+  // Off-product channels that already exist between the user and the team.
+  let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "slack"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
   try {
     const raw = localStorage.getItem("observant.selfserve.v1");
@@ -32,7 +33,7 @@ function jnContext() {
       if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 2;
       if (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) partnerBenefit = state.setup.tierRewards.bronze;
       if (!channels.length && state.setup && state.setup.surfaces) {
-        channels = ["email", "telegram"].filter((c) => state.setup.surfaces[c]);
+        channels = ["email", "slack"].filter((c) => state.setup.surfaces[c]);
       }
       if (!route && state.setup && state.setup.route) route = state.setup.route;
     }
@@ -41,7 +42,7 @@ function jnContext() {
     product: product || "Northwind",
     rate,
     partnerBenefit,
-    channels: channels.length ? channels : ["email", "telegram"],
+    channels: channels.length ? channels : ["email", "slack"],
     route: route || "offproduct",
   };
 }
@@ -58,6 +59,14 @@ function JoinApp() {
     ? () => { setChannel("inproduct"); setPhase("joined"); }
     : () => setPhase("choose");
 
+  // Stepper index → phase, so a completed step can be clicked to go back.
+  const phaseForStep = (i) => {
+    if (i === 0) return "invite";
+    if (route === "inproduct") return "joined";
+    return i === 1 ? "choose" : "joined";
+  };
+  const goPhase = (p) => setPhase(p);
+
   return (
     <div className="jn-page">
       <header className="jn-top">
@@ -65,11 +74,11 @@ function JoinApp() {
         <span className="jn-powered">run by <Wordmark size="1.05rem" /></span>
       </header>
 
-      <JoinProgress phase={phase} route={route} />
+      <JoinProgress phase={phase} route={route} onJump={(i) => goPhase(phaseForStep(i))} />
 
       {phase === "invite" && <JoinInvite product={product} partnerBenefit={partnerBenefit} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} onBack={() => setPhase("invite")} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
+      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} onBack={() => setPhase(route === "inproduct" ? "invite" : "choose")} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -78,17 +87,24 @@ function JoinApp() {
   );
 }
 
-function JoinProgress({ phase, route }) {
+function JoinProgress({ phase, route, onJump }) {
   const steps = route === "inproduct" ? ["Join", "Get started"] : ["Join", "Choose channel", "Get started"];
   const current = phase === "invite" ? 0 : (route === "inproduct" ? 1 : (phase === "choose" ? 1 : 2));
   return (
     <ol className="jn-progress" aria-label="Sign-up progress">
-      {steps.map((label, i) => (
-        <li key={label} className={"jn-progress-step" + (i < current ? " done" : i === current ? " on" : "")}>
-          <span className="jn-progress-dot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
-          <span className="jn-progress-label">{label}</span>
-        </li>
-      ))}
+      {steps.map((label, i) => {
+        const done = i < current;
+        // Completed steps are clickable to jump back; current/future are not.
+        const clickable = done && typeof onJump === "function";
+        return (
+          <li key={label} className={"jn-progress-step" + (done ? " done" : i === current ? " on" : "") + (clickable ? " clickable" : "")}>
+            <button type="button" className="jn-progress-hit" disabled={!clickable} onClick={() => clickable && onJump(i)} aria-label={clickable ? "Back to " + label : label}>
+              <span className="jn-progress-dot">{done ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+              <span className="jn-progress-label">{label}</span>
+            </button>
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -99,12 +115,16 @@ const JN_CADENCE = [
   { id: "rare", t: "Only now and then", d: "Sparingly — and whenever I reach out myself." },
 ];
 
-function JoinChoose({ product, channels, onConnect }) {
+function JoinChoose({ product, channels, onConnect, onBack }) {
   const single = channels.length === 1;
   const [picked, setPicked] = useStateJN(single ? channels[0] : "");
   const [email, setEmail] = useStateJN("");
+  const [handle, setHandle] = useStateJN("");
   const [cadence, setCadence] = useStateJN("occasional");
   const emailValid = email.includes("@") && email.includes(".");
+  // Reliable back: from the detail page → channel grid (clear the pick); if there's
+  // only one channel (no grid), step back to the invite phase instead.
+  const goBack = () => { if (!single) setPicked(""); else if (onBack) onBack(); };
 
   // Step 1 — pick the channel
   if (!picked) {
@@ -113,27 +133,28 @@ function JoinChoose({ product, channels, onConnect }) {
         <section className="jn-hero">
           <span className="eyebrow">One last choice</span>
           <h1>Where should we reach you?</h1>
-          <p>Pick one — this is where your one-on-one with the {product} team will live. You can switch channels later, and opt out anytime.</p>
+          <p>You're <b>already on both of these</b> with the {product} team — a team email and the shared Slack channel. Just pick where your one-on-one should live. You can switch later, and opt out anytime.</p>
+          {onBack && <p><button type="button" className="jn-back" onClick={onBack}>← back</button></p>}
         </section>
         <div className="jn-choice-grid">
           {channels.includes("email") && (
             <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("email")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("email"); } }}>
               <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
-              <b>Email</b>
-              <p>Quiet and async — reply whenever you have five minutes.</p>
+              <b>Team email</b>
+              <p>Quiet and async — lands in the team inbox you already use.</p>
               <span className="jn-choice-go">Choose email <Icon name="arrow" size={14} /></span>
             </article>
           )}
-          {channels.includes("telegram") && (
-            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("telegram")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("telegram"); } }}>
+          {channels.includes("slack") && (
+            <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("slack")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("slack"); } }}>
               <span className="jn-choice-ic"><Icon name="chat" size={20} /></span>
-              <b>Telegram</b>
-              <p>A private chat with the Observant bot — replying feels like texting a friend.</p>
-              <span className="jn-choice-go">Choose Telegram <Icon name="arrow" size={14} /></span>
+              <b>Slack channel with {product}</b>
+              <p>The shared Slack channel you're already in with the team — reply right where you already talk.</p>
+              <span className="jn-choice-go">Choose Slack <Icon name="arrow" size={14} /></span>
             </article>
           )}
         </div>
-        <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Telegram handle. No other personal data changes hands.</p>
+        <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Slack handle. No other personal data changes hands.</p>
       </main>
     );
   }
@@ -142,9 +163,9 @@ function JoinChoose({ product, channels, onConnect }) {
   return (
     <main className="jn-main">
       <section className="jn-hero">
-        <span className="eyebrow">{picked === "email" ? "Email" : "Telegram"}</span>
-        <h1>{picked === "email" ? "Join by email." : "Connect on Telegram."}</h1>
-        <p>This is where your one-on-one with the {product} team will live.{!single && <> <button type="button" className="jn-back" onClick={() => setPicked("")}>← pick a different way</button></>}</p>
+        <span className="eyebrow">{picked === "email" ? "Team email" : "Slack"}</span>
+        <h1>{picked === "email" ? "Join by email." : "Join on Slack."}</h1>
+        <p>This is where your one-on-one with the {product} team will live. <button type="button" className="jn-back" onClick={goBack}>← pick a different way</button></p>
       </section>
 
       <div className="jn-cadence">
@@ -159,15 +180,17 @@ function JoinChoose({ product, channels, onConnect }) {
         <p className="jn-cadence-note">We'll respect this — and you can change it or pause anytime. (You can always reach out yourself, no matter what you pick.)</p>
       </div>
 
+      <p className="jn-howitworks">How it works: every so often the {product} team sends a quick question — reply when you have a minute, right here. Your replies go straight to the team, and you can reach out anytime you have feedback, not just when asked.</p>
+
       {picked === "email" ? (
         <div className="jn-next">
           <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email, cadence); }} />
-          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email, cadence)}>Join by email</Btn>
+          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email, cadence)}>Join</Btn>
         </div>
       ) : (
         <div className="jn-next">
-          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
-          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram", "", cadence)}>Connect Telegram</Btn>
+          <p className="jn-choice-hint">Reply right in the shared Slack channel you're already in with the {product} team.</p>
+          <Btn variant="primary" size="lg" onClick={() => onConnect("slack", handle, cadence)}>Join</Btn>
         </div>
       )}
       <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>
@@ -177,7 +200,7 @@ function JoinChoose({ product, channels, onConnect }) {
 
 function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
   const benefit = partnerBenefit || "5% discount + early access";
-  const channelPhrase = channels.map((c) => c === "telegram" ? "Telegram" : "email").join(" or ");
+  const channelPhrase = channels.map((c) => c === "slack" ? "Slack" : "email").join(" or ");
   const reachLine = route === "inproduct"
     ? <>It reaches you right inside {product}, at the moment you're using it</>
     : <>You choose where it reaches you — {channelPhrase}</>;
@@ -225,7 +248,7 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
         <h2>Common questions</h2>
         <details>
           <summary>Who is Observant, and why am I hearing from them?</summary>
-          <p>Observant is {product}'s feedback partner — it runs these one-on-one conversations and the reward tracking on {product}'s behalf. {route === "inproduct" ? "You'll hear from Observant right inside " + product + " while you're using it." : "So the emails or Telegram messages asking about " + product + " will come from Observant."} The invitation comes from {product}; the conversations are run by Observant, for the {product} team only.</p>
+          <p>Observant is {product}'s feedback partner — it runs these one-on-one conversations on {product}'s behalf. {route === "inproduct" ? "You'll hear from Observant right inside " + product + " while you're using it." : "So the emails or Slack messages asking about " + product + " will come from Observant."} The invitation comes from {product}; the conversations are run by Observant, for the {product} team only.</p>
         </details>
         <details>
           <summary>What do I get out of it?</summary>
@@ -244,15 +267,16 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, contactEmail, cadence }) {
+function JoinWelcome({ product, channel, contactEmail, cadence, onBack }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
   const [introSkipped, setIntroSkipped] = useStateJN(false);
-  const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
+  const reachWord = channel === "slack" ? "Slack" : channel === "inproduct" ? "right inside " + product : "email";
   const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
   return (
     <main className="jn-main">
+      {onBack && <p className="jn-step-back"><button type="button" className="jn-back" onClick={onBack}>← back</button></p>}
       {!introSkipped ? (
         <section className="jn-hero">
           <span className="eyebrow">You're in</span>

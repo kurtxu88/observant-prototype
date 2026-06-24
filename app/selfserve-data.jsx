@@ -42,19 +42,20 @@ const SS_GROUP_OPTIONS = [
   { id: "at-risk", label: "At-risk accounts", text: "Accounts gone quiet or trending toward churn." },
 ];
 
-// CONTACT channels — where the 1:1 actually happens. For a builder/dev product
-// these live where the community already is (Slack / Discord), not personal IM.
-// NOTE: integration SOURCES (Intercom, Gong, Slack Connect, PostHog) are a
-// separate concept and live only in the Sources panel (SS_SOURCE_TILES).
+// CONTACT channels — where the 1:1 actually happens. These are channels that
+// ALREADY exist between the user and the product (the team email inbox + the
+// shared Slack channel) — the user is already reachable on them, so it's not a
+// new channel to set up. NOTE: integration SOURCES (Intercom, Gong, Slack
+// Connect, PostHog) are a separate concept and live only in the Sources panel.
 const SS_SURFACE_OPTIONS = [
+  { id: "email", label: "Email", icon: "mail" },
   { id: "slack", label: "Slack", icon: "chat" },
-  { id: "discord", label: "Discord", icon: "globe" },
   { id: "product", label: "In-product", icon: "globe" },
 ];
 
-// Fast-start contact channels a user can pick on the magic link — where the
-// community already is for a builder/dev product.
-const SS_FAST_CHANNELS = ["slack", "discord"];
+// Fast-start contact channels a user can pick on the magic link — both already
+// exist between the user and the team (team email + the shared Slack channel).
+const SS_FAST_CHANNELS = ["email", "slack"];
 
 // People-first: how the always-on panel is built. Ranked — reach everyone leads.
 const SS_AUDIENCE_OPTIONS = [
@@ -229,9 +230,10 @@ function ssCreateSetup(workspace) {
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
     // The client's one surface decision: off-product (start today) vs in-product (Pro).
-    // Slack vs Discord is the USER's choice at opt-in — both always available.
+    // Email vs Slack is the USER's choice at opt-in — both already exist between
+    // the user and the team, so both are always available.
     route: "offproduct",
-    surfaces: { slack: true, discord: true, product: false },
+    surfaces: { email: true, slack: true, product: false },
     // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
@@ -775,14 +777,14 @@ function ssCreateLoops() {
       people: 712, active: 4, memory: 318,
       question: "Which enterprise accounts are quietly at risk before they churn?",
       conversationId: "summit", conversationIds: ["summit", "harbor"], peopleIds: ["summit", "harbor", "bright"],
-      eventIds: ["evt-1", "evt-2"], surfaceIds: ["slack", "discord"],
+      eventIds: ["evt-1", "evt-2"], surfaceIds: ["email", "slack"],
     },
     {
       id: "loop-onboarding", name: "New account onboarding", status: "Learning", cadence: "First 30 days",
       people: 38, active: 1, memory: 74,
       question: "Where do new accounts lose trust in the prototyping flow in the first month?",
       conversationId: "cedar", conversationIds: ["cedar"], peopleIds: ["cedar"],
-      eventIds: ["evt-3"], surfaceIds: ["slack", "discord"],
+      eventIds: ["evt-3"], surfaceIds: ["email", "slack"],
     },
     {
       id: "loop-expansion", name: "Sales-call product signal & renewal", status: "Learning", cadence: "Triggered by account stage",
@@ -879,7 +881,7 @@ function ssInitialCustomConfig(workspace) {
     name: question.length > 44 ? question.slice(0, 41) + "..." : question,
     question,
     groupIds: ["power-users", "new-signups", "evaluators"],
-    surfaceIds: ["slack", "discord"],
+    surfaceIds: ["email", "slack"],
     signalIds: ["user_signed_up", "feature_opened", "checkout_abandoned"],
   };
 }

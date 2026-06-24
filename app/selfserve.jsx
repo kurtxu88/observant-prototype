@@ -97,7 +97,7 @@ function ssLoopEvents(state, loop) {
 }
 
 function ssSurfaceLabel(surface) {
-  const labels = { email: "Email", slack: "Slack", discord: "Discord", product: "In-product" };
+  const labels = { email: "Email", slack: "Slack", product: "In-product" };
   return labels[surface] || surface;
 }
 
@@ -457,11 +457,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const designReward = (setup.tierRewards && setup.tierRewards.bronze) || "5% discount + early access";
   const setDesignReward = (v) => patchSetup({ tierRewards: { ...(setup.tierRewards || {}), bronze: v } });
 
-  // Off-product contact channel for the preview/test experience. For a builder
-  // product this is Slack/Discord (where the community is), so the preview is a
-  // Slack-style "share a magic link in your channel", not an email test.
-  const primaryChannel = (SS_FAST_CHANNELS && SS_FAST_CHANNELS[0]) || "";
-  const isChatChannel = route !== "inproduct" && (primaryChannel === "slack" || primaryChannel === "discord");
+  // Off-product contact channels (email + the shared Slack channel) — both
+  // already exist between the user and the team. When Slack is one of them, the
+  // magic-link section shows a Slack-styled preview of the 1:1.
+  const isChatChannel = route !== "inproduct" && (SS_FAST_CHANNELS || []).includes("slack");
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -474,7 +473,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "Slack or Discord";
+  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "Email or Slack";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
     "",
@@ -544,8 +543,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Start today</em></span>
-                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — Slack or Discord</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
-                  <small>Slack: ask right in your shared channel. Discord: a private thread in your community server.</small>
+                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — Email or Slack</b> — when they opt in. Both already exist between you and them, so there's no new channel to set up. Their identifier arrives with that choice; you never hand over user data.</p>
+                  <small>Team email: quiet and async, lands in the inbox they already use. Slack: reply right in the shared channel they're already in with you.</small>
                 </button>
                 <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
@@ -605,7 +604,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by Slack or Discord alongside it." : "Your users pick one at opt-in."} />
+                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by Email or Slack alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS
                   k="Compensation"
                   v="Partnership — managed by Observant"
@@ -705,7 +704,7 @@ function ProUpsell() {
         <p>This is a Pro feature — we'll walk you through some simple setup. It unlocks the following:</p>
       </div>
       <ul className="ss-pro-list">
-        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by Slack or Discord too.</span></li>
+        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by Email or Slack too.</span></li>
         <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
         <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
         <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
@@ -1086,10 +1085,10 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
-  // For a builder product the off-product channel is Slack/Discord — so the Test
-  // step is a Slack-style "share a link in your channel", not a "send a test email".
+  // When Slack is an off-product channel, the Test step shows a Slack-style
+  // "share a link in your channel" preview (the shared channel already exists).
   const surfaces = (state.setup && state.setup.surfaces) || {};
-  const chatChannel = !surfaces.product && (surfaces.slack ? "Slack" : surfaces.discord ? "Discord" : "");
+  const chatChannel = !surfaces.product && surfaces.slack ? "Slack" : "";
   const slugProduct = String(product || "your-product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const designReward = (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) || "5% discount + early access";
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
