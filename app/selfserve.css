@@ -3432,3 +3432,19 @@
 
 /* Quiet secondary note on the loop-composer Test step */
 .ss-result-note { font-size: .82rem; line-height: 1.5; color: var(--text-muted); margin: .8rem 0 0; }
+
+/* Loop composer Step 2 — two preview actions side by side + inline email preview */
+.ss-preview-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+.ss-preview-email { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--border); }
+
+/* Loop composer Step 3 — send-to-partners progress stages */
+.ss-send-stages { list-style: none; margin: .8rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .1rem; }
+.ss-send-stage { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .2rem; border-top: 1px solid var(--border); }
+.ss-send-stage:first-child { border-top: none; }
+.ss-send-stage-dot { width: 22px; height: 22px; flex: none; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text-muted); margin-top: .05rem; }
+.ss-send-stage.on .ss-send-stage-dot { border-color: var(--accent); color: var(--accent); }
+.ss-send-stage.done .ss-send-stage-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ss-send-stage > div { display: flex; flex-direction: column; }
+.ss-send-stage b { font-size: .92rem; line-height: 1.3; color: var(--text-muted); }
+.ss-send-stage.on b, .ss-send-stage.done b { color: var(--text-primary); }
+.ss-send-stage span { font-size: .82rem; color: var(--text-secondary); line-height: 1.4; margin-top: .1rem; }

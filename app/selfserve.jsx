@@ -1132,7 +1132,9 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
-  const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
+  const [emailPreviewOpen, setEmailPreviewOpen] = useStateSS(false);
+  const [sendStage, setSendStage] = useStateSS(-1);   // -1 idle; 0..N progress stages; N = done
+  const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 send
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
   // Slack note on the test step (when the shared channel is an off-product channel).
@@ -1176,12 +1178,33 @@ function AskPanel({ product, state, patchState, navigate }) {
 
   const goStep = (i) => { if (i === 0 || tri) setPage(i); };
 
+  // STEP 3 — the actual send to partners. Logs the loop, then walks the
+  // simulation progress stages so it feels like the questions are going out.
+  const stages = (typeof SS_SIMULATION_STAGES !== "undefined" && SS_SIMULATION_STAGES) || [];
+  function runSend() {
+    if (sendStage > -1) return;
+    patchState((cur) => {
+      if ((cur.loops || []).some((l) => l.question === question)) return cur;
+      const loop = { id: "loop-" + (cur.loops ? cur.loops.length : 0) + "-" + question.length, name: question.length > 44 ? question.slice(0, 42) + "…" : question, question, mode: tri ? tri.mode : "light", people: 0, memory: 0 };
+      return { ...cur, loops: [loop, ...(cur.loops || [])], activity: ["Loop sent to partners: " + loop.name + ".", ...(cur.activity || [])] };
+    });
+    let i = 0;
+    setSendStage(0);
+    const tick = () => {
+      i += 1;
+      if (i >= stages.length) { setSendStage(stages.length); return; }
+      setSendStage(i);
+      setTimeout(tick, 1100);
+    };
+    setTimeout(tick, 1100);
+  }
+
   return (
     <section className="ss-panel" id="create-loop">
       <PanelTitle k="Loop" title="Send a new loop" status="Always on" />
 
       <ol className="ss-loop-steps">
-        {["Write", "Review", "Test"].map((s, i) => (
+        {["Write", "Review", "Send"].map((s, i) => (
           <li key={s} className={"ss-loop-step" + (i < page ? " done" : i === page ? " on" : "") + ((i === 0 || tri) ? " nav" : "")} onClick={() => goStep(i)}>
             <span className="ss-loop-dot">{i < page ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
             <span className="ss-loop-label">{s}</span>
@@ -1236,39 +1259,76 @@ function AskPanel({ product, state, patchState, navigate }) {
             )}
 
             {isDeep && (
-              <div className="ss-review2-voice">
-                <span className="ss-review2-label">The ~10-minute conversation</span>
-                <p className="ss-review2-sub">A real, live AI voice interview on this — try it exactly the way your user would.</p>
-                <Btn variant="ghost" size="sm" onClick={() => ssOpenVoicePreview(product, tri.deepPlan)}><Icon name="phone" size={15} /> Preview the conversation</Btn>
+              <p className="ss-review2-sub">It runs as a real, live ~10-minute AI voice interview — preview it below exactly the way your user would.</p>
+            )}
+
+            {/* Two working previews, side by side. */}
+            <span className="ss-review2-label">Preview what a partner gets</span>
+            <div className="ss-preview-actions">
+              <Btn variant="ghost" size="sm" onClick={() => setEmailPreviewOpen((v) => !v)}><Icon name="mail" size={15} /> Preview the email</Btn>
+              <Btn variant="ghost" size="sm" onClick={() => ssOpenVoicePreview(product, tri.deepPlan || { essence: (plan && plan.essence) || question, threads: (plan && plan.questions) || [] })}><Icon name="phone" size={15} /> Preview the voice interview</Btn>
+            </div>
+
+            {emailPreviewOpen && (
+              <div className="ss-preview-email">
+                <p className="ss-result-help">Send yourself the {isDeep ? "invitation" : "email"} a partner receives — exactly as they'd see it.</p>
+                <div className="ss-send-row">
+                  <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+                  <Btn variant="primary" size="sm" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send me the email"}</Btn>
+                </div>
+                {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox.</p>}
+                {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+                {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
               </div>
             )}
           </section>
 
           <div className="ss-wiz-nav">
             <button type="button" className="ss-linklike" onClick={() => setPage(0)}><Icon name="back" size={14} /> Back to edit</button>
-            <Btn variant="primary" onClick={() => setPage(2)}>Next: see what users get <Icon name="arrow" size={16} /></Btn>
+            <Btn variant="primary" onClick={() => setPage(2)}>Next: send to partners <Icon name="arrow" size={16} /></Btn>
           </div>
         </div>
       )}
 
-      {/* ── STEP 3 · TEST — send yourself the real thing your users receive ── */}
+      {/* ── STEP 3 · SEND — the actual send to partners, with progress ── */}
       {page === 2 && tri && (
         <div className="ss-step-block">
-          <span className="ss-step-tag">Step 3 · See it as your users do</span>
-          <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
-          <div className="ss-send-row">
-            <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
-            <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
-          </div>
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
-          {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
-          {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
-          {chatChannel && (
-            <p className="ss-result-note">When you go live, you'll also be able to share the magic link in your {chatChannel} channel — partners opt in and the 1:1 happens right there.</p>
+          <span className="ss-step-tag">Step 3 · Send to your partners</span>
+          {sendStage < 0 ? (
+            <>
+              <p className="ss-result-help">Send this loop to your feedback partners. Observant reaches each of them on their channel and brings what it learns back here.</p>
+              {chatChannel && <p className="ss-result-note">Reaches partners by email and in your {chatChannel} channel.</p>}
+              <div className="ss-panel-actions">
+                <Btn variant="primary" onClick={runSend}><Icon name="spark" size={15} /> Send to partners</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="ss-result-help">{sendStage >= stages.length ? "Your loop is out — Observant is on it." : "Sending your loop to partners…"}</p>
+              <ol className="ss-send-stages">
+                {stages.map((st, i) => {
+                  const done = sendStage > i || sendStage >= stages.length;
+                  const active = sendStage === i;
+                  return (
+                    <li key={st.id} className={"ss-send-stage" + (done ? " done" : active ? " on" : "")}>
+                      <span className="ss-send-stage-dot">{done ? <Icon name="check" size={12} sw={3} /> : active ? <span className="ss-spinner" /> : i + 1}</span>
+                      <div><b>{st.label}</b>{st.detail ? <span>{st.detail}</span> : null}</div>
+                    </li>
+                  );
+                })}
+              </ol>
+              {sendStage >= stages.length && (
+                <div className="ss-panel-actions">
+                  <Btn variant="ghost" onClick={() => navigate({ section: "learning" })}>See it in Loop history <Icon name="arrow" size={15} /></Btn>
+                </div>
+              )}
+            </>
           )}
-          <div className="ss-wiz-nav">
-            <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
-          </div>
+          {sendStage < 0 && (
+            <div className="ss-wiz-nav">
+              <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
+            </div>
+          )}
         </div>
       )}
 
