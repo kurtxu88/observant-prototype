@@ -453,6 +453,17 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const route = setup.route || "offproduct";
   const setRoute = (id) => patchSetup({ route: id });
 
+  // Editable single Design-partner reward, carried in setup.tierRewards.bronze.
+  const designReward = (setup.tierRewards && setup.tierRewards.bronze) || "5% discount + early access";
+  const setDesignReward = (v) => patchSetup({ tierRewards: { ...(setup.tierRewards || {}), bronze: v } });
+
+  // Off-product contact channel for the preview/test experience. For a builder
+  // product this is Slack/Discord (where the community is), so the preview is a
+  // Slack-style "share a magic link in your channel", not an email test.
+  const primaryChannel = (SS_FAST_CHANNELS && SS_FAST_CHANNELS[0]) || "";
+  const isChatChannel = route !== "inproduct" && (primaryChannel === "slack" || primaryChannel === "discord");
+  const chatChannelLabel = ssSurfaceLabel(primaryChannel) || "Slack";
+
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
   // Vercel deploy both rewrite /join/:slug) — observant.link later just points here.
@@ -464,7 +475,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);
   };
-  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "email or Telegram";
+  const channelPhrase = surfaceSummary ? surfaceSummary.replace(" · ", " or ") : "Slack or Discord";
   const inviteText = [
     "Subject: You're invited to help shape " + product,
     "",
@@ -534,8 +545,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Start today</em></span>
-                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
-                  <small>Email: quiet async 1:1s, whenever they have five minutes. Telegram: a one-tap private chat with the Observant bot.</small>
+                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — Slack or Discord</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
+                  <small>Slack: ask right in your shared channel. Discord: a private thread in your community server.</small>
                 </button>
                 <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
@@ -560,7 +571,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     <b>Partnership</b>
                     <p>Partners trade a product discount and early access for being a design partner — no cash, no per-minute payout.</p>
                     <div className="ss-comp-tiers">
-                      <span className="ss-comp-tier"><b>Design partner</b> — 5% discount + early access</span>
+                      <label className="ss-comp-tier ss-comp-tier-edit">
+                        <b>Design partner</b>
+                        <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="5% discount + early access" aria-label="Design partner reward" />
+                      </label>
                     </div>
                     <small>Partners can choose how often they'd like to be contacted — set later.</small>
                   </article>
@@ -592,12 +606,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
+                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by Slack or Discord alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS
                   k="Compensation"
                   v="Partnership — managed by Observant"
                   sub={<>
-                    <span className="ss-review-tier">Design partner — 5% discount + early access</span>
+                    <span className="ss-review-tier">Design partner — {designReward}</span>
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
@@ -621,41 +635,50 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               )}
 
               <div className="ss-program-block">
-                <h3>Your magic link</h3>
+                <h3>{isChatChannel ? "Your magic link for " + chatChannelLabel : "Your magic link"}</h3>
                 {!linkGenerated ? (
                   <>
-                    <p>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</p>
+                    <p>{isChatChannel
+                      ? "Generate a magic link to share in your " + chatChannelLabel + " channel — people opt in and start a 1:1 right there. Preview exactly what they'll see once you generate it."
+                      : <>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</>}</p>
                     <div className="ss-golive-actions">
-                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
+                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> {isChatChannel ? "Generate a magic link to share in " + chatChannelLabel : "Generate my magic link"}</Btn>
                     </div>
                   </>
                 ) : (
                   <>
-                    <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
+                    <p>{isChatChannel
+                      ? <>Live and ready — <b>share this link in your {chatChannelLabel} channel</b>. People opt in and start a 1:1 right there.</>
+                      : <>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</>}</p>
                     <div className="ss-magiclink">
                       <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
                       <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
                     </div>
+                    {isChatChannel && (
+                      <div className="ss-slackthread ss-preview-thread">
+                        <div className="ss-slackthread-head"><Icon name="chat" size={13} /> #{product.toLowerCase().replace(/[^a-z0-9]+/g, "-")} · what your people see</div>
+                        <div className="ss-slackmsg ss-slackmsg-team">
+                          <Avatar name={product} color="teal" cls="ss-slackmsg-ava" />
+                          <div>
+                            <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
+                            <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Design partners get {designReward}.</p>
+                          </div>
+                        </div>
+                        <div className="ss-slackmsg ss-slackmsg-bot">
+                          <span className="ss-slackmsg-who">Observant</span>
+                          <p>Thanks for joining 🙌 To start — what's the one thing you'd most want the {product} team to fix or build next?</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="ss-golive-actions">
                       <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
                     </div>
                   </>
                 )}
               </div>
-
-              <div className="ss-program-block ss-suggest">
-                <span className="ss-suggest-badge">Our suggestions</span>
-                <h3>Who to send it to</h3>
-                <p>When you're thinking about who to send the magic link to — who you're inviting into your feedback program — here are a few ways to think about your first batch, if you want them. Keep in mind: usually <b>5–10% of those you invite opt in</b>, and they tend to be your most engaged.</p>
-                <div className="ss-advice-block">
-                  {SS_AUDIENCE_OPTIONS.map((opt) => (
-                    <div className="ss-advice-item" key={opt.id}>
-                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
-                      <div><b>{opt.label}{opt.tag && <em className="ss-advice-tag">{opt.tag}</em>}</b><p>{opt.text}</p></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* B2B: targeted/account-based recruitment (Slack Connect invites + sales
+                  calls), not a blast-the-magic-link-to-your-pool audience model — so the
+                  B2C "Who to send it to" suggestions panel is intentionally omitted. */}
             </section>
           )}
 
@@ -683,7 +706,7 @@ function ProUpsell() {
         <p>This is a Pro feature — we'll walk you through some simple setup. It unlocks the following:</p>
       </div>
       <ul className="ss-pro-list">
-        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by email or Telegram too.</span></li>
+        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by Slack or Discord too.</span></li>
         <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
         <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
         <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
@@ -820,7 +843,6 @@ const SS_SOURCE_TILES = [
   { id: "salescalls", name: "Sales calls", icon: "video", desc: "Gong / Chorus / Fireflies transcripts", state: "Connected" },
   { id: "slack", name: "Slack Connect", icon: "chat", desc: "Customer channels", state: "Connected" },
   { id: "posthog", name: "PostHog", icon: "bolt", desc: "Product analytics & usage triggers", state: "Connected" },
-  { id: "native", name: "Email & 1:1 chat / voice", icon: "mail", desc: "Observant's own channels", state: "Native" },
 ];
 
 function SourcesPanel() {
@@ -1061,9 +1083,16 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
+  const [linkCopied, setLinkCopied] = useStateSS(false);
   const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
+  // For a builder product the off-product channel is Slack/Discord — so the Test
+  // step is a Slack-style "share a link in your channel", not a "send a test email".
+  const surfaces = (state.setup && state.setup.surfaces) || {};
+  const chatChannel = !surfaces.product && (surfaces.slack ? "Slack" : surfaces.discord ? "Discord" : "");
+  const slugProduct = String(product || "your-product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const designReward = (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) || "5% discount + early access";
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
   const comp = SelfServeData.contextCompleteness(state.workspace);
@@ -1181,20 +1210,42 @@ function AskPanel({ product, state, patchState, navigate }) {
       {page === 2 && tri && (
         <div className="ss-step-block">
           <span className="ss-step-tag">Step 3 · See it as your users do</span>
-          {channel === "email" ? (
+          {chatChannel ? (
+            <>
+              <p className="ss-result-help">Share this magic link in your {chatChannel} channel — people opt in and start a 1:1 right there. Here's what they'll see.</p>
+              <div className="ss-magiclink">
+                <a className="ss-magiclink-open" href={"/join/" + slugProduct} target="_blank" rel="noreferrer"><code>{(typeof window !== "undefined" ? window.location.host : "") + "/join/" + slugProduct}</code></a>
+                <button type="button" className="ss-magiclink-copy" onClick={() => { try { navigator.clipboard.writeText(window.location.origin + "/join/" + slugProduct); } catch (e) {} setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1500); }}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+              </div>
+              <div className="ss-slackthread ss-preview-thread">
+                <div className="ss-slackthread-head"><Icon name="chat" size={13} /> #{slugProduct} · what your people see</div>
+                <div className="ss-slackmsg ss-slackmsg-team">
+                  <Avatar name={product} color="teal" cls="ss-slackmsg-ava" />
+                  <div>
+                    <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
+                    <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Design partners get {designReward}.</p>
+                  </div>
+                </div>
+                <div className="ss-slackmsg ss-slackmsg-bot">
+                  <span className="ss-slackmsg-who">Observant</span>
+                  <p>{isDeep ? "Thanks for joining 🙌 When you've got ~10 minutes, I'll walk through a few things about " + product + " with you — voice or text, your call." : (plan && (plan.questions || [])[0]) || ("Thanks for joining 🙌 To start — what's the one thing you'd most want the " + product + " team to fix or build next?")}</p>
+                </div>
+              </div>
+            </>
+          ) : channel === "email" ? (
             <>
               <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
               <div className="ss-send-row">
                 <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
                 <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
               </div>
+              {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
+              {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+              {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
             </>
           ) : (
-            <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
+            <p className="ss-result-help">Generate your magic link in the program setup to preview exactly what your users receive.</p>
           )}
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
-          {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
-          {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
           <div className="ss-wiz-nav">
             <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
           </div>
@@ -1280,7 +1331,7 @@ function LearningView({ state, patchState, navigate }) {
       question: q,
       // Everyone on the always-on panel — no per-question sampling.
       groupIds: ["power-users", "new-signups", "evaluators"],
-      surfaceIds: activeSurfaces.length ? activeSurfaces : ["email"],
+      surfaceIds: activeSurfaces.length ? activeSurfaces : ["slack"],
       signalIds: [],
     });
   };
@@ -1319,27 +1370,21 @@ function QuestionHistory({ state }) {
 }
 
 function PeopleView({ state, patchState, navigate }) {
-  const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
-  const person = ssPersonForConversation(state, selected);
+  // No auto-select: a detail panel only shows once the user actually clicks a row.
+  const selected = state.selectedConversationId
+    ? (state.conversations.find((c) => c.id === state.selectedConversationId) || null)
+    : null;
+  const person = selected ? ssPersonForConversation(state, selected) : null;
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
   const [followUpQ, setFollowUpQ] = useStateSS("");
   const [followUpStage, setFollowUpStage] = useStateSS("");
   const [modeTab, setModeTab] = useStateSS("chat");
 
-  if (!selected || !person) {
-    return (
-      <section className="ss-panel">
-        <PanelTitle k="Partners" title="Your feedback partners" status="No lines" />
-        <p className="mut">No lines are open yet.</p>
-      </section>
-    );
-  }
-
-  const personConversations = state.conversations.filter((item) => item.userId === person.id || item.id === person.id);
+  const personConversations = person ? state.conversations.filter((item) => item.userId === person.id || item.id === person.id) : [];
   const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
   const voiceConversations = personConversations.filter((item) => item.mode === "voice");
   // Account → people-by-role: only when the seeded account carries the new model.
-  const hasRelationship = !!(person.relationshipMemory && (person.people || []).length);
+  const hasRelationship = !!(person && person.relationshipMemory && (person.people || []).length);
   const conversationsById = {};
   (state.conversations || []).forEach((c) => { conversationsById[c.id] = c; });
 
@@ -1414,7 +1459,7 @@ function PeopleView({ state, patchState, navigate }) {
                 person={rowPerson}
                 meta={rowPerson.segment + " · " + rowPerson.surface}
                 body={rowPerson.last}
-                selected={!rowHasRelationship && selected.id === conversationId}
+                selected={!rowHasRelationship && !!selected && selected.id === conversationId}
                 focused={state.focusedTarget === "person-" + rowPerson.id}
                 onClick={() => rowHasRelationship && navigate
                   ? navigate({ section: "account", conversationId: rowPerson.id, focusedTarget: "account-" + rowPerson.id })
@@ -1425,6 +1470,7 @@ function PeopleView({ state, patchState, navigate }) {
         </div>
       </section>
 
+      {selected && person ? (
       <section className={"ss-chat-panel ss-person-detail" + ssFocusClass(state, "person-" + person.id)}>
         <div className="ss-chat-head">
           <ProfileAvatar person={person} />
@@ -1480,7 +1526,12 @@ function PeopleView({ state, patchState, navigate }) {
           <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={15} /> Request live 1:1</Btn>
         </div>
       </section>
-      {followUpOpen && (
+      ) : (
+        <section className="ss-chat-panel ss-person-detail ss-person-detail-empty">
+          <EmptyState title="Select an account to see its relationship memory" text="Pick a feedback partner on the left to open their conversations and what Observant has learned." />
+        </section>
+      )}
+      {person && followUpOpen && (
         <>
           <button type="button" className="ss-edit-backdrop" aria-label="Close" onClick={() => { if (!followUpStage) { setFollowUpOpen(false); } }} />
           <div className="ss-modal" role="dialog" aria-label="Follow up with a question">

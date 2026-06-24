@@ -3347,3 +3347,11 @@
 .ss-person-history .ss-chat-msg { position: relative; }
 .ss-msg-meta { display: inline-flex; align-items: center; gap: .3rem; }
 .ss-msg-ch { display: inline-flex; align-items: center; color: var(--text-muted); }
+
+/* Editable single Design-partner reward (compensation step) */
+.ss-comp-tier-edit { display: flex; align-items: center; gap: .5rem; }
+.ss-comp-tier-edit b { white-space: nowrap; }
+.ss-comp-reward-input { flex: 1; min-width: 0; font-size: .8rem; padding: .3rem .5rem; }
+
+/* Slack-styled preview inside the magic-link / loop-test step */
+.ss-preview-thread { margin-top: .85rem; }

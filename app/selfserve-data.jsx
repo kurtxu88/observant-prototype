@@ -42,17 +42,19 @@ const SS_GROUP_OPTIONS = [
   { id: "at-risk", label: "At-risk accounts", text: "Accounts gone quiet or trending toward churn." },
 ];
 
+// CONTACT channels — where the 1:1 actually happens. For a builder/dev product
+// these live where the community already is (Slack / Discord), not personal IM.
+// NOTE: integration SOURCES (Intercom, Gong, Slack Connect, PostHog) are a
+// separate concept and live only in the Sources panel (SS_SOURCE_TILES).
 const SS_SURFACE_OPTIONS = [
-  { id: "email", label: "Email", icon: "mail" },
-  { id: "telegram", label: "Intercom", icon: "chat" },
-  { id: "slack", label: "Slack Connect", icon: "chat" },
-  { id: "discord", label: "PostHog", icon: "globe" },
-  { id: "product", label: "Sales call", icon: "globe" },
+  { id: "slack", label: "Slack", icon: "chat" },
+  { id: "discord", label: "Discord", icon: "globe" },
+  { id: "product", label: "In-product", icon: "globe" },
 ];
 
-// Fast-start connections a user can pick on the magic link.
-// Slack Connect needs a workspace install and sales-call ingest needs the SDK — both live on the Pro side.
-const SS_FAST_CHANNELS = ["email", "telegram"];
+// Fast-start contact channels a user can pick on the magic link — where the
+// community already is for a builder/dev product.
+const SS_FAST_CHANNELS = ["slack", "discord"];
 
 // People-first: how the always-on panel is built. Ranked — reach everyone leads.
 const SS_AUDIENCE_OPTIONS = [
@@ -227,9 +229,9 @@ function ssCreateSetup(workspace) {
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
     // The client's one surface decision: off-product (start today) vs in-product (Pro).
-    // Email vs Telegram is the USER's choice at opt-in — both always available.
+    // Slack vs Discord is the USER's choice at opt-in — both always available.
     route: "offproduct",
-    surfaces: { email: true, telegram: true, product: false },
+    surfaces: { slack: true, discord: true, product: false },
     // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
@@ -773,14 +775,14 @@ function ssCreateLoops() {
       people: 712, active: 4, memory: 318,
       question: "Which enterprise accounts are quietly at risk before they churn?",
       conversationId: "summit", conversationIds: ["summit", "harbor"], peopleIds: ["summit", "harbor", "bright"],
-      eventIds: ["evt-1", "evt-2"], surfaceIds: ["telegram", "discord"],
+      eventIds: ["evt-1", "evt-2"], surfaceIds: ["slack", "discord"],
     },
     {
       id: "loop-onboarding", name: "New account onboarding", status: "Learning", cadence: "First 30 days",
       people: 38, active: 1, memory: 74,
       question: "Where do new accounts lose trust in the prototyping flow in the first month?",
       conversationId: "cedar", conversationIds: ["cedar"], peopleIds: ["cedar"],
-      eventIds: ["evt-3"], surfaceIds: ["telegram", "email"],
+      eventIds: ["evt-3"], surfaceIds: ["slack", "discord"],
     },
     {
       id: "loop-expansion", name: "Sales-call product signal & renewal", status: "Learning", cadence: "Triggered by account stage",
@@ -877,7 +879,7 @@ function ssInitialCustomConfig(workspace) {
     name: question.length > 44 ? question.slice(0, 41) + "..." : question,
     question,
     groupIds: ["power-users", "new-signups", "evaluators"],
-    surfaceIds: ["email", "telegram"],
+    surfaceIds: ["slack", "discord"],
     signalIds: ["user_signed_up", "feature_opened", "checkout_abandoned"],
   };
 }
@@ -964,7 +966,7 @@ function ssSurfaceLabelData(id) {
 }
 
 function ssCreateCustomLoop(workspace, config, runId) {
-  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["email"]);
+  const surfaceIds = (config.surfaceIds && config.surfaceIds.length ? config.surfaceIds : ["slack"]);
   // Behavior triggers are a contact-us add-on — never auto-attached to a question.
   const signalIds = (config.signalIds && config.signalIds.length ? config.signalIds : []);
   return {
@@ -1010,7 +1012,7 @@ function ssFallbackSimulation(workspace, config, runId) {
   const actualRunId = runId || ssMakeRunId();
   const loop = ssCreateCustomLoop(workspace, config || {}, actualRunId);
   const groupIds = loop.groupIds.length ? loop.groupIds : ["power-users"];
-  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["email"];
+  const surfaceIds = loop.surfaceIds.length ? loop.surfaceIds : ["slack"];
   const signalIds = loop.signalIds || [];
   const colors = ["rust", "green", "blue", "gold", "teal", "plum"];
   const names = ["Avery N.", "Samir P.", "Elena R.", "Jordan M.", "Mina S.", "Theo L."];
