@@ -118,10 +118,11 @@ const JN_CADENCE = [
 function JoinChoose({ product, channels, onConnect, onBack }) {
   const single = channels.length === 1;
   const [picked, setPicked] = useStateJN(single ? channels[0] : "");
-  const [email, setEmail] = useStateJN("");
-  const [handle, setHandle] = useStateJN("");
+  // Work email is the identity differentiator — collected for BOTH channels so
+  // Observant recognizes who's who and keeps a separate 1:1 line per person.
+  const [workEmail, setWorkEmail] = useStateJN("");
   const [cadence, setCadence] = useStateJN("occasional");
-  const emailValid = email.includes("@") && email.includes(".");
+  const emailValid = workEmail.includes("@") && workEmail.includes(".");
   // Reliable back: from the detail page → channel grid (clear the pick); if there's
   // only one channel (no grid), step back to the invite phase instead.
   const goBack = () => { if (!single) setPicked(""); else if (onBack) onBack(); };
@@ -154,7 +155,7 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
             </article>
           )}
         </div>
-        <p className="jn-choice-note">Whichever you pick, that's all we know you by — your email or your Slack handle. No other personal data changes hands.</p>
+        <p className="jn-choice-note">Either way, we'll ask for your work email next — that's how the {product} team recognizes you. No other personal data changes hands.</p>
       </main>
     );
   }
@@ -182,18 +183,19 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
 
       <p className="jn-howitworks">How it works: every so often the {product} team sends a quick question — reply when you have a minute, right here. Your replies go straight to the team, and you can reach out anytime you have feedback, not just when asked.</p>
 
-      {picked === "email" ? (
-        <div className="jn-next">
-          <input className="input" type="email" value={email} placeholder="you@example.com" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect("email", email, cadence); }} />
-          <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect("email", email, cadence)}>Join</Btn>
-        </div>
-      ) : (
-        <div className="jn-next">
-          <p className="jn-choice-hint">Reply right in the shared Slack channel you're already in with the {product} team.</p>
-          <Btn variant="primary" size="lg" onClick={() => onConnect("slack", handle, cadence)}>Join</Btn>
-        </div>
+      <div className="jn-workemail">
+        <label className="jn-field-label" htmlFor="jn-workemail-input">Work email</label>
+        <input id="jn-workemail-input" className="input" type="email" value={workEmail} placeholder="you@company.com" onChange={(e) => setWorkEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && emailValid) onConnect(picked, workEmail, cadence); }} />
+        <p className="jn-field-help">So the {product} team knows it's you across email and Slack.</p>
+      </div>
+
+      {picked === "slack" && (
+        <p className="jn-choice-hint">Your 1:1 happens right in the shared Slack channel you're already in with the {product} team — your work email is just how they recognize you.</p>
       )}
-      <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>
+      <div className="jn-next">
+        <Btn variant="primary" size="lg" disabled={!emailValid} onClick={() => onConnect(picked, workEmail, cadence)}>Join</Btn>
+      </div>
+      <p className="jn-choice-note">Your work email is how Observant tells partners apart within {product}'s account — nothing else personal changes hands.</p>
     </main>
   );
 }

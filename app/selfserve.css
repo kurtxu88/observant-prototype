@@ -3374,3 +3374,8 @@
 
 /* Per-person actions on the account page (follow-up + request-live) */
 .ss-account-person-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem; border-top: 1px solid var(--border); }
+
+/* Join flow: work-email identity field */
+.jn-workemail { margin: 0 0 1rem; }
+.jn-field-label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
+.jn-field-help { font-size: .82rem; color: var(--text-muted); line-height: 1.45; margin: 6px 0 0; }
