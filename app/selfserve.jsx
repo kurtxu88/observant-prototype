@@ -1671,9 +1671,9 @@ function AccountPage({ state, account, navigate, goBack, patchState }) {
   const roster = account.people || [];
   const byRole = rm.byRole || {};
   const orgMemory = rm.orgMemory || [];
-  const product = SelfServeData.productName(state.workspace);
-  // The active Slack action is account-scoped, and only when the account lives in Slack Connect.
-  const hasSlack = String(account.surface || "").toLowerCase().includes("slack");
+  // Note: accounts here have already joined the program — no re-invite CTA on
+  // this page. New people are recruited via the magic link in program setup.
+  // (SlackConnectInvite remains defined but unrendered.)
 
   return (
     <div className="ss-page-stack ss-account-page">
@@ -1693,7 +1693,6 @@ function AccountPage({ state, account, navigate, goBack, patchState }) {
         </div>
         {rm.state && <p className="ss-account-state">{rm.state}</p>}
         <p className="ss-account-note">Each person is assigned a role at onboarding. Observant follows up with each of them individually and keeps per-person and per-account memory — so the team inherits the whole relationship, not just the last reply.</p>
-        {hasSlack && <SlackConnectInvite product={product} account={account} />}
       </section>
 
       {/* Org memory / standing timeline — up top, with space */}
