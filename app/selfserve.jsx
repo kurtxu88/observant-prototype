@@ -454,7 +454,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const setRoute = (id) => patchSetup({ route: id });
 
   // Editable single Design-partner reward, carried in setup.tierRewards.bronze.
-  const designReward = (setup.tierRewards && setup.tierRewards.bronze) || "5% discount + early access";
+  const designReward = (setup.tierRewards && setup.tierRewards.bronze) || "8% discount + early access";
   const setDesignReward = (v) => patchSetup({ tierRewards: { ...(setup.tierRewards || {}), bronze: v } });
 
   // Off-product contact channels (email + the shared Slack channel) — both
@@ -568,7 +568,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     <div className="ss-comp-tiers">
                       <label className="ss-comp-tier ss-comp-tier-edit">
                         <b>Feedback partner</b>
-                        <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="5% discount + early access" aria-label="Feedback partner reward" />
+                        <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="8% discount + early access" aria-label="Feedback partner reward" />
                       </label>
                     </div>
                     <small>Partners can choose how often they'd like to be contacted — set later.</small>
@@ -1073,7 +1073,7 @@ function AskPanel({ product, state, patchState, navigate }) {
   const surfaces = (state.setup && state.setup.surfaces) || {};
   const chatChannel = !surfaces.product && surfaces.slack ? "Slack" : "";
   const slugProduct = String(product || "your-product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const designReward = (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) || "5% discount + early access";
+  const designReward = (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) || "8% discount + early access";
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
   const comp = SelfServeData.contextCompleteness(state.workspace);

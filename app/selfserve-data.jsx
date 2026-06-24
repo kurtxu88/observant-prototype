@@ -76,10 +76,10 @@ const SS_COMPENSATION_OPTIONS = [
 // Partnership tiers by depth of the relationship, not minutes. The deeper the
 // partnership, the more the account gets — and the more the team learns.
 const SS_REWARD_TIERS = [
-  { id: "bronze", name: "Feedback partner", min: 1, cash: 0, reward: "5% discount + early access", color: "teal" },
+  { id: "bronze", name: "Feedback partner", min: 1, cash: 0, reward: "8% discount + early access", color: "teal" },
 ];
 
-const SS_DEFAULT_TIER_REWARDS = { bronze: "5% discount + early access" };
+const SS_DEFAULT_TIER_REWARDS = { bronze: "8% discount + early access" };
 
 const SS_SIGNAL_OPTIONS = [
   { id: "user_signed_up", label: "account_activated" },
@@ -253,7 +253,7 @@ function ssCreatePeople(workspace) {
       last: "Magic Patterns is how we prototype now — but we're hitting the ceiling on advanced components.",
       profile: {
         since: "Partner 7 months · Feedback partner",
-        reward: "5% discount + early access",
+        reward: "8% discount + early access",
         knows: [
           "Pro account; the design lead is the champion and daily power user.",
           "Heavy daily usage — prototypes ship straight from Magic Patterns.",
@@ -311,7 +311,7 @@ function ssCreatePeople(workspace) {
       last: "Took me a bit to trust that what it generates is actually usable — I rebuilt the first few by hand.",
       profile: {
         since: "Partner 3 weeks · Feedback partner",
-        reward: "5% discount + early access",
+        reward: "8% discount + early access",
         knows: [
           "New account, week 3; a PM is the daily user.",
           "Rebuilt the first few generated screens by hand before trusting the output.",
@@ -366,7 +366,7 @@ function ssCreatePeople(workspace) {
       last: "Our engineers don't have the design intuition the founders do — we need the tool to give them that.",
       profile: {
         since: "In sales · Feedback partner (pending)",
-        reward: "5% discount + early access",
+        reward: "8% discount + early access",
         knows: [
           "Enterprise account in an active sales motion; the co-founder is the buyer.",
           "Real product signal raised on a sales call: engineers need their own design intuition.",
@@ -422,7 +422,7 @@ function ssCreatePeople(workspace) {
       last: "We hit a bug, flagged it in Intercom, and then just stopped — wasn't sure it was worth it after the price change.",
       profile: {
         since: "Partner 9 months · Feedback partner",
-        reward: "5% discount + early access (lapsing)",
+        reward: "8% discount + early access (lapsing)",
         knows: [
           "Pro account; was a heavy user until a bug went unresolved and the pricing changed.",
           "PostHog shows usage down ~40%; logins sporadic since the pricing change.",
@@ -480,7 +480,7 @@ function ssCreatePeople(workspace) {
       last: "I'm sold — but one of our engineers flagged a permissions worry and I need that settled before we re-sign.",
       profile: {
         since: "Partner 11 months · Feedback partner",
-        reward: "5% discount + early access",
+        reward: "8% discount + early access",
         knows: [
           "Pro account; renewal coming up and the champion is happy.",
           "An engineer raised a permissions concern in Intercom that's blocking a clean yes.",

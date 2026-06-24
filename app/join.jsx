@@ -21,7 +21,7 @@ function jnContext() {
   }
   let rate = 2;
   // B2B partnership benefit (single Design-partner tier) — replaces cash/minutes.
-  let partnerBenefit = "5% discount + early access";
+  let partnerBenefit = "8% discount + early access";
   // Off-product channels that already exist between the user and the team.
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "slack"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
@@ -199,7 +199,7 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
 }
 
 function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
-  const benefit = partnerBenefit || "5% discount + early access";
+  const benefit = partnerBenefit || "8% discount + early access";
   return (
     <main className="jn-main">
       <section className="jn-hero">
