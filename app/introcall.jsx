@@ -40,6 +40,26 @@ function icPlan(product) {
     subject: "",
   };
 }
+// The opener as a FEW short chat bubbles (not one block): greeting + framing,
+// the two-way-line note, then the first real question. {product}-grounded.
+function icOpenerBubbles(product, plan, deep) {
+  const firstQ = (plan && Array.isArray(plan.questions) && plan.questions[0])
+    || ("To kick off — what got you using " + product + ", and how does it fit into your day?");
+  const greeting = deep
+    ? "Hey 👋 I've got a few questions about how " + product + " works for you — should only take about ten minutes, and there are no wrong answers."
+    : "Hey 👋 I've got a couple quick questions about how " + product + " works for you — should only take a few minutes.";
+  const twoWay = "Heads up — this is a two-way line. Anytime something breaks or you've got feedback, just message here, not only when we ask. Genuine feedback earns rewards too.";
+  return [greeting, twoWay, firstQ];
+}
+
+// The entered workspace context, so the voice agent grounds in THIS product.
+function icWorkspaceContext() {
+  try {
+    const s = JSON.parse(localStorage.getItem("observant.selfserve.v1") || "{}");
+    const w = s.workspace || {};
+    return { productDescription: String(w.productDescription || ""), userBase: String(w.userBase || "") };
+  } catch (e) { return { productDescription: "", userBase: "" }; }
+}
 
 async function icPost(body) {
   const r = await fetch("/api/selfserve/interview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -89,7 +109,8 @@ function IntroCall() {
   // Prefer a real ElevenLabs voice agent (custom UI, not the embed widget); fall back to text chat.
   useICFx(() => { (async () => {
     try {
-      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, introQuestions: plan.questions, essence: deep ? plan.essence : "", deep: !!deep }) }).then((r) => r.json());
+      const ws = icWorkspaceContext();
+      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, productDescription: ws.productDescription, userBase: ws.userBase, introQuestions: plan.questions, essence: deep ? plan.essence : "", deep: !!deep }) }).then((r) => r.json());
       if (v && v.ok && (v.signedUrl || v.agentId)) { setSignedUrl(v.signedUrl || ""); setAgentId(v.agentId || ""); setMode("voice"); return; }
     } catch (e) { /* fall through to chat */ }
     setMode("chat");
@@ -130,15 +151,12 @@ function IntroCall() {
     if (msgs.length) finishIntro(msgs);
   }
 
-  // When in (or switched to) the text chat, fetch the opening once.
+  // When in (or switched to) the text chat, open with a FEW short bubbles
+  // (greeting + framing, the two-way-line note, then the first question) so it
+  // reads like a real chat — not one wall of text.
   useICFx(() => {
     if (mode !== "chat" || messages.length || busy) return;
-    (async () => {
-      setBusy(true);
-      try { const r = await icPost({ action: "turn", product, channel: "telegram", exploration: 0.6, plan, messages: [] }); if (r && r.message) setMessages([{ role: "assistant", content: r.message }]); }
-      catch (e) { setErr(String(e.message || e)); }
-      setBusy(false);
-    })();
+    setMessages(icOpenerBubbles(product, plan, deep).map((content) => ({ role: "assistant", content })));
   }, [mode]);
 
   async function sendText(text) {

@@ -19,11 +19,12 @@ This is **not** a study-type classifier. We are not sorting the question into a 
 - **Not consciously known** — motivations and **mental models** can't be stated; they're inferred from behavior and how someone talks. *"How do they think about where we fit."*
 - **Needs the right person / context** — only yields truth from a specific respondent or with setup (e.g. churned-then-resurrected users for churn).
 - **Too big to hold in one answer** — pricing *strategy* / value; "what should we *really* build" (the unmet need, not a feature wishlist). A sentence can't carry it.
+- **Mapping a workflow / process end-to-end** — *"what's people's workflow for submitting insurance payment,"* *"walk me through how Y happens from start to finish — who does what, where it breaks."* A multi-step process with handoffs, the order of steps, who's involved, and where it stalls **can't be traced in 1-2 async rounds** — each step opens the next question. It needs the live, interviewer-grade probing conversation to follow the whole flow. → **DEEP.**
 
 ## What stays LIGHT (a direct ask gets the truth) — even if strategic
 - **The answer is a statable thing** — a label, feeling, reaction, rating, or recallable recent action the person gives honestly when asked: feature sentiment ("how do they feel about the community feature"), satisfaction, usage frequency, did-they-notice, **the JTBD label** ("what's the real job we're hired for").
 - **A specific surface / feature** — "what do they think of our pricing **page**" (UI: CTA placement, whether tiers read clearly) is light; "what do they think of our **pricing**" (the strategy/value) is deep. Same verb, different scope.
-- **"Why" behind one behavior that's askable behaviorally** — "when you exported to a spreadsheet, what were you trying to do?" + one follow-up. (But if the honest "why" is cliché-trapped — like churn — it's deep.)
+- **A SINGLE behavioral moment that's askable behaviorally** — one discrete action and the "why" right behind it: "when you exported to a spreadsheet, what were you trying to do?" + one follow-up. A single moment fits in a round or two. (But if the honest "why" is cliché-trapped — like churn — it's deep; and if the ask is to map a whole multi-step **workflow** rather than one moment — "walk me through your *whole* process for X, start to finish" — that's the workflow case above → **deep.**)
 - **Surfacing complaints / struggles / pain points** — "what are people's complaints and struggles?" People can *name* their pain points directly, and naming them is enough. → **light.** It's only deep if the team wants to dig into the *why* behind one *specific* struggle.
 - Default: a direct ask, plus at most one follow-up, gets a genuine answer.
 

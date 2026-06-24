@@ -951,10 +951,38 @@
 }
 .ss-progress-track span {
   display: block;
+  position: relative;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover), var(--accent));
+  background-size: 190% 100%;
   transition: width .35s ease;
+  animation: ss-progress-flow 1.8s linear infinite;
+}
+.ss-progress-track span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / .32), transparent);
+  transform: translateX(-120%);
+  animation: ss-progress-glint 1.45s ease-in-out infinite;
+}
+@keyframes ss-progress-flow {
+  to { background-position: 190% 0; }
+}
+@keyframes ss-progress-glint {
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-progress-track span {
+    animation: none;
+  }
+  .ss-progress-track span::after {
+    display: none;
+    animation: none;
+  }
 }
 .ss-progress-steps {
   list-style: none;
@@ -988,6 +1016,24 @@
   background: var(--accent);
   border-color: var(--accent);
   color: oklch(0.99 0.01 70);
+}
+.ss-progress-steps li.on {
+  color: var(--text-primary);
+}
+.ss-progress-steps li.on > span {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-tint);
+  animation: ss-stage-pulse 1.35s ease-in-out infinite;
+}
+@keyframes ss-stage-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-tint); }
+  50% { box-shadow: 0 0 0 8px oklch(0.92 0.055 48 / .55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ss-progress-steps li.on > span {
+    animation: none;
+  }
 }
 .ss-progress-steps b,
 .ss-progress-steps p {
@@ -1023,6 +1069,9 @@
   margin-top: 0.8rem;
   color: var(--accent-hover);
   font-weight: 700;
+}
+.ss-answer-progress {
+  margin-top: 0.9rem;
 }
 .ss-loop-card,
 .ss-insight-card {
@@ -2178,22 +2227,6 @@
 }
 .ss-advice-foot b { color: var(--text-primary); }
 
-/* Simulated-preview pill (custom workspaces — data is synthetic until real users join) */
-.ss-sim-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.7rem;
-  border: 1px dashed var(--border-strong);
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: var(--surface);
-  cursor: help;
-}
-
 /* Upsell variant that fills a panel body (e.g. Home triggers panel) */
 .ss-upsell-fill {
   flex-direction: column;
@@ -2994,6 +3027,7 @@
 
 /* Home — new insights highlight row */
 .ss-home-insights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ss-answer-card + .ss-home-insights { margin-top: 12px; }
 .ss-home-insight { text-align: left; border: 1px solid var(--border,#e6e3dd); background: #fff; border-radius: 12px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: border-color .15s, box-shadow .15s; }
 .ss-home-insight:hover { border-color: var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,.04); }
 .ss-home-insight-metric { font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
@@ -3162,3 +3196,255 @@
 /* Voice interview preview (deep compose) */
 .ss-voice-preview { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .ss-voice-preview .btn { margin-top: 8px; }
+
+/* B2B partnership comp tiers (replaces the cash/$-per-min card) */
+.ss-comp-tiers { display: flex; flex-direction: column; gap: .3rem; margin: .25rem 0 .15rem; }
+.ss-comp-tier { font-size: .8rem; line-height: 1.4; color: var(--text-secondary); }
+.ss-comp-tier b { color: inherit; }
+
+/* ============================================================
+   Account → people-by-role → relationship-memory page (B2B)
+   Additive: styles the RelationshipMemory component. Reuses the
+   project's CSS vars; .ss-transcript / .ss-turn / .ss-chat-body
+   are reused for raw source threads.
+   ============================================================ */
+.ss-rmem { margin: .25rem 0 1rem; }
+.ss-rmem-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .4rem; }
+.ss-rmem-health { font-style: normal; font-size: .76rem; font-family: var(--font-mono); color: var(--success); white-space: nowrap; }
+.ss-rmem-state { font-size: .95rem; line-height: 1.5; color: var(--text-primary); margin: 0 0 1rem; }
+.ss-rmem-sublabel { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin: .4rem 0 .55rem; }
+
+.ss-rmem-people { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.1rem; }
+.ss-rmem-person { border: 1px solid var(--border); border-radius: 13px; background: oklch(0.99 0.004 80 / .55); overflow: hidden; }
+.ss-rmem-person.on { border-color: var(--accent-soft); background: var(--accent-tint); }
+.ss-rmem-person-row { display: grid; grid-template-columns: auto 1fr auto; gap: .7rem; align-items: start; width: 100%; text-align: left; padding: .8rem .9rem; }
+.ss-rmem-person-row:hover, .ss-rmem-person-row:focus-visible { background: var(--accent-tint); }
+.ss-rmem-person-copy b { display: block; font-size: .95rem; line-height: 1.3; }
+.ss-rmem-role { font-style: normal; font-weight: 500; font-size: .76rem; color: var(--accent, var(--text-secondary)); margin-left: .35rem; }
+.ss-rmem-usage { display: block; font-size: .82rem; color: var(--text-secondary); margin-top: .12rem; }
+.ss-rmem-summary { font-size: .88rem; line-height: 1.45; color: var(--text-primary); margin: .4rem 0 .3rem; }
+.ss-rmem-needs { display: block; font-size: .82rem; color: var(--text-secondary); }
+.ss-rmem-needs b { font-weight: 600; color: var(--text-primary); }
+.ss-rmem-person-meta { text-align: right; white-space: nowrap; }
+.ss-rmem-status { display: block; font-style: normal; font-size: .72rem; font-family: var(--font-mono); color: var(--text-secondary); }
+.ss-rmem-last { display: block; font-size: .7rem; color: var(--text-muted); margin-top: .18rem; }
+
+.ss-rmem-threads { padding: 0 .9rem .8rem; }
+.ss-rmem-fold { border-top: 1px solid var(--border); padding-top: .6rem; margin-top: .5rem; }
+.ss-rmem-fold > summary { cursor: pointer; font-size: .82rem; color: var(--text-secondary); display: flex; align-items: center; gap: .35rem; list-style: none; }
+.ss-rmem-fold > summary::-webkit-details-marker { display: none; }
+.ss-rmem-fold[open] > summary { color: var(--text-primary); margin-bottom: .5rem; }
+.ss-rmem-empty { font-size: .82rem; color: var(--text-muted); padding: .4rem 0; }
+
+.ss-rmem-source { margin: .4rem 0; }
+.ss-rmem-source-head { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin-bottom: .35rem; }
+.ss-rmem-source-tag { display: inline-flex; align-items: center; gap: .3rem; font-size: .7rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: 999px; padding: .12rem .5rem; }
+.ss-rmem-source-head b { font-size: .85rem; line-height: 1.3; }
+.ss-rmem-source-dur { font-size: .7rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+.ss-rmem-org { border-top: 1px solid var(--border); padding-top: .85rem; margin-bottom: .8rem; }
+.ss-rmem-timeline { list-style: none; padding: 0; margin: 0; }
+.ss-rmem-timeline li { position: relative; padding: 0 0 .65rem 1rem; font-size: .88rem; line-height: 1.45; color: var(--text-secondary); border-left: 2px solid var(--border-strong); margin-left: .2rem; }
+.ss-rmem-timeline li::before { content: ""; position: absolute; left: -5px; top: .45rem; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-soft, var(--border-strong)); }
+.ss-rmem-timeline li:last-child { padding-bottom: 0; }
+.ss-rmem-foot { font-size: .8rem; color: var(--text-secondary); font-style: italic; margin: .2rem 0 0; }
+
+.ss-rmem-rawsources { border: 1px solid var(--border); border-radius: 13px; padding: .7rem .9rem; margin-top: .4rem; background: var(--surface); }
+.ss-rmem-rawsources > summary { cursor: pointer; font-size: .85rem; color: var(--text-secondary); display: flex; align-items: center; gap: .4rem; list-style: none; }
+.ss-rmem-rawsources > summary::-webkit-details-marker { display: none; }
+.ss-rmem-rawsources[open] > summary { color: var(--text-primary); margin-bottom: .7rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border); }
+.ss-rmem-rawsources-body { display: flex; flex-direction: column; gap: .9rem; }
+
+/* ============================================================
+   Full-width account page (B2B relationship memory v2)
+   Additive — replaces the cramped in-panel layout with a page.
+   Reuses .ss-panel / .ss-rmem-timeline / .ss-transcript / .ss-turn.
+   ============================================================ */
+.ss-account-page { max-width: 920px; }
+.ss-account-backlink { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-secondary); padding: .2rem 0; margin-bottom: .2rem; }
+.ss-account-backlink:hover, .ss-account-backlink:focus-visible { color: var(--text-primary); }
+
+.ss-account-hero-head { display: flex; align-items: center; gap: .85rem; margin-bottom: .9rem; }
+.ss-account-avatar { width: 2.6rem; height: 2.6rem; font-size: 1rem; }
+.ss-account-hero-id { flex: 1; }
+.ss-account-hero-id h2 { font-size: 1.35rem; line-height: 1.2; margin: 0; }
+.ss-account-hero-id span { font-size: .85rem; color: var(--text-secondary); }
+.ss-account-health { font-style: normal; font-size: .78rem; font-family: var(--font-mono); color: var(--success); white-space: nowrap; }
+.ss-account-state { font-size: 1.02rem; line-height: 1.55; color: var(--text-primary); margin: 0 0 .85rem; }
+.ss-account-note { font-size: .85rem; line-height: 1.5; color: var(--text-secondary); margin: 0; padding-top: .8rem; border-top: 1px solid var(--border); }
+
+.ss-account-people { display: flex; flex-direction: column; gap: 1.1rem; }
+.ss-account-person { border: 1px solid var(--border); border-radius: 14px; background: oklch(0.99 0.004 80 / .5); padding: 1.1rem 1.15rem; }
+.ss-account-person-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .6rem; }
+.ss-account-person-id { flex: 1; }
+.ss-account-person-id b { display: block; font-size: 1.02rem; line-height: 1.25; }
+.ss-account-role { font-size: .78rem; color: var(--text-secondary); }
+.ss-account-status { font-style: normal; font-size: .72rem; font-family: var(--font-mono); color: var(--text-secondary); white-space: nowrap; }
+.ss-account-summary { font-size: .92rem; line-height: 1.55; color: var(--text-primary); margin: 0 0 .6rem; }
+.ss-account-needs { font-size: .86rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .85rem; }
+.ss-account-needs b { display: inline-block; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-right: .45rem; }
+.ss-account-threads { display: flex; flex-direction: column; gap: .15rem; border-top: 1px solid var(--border); padding-top: .55rem; }
+
+/* Quiet icon-led conversation rows (chat / voice / sales) */
+.ss-rmem-fold { border-radius: 9px; }
+.ss-rmem-fold > summary { cursor: pointer; display: flex; align-items: center; gap: .55rem; padding: .5rem .55rem; list-style: none; border-radius: 9px; }
+.ss-rmem-fold > summary::-webkit-details-marker { display: none; }
+.ss-rmem-fold > summary:hover, .ss-rmem-fold > summary:focus-visible { background: var(--accent-tint); }
+.ss-rmem-fold-ic { display: inline-flex; color: var(--text-muted); flex: none; }
+.ss-rmem-fold-snip { flex: 1; font-size: .88rem; color: var(--text-secondary); line-height: 1.4; }
+.ss-rmem-fold[open] > summary .ss-rmem-fold-snip { color: var(--text-primary); }
+.ss-rmem-fold-dur { font-size: .7rem; font-family: var(--font-mono); color: var(--text-muted); flex: none; }
+.ss-rmem-fold-body { padding: .25rem .55rem .7rem; }
+.ss-rmem-empty { font-size: .84rem; color: var(--text-muted); padding: .35rem .55rem; }
+
+/* ============================================================
+   Home "Connect your sources" panel (work-on-top-of-your-stack)
+   Additive — reuses .ss-panel; quiet, consistent with dashboard.
+   ============================================================ */
+.ss-sources-lead { font-size: .9rem; line-height: 1.5; color: var(--text-secondary); margin: -.2rem 0 .9rem; }
+.ss-sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: .6rem; }
+.ss-source-tile { display: flex; align-items: center; gap: .65rem; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: .72rem .8rem; }
+.ss-source-ic { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 9px; background: var(--accent-tint); color: var(--accent, var(--text-secondary)); flex: none; }
+.ss-source-copy { flex: 1; min-width: 0; }
+.ss-source-copy b { display: block; font-size: .9rem; line-height: 1.25; }
+.ss-source-copy span { display: block; font-size: .78rem; color: var(--text-muted); line-height: 1.35; margin-top: .12rem; }
+.ss-source-state { display: inline-flex; align-items: center; gap: .2rem; font-style: normal; font-size: .7rem; font-family: var(--font-mono); color: var(--success); white-space: nowrap; flex: none; }
+.ss-source-add { cursor: pointer; border-style: dashed; border-color: var(--border-strong); }
+.ss-source-add:hover, .ss-source-add:focus-visible { background: var(--accent-tint); border-color: var(--accent-soft); }
+.ss-source-add .ss-source-ic { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-secondary); }
+.ss-source-cta { font-style: normal; font-size: .76rem; font-weight: 600; color: var(--accent, var(--text-secondary)); white-space: nowrap; flex: none; }
+
+/* ============================================================
+   Account page: Slack Connect invite + unified person history
+   Additive — reuses .ss-chat-body / .ss-chat-msg / Avatar / tags.
+   ============================================================ */
+/* Invite via Slack Connect (active side of the integration, demo-only) */
+.ss-slackrun { margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.ss-slackrun-launch { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 500; color: var(--accent, var(--text-secondary)); border: 1px solid var(--border-strong); border-radius: 999px; padding: .4rem .85rem; }
+.ss-slackrun-launch:hover, .ss-slackrun-launch:focus-visible { background: var(--accent-tint); border-color: var(--accent-soft); }
+.ss-slackrun-panel { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: .95rem 1rem; }
+.ss-slackrun-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .5rem; }
+.ss-slackrun-lead { font-size: .85rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .8rem; }
+.ss-slackrun-topic { min-height: 7rem; font-size: .88rem; line-height: 1.5; }
+.ss-slackrun-actions { display: flex; gap: .5rem; margin-top: .7rem; }
+.ss-slackrun-confirm { display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--success); margin: .7rem 0 0; line-height: 1.45; }
+
+/* Slack-styled thread / message preview */
+.ss-slackthread { border: 1px solid var(--border); border-radius: 11px; background: oklch(0.99 0.004 80 / .6); padding: .7rem .8rem; }
+.ss-slackthread-head { display: flex; align-items: center; gap: .35rem; font-size: .76rem; font-family: var(--font-mono); color: var(--text-secondary); padding-bottom: .55rem; margin-bottom: .55rem; border-bottom: 1px solid var(--border); }
+.ss-slackmsg { display: flex; gap: .55rem; padding: .35rem 0; }
+.ss-slackmsg > div { flex: 1; min-width: 0; }
+.ss-slackmsg-ava { width: 1.7rem; height: 1.7rem; font-size: .72rem; flex: none; }
+.ss-slackmsg-who { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .1rem; }
+.ss-slackmsg-app { font-style: normal; font-weight: 400; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 .25rem; margin-left: .3rem; }
+.ss-slackmsg p { font-size: .88rem; line-height: 1.5; color: var(--text-primary); margin: 0; }
+.ss-slackmsg-team .ss-slackmsg-who { color: var(--text-primary); }
+.ss-slackreacts { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+.ss-slackreact { font-size: .78rem; border: 1px solid var(--accent-soft); background: var(--accent-tint); border-radius: 999px; padding: .1rem .5rem; }
+.ss-slackreact-who { font-size: .72rem; color: var(--text-muted); }
+
+/* Unified per-person conversation history — small channel icon per message */
+.ss-person-history .ss-chat-msg { position: relative; }
+.ss-msg-meta { display: inline-flex; align-items: center; gap: .3rem; }
+.ss-msg-ch { display: inline-flex; align-items: center; color: var(--text-muted); }
+
+/* Editable single Design-partner reward (compensation step) */
+.ss-comp-tier-edit { display: flex; align-items: center; gap: .5rem; }
+.ss-comp-tier-edit b { white-space: nowrap; }
+.ss-comp-reward-input { flex: 1; min-width: 0; font-size: .8rem; padding: .3rem .5rem; }
+
+/* Slack-styled preview inside the magic-link / loop-test step */
+.ss-preview-thread { margin-top: .85rem; }
+
+/* Join flow: clickable stepper-back + how-it-works + step-back link (B2B) */
+.jn-progress-hit { display: inline-flex; align-items: center; gap: 8px; background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: default; }
+.jn-progress-step.clickable .jn-progress-hit { cursor: pointer; }
+.jn-progress-step.clickable .jn-progress-hit:hover .jn-progress-label,
+.jn-progress-step.clickable .jn-progress-hit:focus-visible .jn-progress-label { text-decoration: underline; }
+.jn-progress-hit:disabled { cursor: default; }
+.jn-howitworks { font-size: .9rem; line-height: 1.55; color: var(--text-secondary); background: var(--accent-tint, #f4efe6); border: 1px solid var(--accent-soft, #e6ddcb); border-radius: 11px; padding: .7rem .85rem; margin: .2rem 0 1rem; }
+.jn-step-back { margin: 0 0 .6rem; }
+
+/* Consolidated "Your magic link": Copy link + Send me a test email */
+.ss-magiclink-test { margin-top: .85rem; }
+.ss-magiclink-test-note { font-size: .8rem; color: var(--text-muted); line-height: 1.45; margin: .5rem 0 0; }
+
+/* PeopleView is now a clean list (no right-side detail panel) */
+.ss-people-list-page .ss-table-list { margin-top: .25rem; }
+
+/* Per-person actions on the account page (follow-up + request-live) */
+.ss-account-person-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem; border-top: 1px solid var(--border); }
+
+/* Join flow: work-email identity field */
+.jn-workemail { margin: 0 0 1rem; }
+.jn-field-label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
+.jn-field-help { font-size: .82rem; color: var(--text-muted); line-height: 1.45; margin: 6px 0 0; }
+
+/* Compensation: cash caveat (compliance) */
+.ss-comp-caveat { color: var(--text-secondary); }
+
+/* Team settings — the company's own people on Observant (not feedback partners) */
+.ss-team-invite { display: flex; gap: .5rem; align-items: center; margin: .25rem 0 .6rem; }
+.ss-team-invite .input { flex: 1; }
+.ss-team-list { display: flex; flex-direction: column; gap: .1rem; margin-top: .5rem; }
+.ss-team-member { display: flex; align-items: center; gap: .65rem; padding: .6rem .55rem; border-top: 1px solid var(--border); }
+.ss-team-member:first-child { border-top: none; }
+.ss-team-member-id { flex: 1; min-width: 0; }
+.ss-team-member-id b { display: block; font-size: .92rem; line-height: 1.25; }
+.ss-team-member-id span { display: block; font-size: .8rem; color: var(--text-muted); }
+.ss-team-pending { font-style: normal; font-size: .72rem; color: var(--text-muted); font-weight: 400; }
+.ss-team-role { font-style: normal; font-size: .7rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: 999px; padding: .12rem .5rem; white-space: nowrap; }
+.ss-team-role.admin { color: var(--accent, var(--text-secondary)); border-color: var(--accent-soft, var(--border-strong)); }
+
+/* Join "What you get" — partnership + cash side by side when both are offered */
+.jn-get-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.jn-get-grid .jn-get-col { margin: 0; }
+.jn-get-grid .jn-get-col b { font-size: 1.1rem; }
+@media (max-width: 640px) { .jn-get-grid { grid-template-columns: 1fr; } }
+
+/* Prominent, standalone Back control at the top of each join step */
+.jn-topback-row { margin: 0 0 1rem; }
+.jn-topback { display: inline-flex; align-items: center; gap: 6px; background: #f0ece4; border: 1px solid var(--border,#e6e3dd); border-radius: 8px; padding: 7px 13px; font: inherit; font-size: .88rem; font-weight: 600; color: #4a463f; cursor: pointer; }
+.jn-topback:hover, .jn-topback:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+/* Join page goes straight to the action — inline CTA under the one-line framing */
+.jn-cta-inline { margin-top: 1.1rem; }
+
+/* Intro-questions preview — user-facing questions translated from founder intent */
+.ss-introq-list { margin: 0; padding-left: 1.1rem; }
+.ss-introq-list li { margin: .2rem 0; line-height: 1.5; }
+
+/* Loop composer · Step 2 (review) — one quiet unified section, minimal color */
+.ss-review2 { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 1rem 1.1rem; margin-top: .5rem; }
+.ss-review2-head b { font-size: .98rem; }
+.ss-review2-head > span { display: block; font-size: .9rem; line-height: 1.5; color: var(--text-secondary); margin-top: .2rem; }
+.ss-review2-learn { margin-top: .5rem; }
+.ss-review2-learn > summary { cursor: pointer; font-size: .82rem; color: var(--text-muted); list-style: none; }
+.ss-review2-learn > summary::-webkit-details-marker { display: none; }
+.ss-review2-learn[open] > summary { color: var(--text-secondary); margin-bottom: .35rem; }
+.ss-review2-learn p { font-size: .85rem; line-height: 1.55; color: var(--text-secondary); margin: 0; }
+.ss-review2-label { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 1rem 0 .4rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.ss-review2-qs { margin: 0; padding-left: 1.15rem; }
+.ss-review2-qs li { margin: .3rem 0; line-height: 1.5; font-size: .92rem; }
+.ss-review2-note { font-size: .85rem; line-height: 1.55; color: var(--text-secondary); margin: .7rem 0 0; }
+.ss-review2-voice { }
+.ss-review2-sub { font-size: .88rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .7rem; }
+
+/* Quiet secondary note on the loop-composer Test step */
+.ss-result-note { font-size: .82rem; line-height: 1.5; color: var(--text-muted); margin: .8rem 0 0; }
+
+/* Loop composer Step 2 — two preview actions side by side + inline email preview */
+.ss-preview-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+.ss-preview-email { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--border); }
+
+/* Loop composer Step 3 — send-to-partners progress stages */
+.ss-send-stages { list-style: none; margin: .8rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .1rem; }
+.ss-send-stage { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .2rem; border-top: 1px solid var(--border); }
+.ss-send-stage:first-child { border-top: none; }
+.ss-send-stage-dot { width: 22px; height: 22px; flex: none; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text-muted); margin-top: .05rem; }
+.ss-send-stage.on .ss-send-stage-dot { border-color: var(--accent); color: var(--accent); }
+.ss-send-stage.done .ss-send-stage-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.ss-send-stage > div { display: flex; flex-direction: column; }
+.ss-send-stage b { font-size: .92rem; line-height: 1.3; color: var(--text-muted); }
+.ss-send-stage.on b, .ss-send-stage.done b { color: var(--text-primary); }
+.ss-send-stage span { font-size: .82rem; color: var(--text-secondary); line-height: 1.4; margin-top: .1rem; }
