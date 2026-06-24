@@ -124,6 +124,19 @@ const JN_CADENCE = [
   { id: "rare", t: "Only now and then", d: "Sparingly — and whenever I reach out myself." },
 ];
 
+// Prominent, standalone Back control at the top-left of a step. Renders nothing
+// when there's no destination, so a step is never a dead end with a stray button.
+function JoinBack({ onClick, label }) {
+  if (!onClick) return null;
+  return (
+    <div className="jn-topback-row">
+      <button type="button" className="jn-topback" onClick={onClick}>
+        <Icon name="back" size={15} /> {label || "Back"}
+      </button>
+    </div>
+  );
+}
+
 function JoinChoose({ product, channels, onConnect, onBack }) {
   const single = channels.length === 1;
   const [picked, setPicked] = useStateJN(single ? channels[0] : "");
@@ -140,11 +153,11 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
   if (!picked) {
     return (
       <main className="jn-main">
+        <JoinBack onClick={onBack} label="Back to invitation" />
         <section className="jn-hero">
           <span className="eyebrow">One last choice</span>
           <h1>Where should we reach you?</h1>
           <p>You're <b>already on both of these</b> with the {product} team — a team email and the shared Slack channel. Just pick where your one-on-one should live. You can switch later, and opt out anytime.</p>
-          {onBack && <p><button type="button" className="jn-back" onClick={onBack}>← back</button></p>}
         </section>
         <div className="jn-choice-grid">
           {channels.includes("email") && (
@@ -172,10 +185,11 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
   // Step 2 — next step for the chosen channel
   return (
     <main className="jn-main">
+      <JoinBack onClick={goBack} label={single ? "Back to invitation" : "Back to channel choice"} />
       <section className="jn-hero">
         <span className="eyebrow">{picked === "email" ? "Team email" : "Slack"}</span>
         <h1>{picked === "email" ? "Join by email." : "Join on Slack."}</h1>
-        <p>This is where your one-on-one with the {product} team will live. <button type="button" className="jn-back" onClick={goBack}>← pick a different way</button></p>
+        <p>This is where your one-on-one with the {product} team will live.</p>
       </section>
 
       <div className="jn-cadence">
@@ -305,7 +319,7 @@ function JoinWelcome({ product, channel, contactEmail, cadence, onBack }) {
 
   return (
     <main className="jn-main">
-      {onBack && <p className="jn-step-back"><button type="button" className="jn-back" onClick={onBack}>← back</button></p>}
+      <JoinBack onClick={onBack} label="Back to channel choice" />
       {!introSkipped ? (
         <section className="jn-hero">
           <span className="eyebrow">You're in</span>
