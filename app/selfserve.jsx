@@ -1115,7 +1115,9 @@ function ssEncodeDeep(plan) {
 }
 function ssOpenVoicePreview(product, deepPlan) {
   const plan = { product, mode: "deep", essence: (deepPlan && deepPlan.essence) || "", threads: (deepPlan && deepPlan.threads) || [] };
-  const url = "IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeURIComponent(ssEncodeDeep(plan));
+  // ABSOLUTE path — /portal and /setup are served from the root, so a relative
+  // "IntroCall.html" would 404 at /IntroCall.html. The page lives at /app/.
+  const url = "/app/IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeURIComponent(ssEncodeDeep(plan));
   try { window.open(url, "_blank", "noopener"); } catch (e) { window.location.href = url; }
 }
 
