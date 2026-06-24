@@ -3429,3 +3429,6 @@
 .ss-review2-note { font-size: .85rem; line-height: 1.55; color: var(--text-secondary); margin: .7rem 0 0; }
 .ss-review2-voice { }
 .ss-review2-sub { font-size: .88rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .7rem; }
+
+/* Quiet secondary note on the loop-composer Test step */
+.ss-result-note { font-size: .82rem; line-height: 1.5; color: var(--text-muted); margin: .8rem 0 0; }

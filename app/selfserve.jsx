@@ -1126,20 +1126,16 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [wishlist, setWishlist] = useStateSS("");
   const [tri, setTri] = useStateSS(null);
   const [previewing, setPreviewing] = useStateSS(false);
-  const [testEmail, setTestEmail] = useStateSS("");
+  const [testEmail, setTestEmail] = useStateSS((state.workspace && state.workspace.email) || "");
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
-  const [linkCopied, setLinkCopied] = useStateSS(false);
   const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
-  // When Slack is an off-product channel, the Test step shows a Slack-style
-  // "share a link in your channel" preview (the shared channel already exists).
+  // Slack note on the test step (when the shared channel is an off-product channel).
   const surfaces = (state.setup && state.setup.surfaces) || {};
   const chatChannel = !surfaces.product && surfaces.slack ? "Slack" : "";
-  const slugProduct = String(product || "your-product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const designReward = (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) || "8% discount + early access";
   const plan = tri && tri.lightPlan;       // the light set (also the deep-mode fallback)
   const isDeep = tri && tri.mode === "deep";
   const comp = SelfServeData.contextCompleteness(state.workspace);
@@ -1253,45 +1249,20 @@ function AskPanel({ product, state, patchState, navigate }) {
         </div>
       )}
 
-      {/* ── STEP 3 · TEST ── */}
+      {/* ── STEP 3 · TEST — send yourself the real thing your users receive ── */}
       {page === 2 && tri && (
         <div className="ss-step-block">
           <span className="ss-step-tag">Step 3 · See it as your users do</span>
-          {chatChannel ? (
-            <>
-              <p className="ss-result-help">Share this magic link in your {chatChannel} channel — people opt in and start a 1:1 right there. Here's what they'll see.</p>
-              <div className="ss-magiclink">
-                <a className="ss-magiclink-open" href={"/join/" + slugProduct} target="_blank" rel="noreferrer"><code>{(typeof window !== "undefined" ? window.location.host : "") + "/join/" + slugProduct}</code></a>
-                <button type="button" className="ss-magiclink-copy" onClick={() => { try { navigator.clipboard.writeText(window.location.origin + "/join/" + slugProduct); } catch (e) {} setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1500); }}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
-              </div>
-              <div className="ss-slackthread ss-preview-thread">
-                <div className="ss-slackthread-head"><Icon name="chat" size={13} /> #{slugProduct} · what your people see</div>
-                <div className="ss-slackmsg ss-slackmsg-team">
-                  <Avatar name={product} color="teal" cls="ss-slackmsg-ava" />
-                  <div>
-                    <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
-                    <p>Hey all 👋 — we're inviting a few people to help shape {product}. Tap to join and you'll get a quick 1:1 with us, right here. Feedback partners get {designReward}.</p>
-                  </div>
-                </div>
-                <div className="ss-slackmsg ss-slackmsg-bot">
-                  <span className="ss-slackmsg-who">Observant</span>
-                  <p>{isDeep ? "Thanks for joining 🙌 When you've got ~10 minutes, I'll walk through a few things about " + product + " with you — voice or text, your call." : (plan && (plan.questions || [])[0]) || ("Thanks for joining 🙌 To start — what's the one thing you'd most want the " + product + " team to fix or build next?")}</p>
-                </div>
-              </div>
-            </>
-          ) : channel === "email" ? (
-            <>
-              <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
-              <div className="ss-send-row">
-                <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
-                <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
-              </div>
-              {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
-              {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
-              {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
-            </>
-          ) : (
-            <p className="ss-result-help">Generate your magic link in the program setup to preview exactly what your users receive.</p>
+          <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
+          <div className="ss-send-row">
+            <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+            <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
+          </div>
+          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
+          {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+          {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
+          {chatChannel && (
+            <p className="ss-result-note">When you go live, you'll also be able to share the magic link in your {chatChannel} channel — partners opt in and the 1:1 happens right there.</p>
           )}
           <div className="ss-wiz-nav">
             <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
