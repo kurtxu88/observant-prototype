@@ -3406,3 +3406,6 @@
 .jn-topback-row { margin: 0 0 1rem; }
 .jn-topback { display: inline-flex; align-items: center; gap: 6px; background: #f0ece4; border: 1px solid var(--border,#e6e3dd); border-radius: 8px; padding: 7px 13px; font: inherit; font-size: .88rem; font-weight: 600; color: #4a463f; cursor: pointer; }
 .jn-topback:hover, .jn-topback:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+/* Join page goes straight to the action — inline CTA under the one-line framing */
+.jn-cta-inline { margin-top: 1.1rem; }

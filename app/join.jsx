@@ -228,63 +228,22 @@ function JoinInvite({ product, partnerBenefit, partnershipOn, cashOn, cashRate, 
   const showPartnership = partnershipOn !== false;
   const rateLabel = (cashRate != null && String(cashRate).trim()) ? String(cashRate) : "$2/min";
   const bothComp = showPartnership && cashOn;
+  // The full invitation is in the email — the web page goes straight to the
+  // action. A short one-line framing + a single benefit line + the CTA.
+  const benefitLine = bothComp
+    ? <>Get {benefit}, a real say in the roadmap, and cash for your time (accrue minutes ~{rateLabel}).</>
+    : showPartnership
+      ? <>Get {benefit} and a real say in the roadmap.</>
+      : <>Get a real say in the roadmap, plus cash for your time (accrue minutes ~{rateLabel}).</>;
   return (
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're invited</span>
         <h1>Help shape {product}.</h1>
-        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. {showPartnership ? <>As a feedback partner, your team gets {benefit} and a real say in the roadmap.</> : <>As a feedback partner, you get a real say in the roadmap.</>}{cashOn && <> You also accrue minutes you can redeem.</>}</p>
-      </section>
-
-      <section className="jn-block">
-        <h2>How it works</h2>
-        <ol className="jn-steps">
-          <li>
-            <b>Opt in, then a quick hello</b>
-            <p>A minute to join, then a short intro chat so the team learns how you use it. Leave anytime.</p>
-          </li>
-          <li>
-            <b>Quick one-on-ones, on your time</b>
-            <p>A few messages or a short voice chat — email or Slack, your call. It remembers your context, so you never repeat yourself.</p>
-          </li>
-          <li>
-            <b>A real say — and an open line</b>
-            <p>You help steer what {product} builds next — and the line's open anytime, not just when they ask.</p>
-          </li>
-        </ol>
-      </section>
-
-      <section className="jn-block">
-        <h2>What you get</h2>
-        <p className="jn-block-lead">{bothComp ? "Two ways your time pays off." : showPartnership ? "This is about the relationship, not a payout." : "A real say in what gets built — and cash for your time."}</p>
-        {bothComp ? (
-          <div className="jn-get-grid">
-            <div className="jn-rate-card jn-get-col">
-              <b>Partnership — {benefit}</b>
-              <p>A real say in the roadmap — the team builds around what you tell them.</p>
-              <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
-            </div>
-            <div className="jn-rate-card jn-get-col">
-              <b>Cash for your time</b>
-              <p>Accrue minutes (~{rateLabel}) you can redeem.</p>
-            </div>
-          </div>
-        ) : showPartnership ? (
-          <div className="jn-rate-card">
-            <b>Feedback partner — {benefit}</b>
-            <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
-            <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
-          </div>
-        ) : (
-          <div className="jn-rate-card">
-            <b>Cash for your time</b>
-            <p>As a {product} feedback partner, you get a real say in the roadmap, and you accrue minutes (~{rateLabel}) you can redeem.</p>
-          </div>
-        )}
-      </section>
-
-      <section className="jn-cta">
-        <Btn variant="primary" size="lg" onClick={onJoin}>Join as a feedback partner <Icon name="arrow" size={16} /></Btn>
+        <p>Become a <b>feedback partner</b> — the occasional quick one-on-one about how {product} works for you, on your time. {benefitLine}</p>
+        <div className="jn-cta-inline">
+          <Btn variant="primary" size="lg" onClick={onJoin}>Join as a feedback partner <Icon name="arrow" size={16} /></Btn>
+        </div>
       </section>
 
       <section className="jn-block jn-faq">
