@@ -3313,3 +3313,37 @@
 .ss-source-add:hover, .ss-source-add:focus-visible { background: var(--accent-tint); border-color: var(--accent-soft); }
 .ss-source-add .ss-source-ic { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-secondary); }
 .ss-source-cta { font-style: normal; font-size: .76rem; font-weight: 600; color: var(--accent, var(--text-secondary)); white-space: nowrap; flex: none; }
+
+/* ============================================================
+   Account page: Slack Connect invite + unified person history
+   Additive — reuses .ss-chat-body / .ss-chat-msg / Avatar / tags.
+   ============================================================ */
+/* Invite via Slack Connect (active side of the integration, demo-only) */
+.ss-slackrun { margin-top: .9rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.ss-slackrun-launch { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; font-weight: 500; color: var(--accent, var(--text-secondary)); border: 1px solid var(--border-strong); border-radius: 999px; padding: .4rem .85rem; }
+.ss-slackrun-launch:hover, .ss-slackrun-launch:focus-visible { background: var(--accent-tint); border-color: var(--accent-soft); }
+.ss-slackrun-panel { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: .95rem 1rem; }
+.ss-slackrun-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .5rem; }
+.ss-slackrun-lead { font-size: .85rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 .8rem; }
+.ss-slackrun-topic { min-height: 7rem; font-size: .88rem; line-height: 1.5; }
+.ss-slackrun-actions { display: flex; gap: .5rem; margin-top: .7rem; }
+.ss-slackrun-confirm { display: flex; align-items: center; gap: .4rem; font-size: .85rem; color: var(--success); margin: .7rem 0 0; line-height: 1.45; }
+
+/* Slack-styled thread / message preview */
+.ss-slackthread { border: 1px solid var(--border); border-radius: 11px; background: oklch(0.99 0.004 80 / .6); padding: .7rem .8rem; }
+.ss-slackthread-head { display: flex; align-items: center; gap: .35rem; font-size: .76rem; font-family: var(--font-mono); color: var(--text-secondary); padding-bottom: .55rem; margin-bottom: .55rem; border-bottom: 1px solid var(--border); }
+.ss-slackmsg { display: flex; gap: .55rem; padding: .35rem 0; }
+.ss-slackmsg > div { flex: 1; min-width: 0; }
+.ss-slackmsg-ava { width: 1.7rem; height: 1.7rem; font-size: .72rem; flex: none; }
+.ss-slackmsg-who { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .1rem; }
+.ss-slackmsg-app { font-style: normal; font-weight: 400; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); border: 1px solid var(--border-strong); border-radius: 4px; padding: 0 .25rem; margin-left: .3rem; }
+.ss-slackmsg p { font-size: .88rem; line-height: 1.5; color: var(--text-primary); margin: 0; }
+.ss-slackmsg-team .ss-slackmsg-who { color: var(--text-primary); }
+.ss-slackreacts { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+.ss-slackreact { font-size: .78rem; border: 1px solid var(--accent-soft); background: var(--accent-tint); border-radius: 999px; padding: .1rem .5rem; }
+.ss-slackreact-who { font-size: .72rem; color: var(--text-muted); }
+
+/* Unified per-person conversation history — small channel icon per message */
+.ss-person-history .ss-chat-msg { position: relative; }
+.ss-msg-meta { display: inline-flex; align-items: center; gap: .3rem; }
+.ss-msg-ch { display: inline-flex; align-items: center; color: var(--text-muted); }

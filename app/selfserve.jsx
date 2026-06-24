@@ -1570,6 +1570,129 @@ function SourceThread({ conversation }) {
   );
 }
 
+// ONE channel-agnostic conversation history per person: every turn from every
+// thread (1:1 chat, voice, sales call, Slack), merged in order, each tagged with
+// a small channel icon. A person has one relationship with us — not several
+// threads. Additive/defensive: guards when a person has no threads.
+function ssMergePersonHistory(person, conversationsById) {
+  const threads = (person.threads || []).map((id) => (conversationsById || {})[id]).filter(Boolean);
+  const turns = [];
+  threads.forEach((c) => {
+    (c.messages || []).forEach((m) => {
+      turns.push({ ...m, _icon: ssThreadIcon(c), _surface: c.surface || "", _mode: c.mode || "chat" });
+    });
+  });
+  return turns;
+}
+
+function PersonHistory({ person, conversationsById }) {
+  const turns = ssMergePersonHistory(person, conversationsById);
+  if (!turns.length) return <p className="ss-rmem-empty">No conversation with {person.name.split(" ")[0]} yet.</p>;
+  return (
+    <details className="ss-rmem-fold ss-person-history">
+      <summary>
+        <span className="ss-rmem-fold-ic"><Icon name="chat" size={14} /></span>
+        <span className="ss-rmem-fold-snip">Conversation history</span>
+        <span className="ss-rmem-fold-dur">{turns.length} messages</span>
+      </summary>
+      <div className="ss-rmem-fold-body">
+        <div className="ss-chat-body">
+          {turns.map((m, i) => (
+            <div className={"ss-chat-msg " + m.t} key={i}>
+              <div>{m.text}</div>
+              <span className="ss-msg-meta"><span className="ss-msg-ch" title={m._surface || m._mode}><Icon name={m._icon} size={11} /></span> {m.meta}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
+}
+
+// "Invite via Slack Connect" — the lightweight active side of the Slack
+// integration: Observant composes a friendly 1:1 invite that the TEAM posts in
+// the account's Slack Connect channel, offering the partnership rewards we
+// already track (discount / early access / roadmap say). Demo-only — no real
+// Slack API. Account-scoped (Slack Connect lives per account).
+function ssSlackChannel(product, account) {
+  const slug = String(product || "your-product").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const short = String(account.name || "").split(/\s|&|,/).filter(Boolean)[0] || "account";
+  return "#" + slug + " ↔ " + short;
+}
+
+function SlackConnectInvite({ product, account }) {
+  const roster = account.people || [];
+  const channel = ssSlackChannel(product, account);
+  // Reuse the partnership rewards we already offer design partners.
+  const tierReward = (typeof SS_REWARD_TIERS !== "undefined" && SS_REWARD_TIERS[0] && SS_REWARD_TIERS[0].reward) || "";
+  const benefit = (account.profile && account.profile.reward) || tierReward
+    || "a product discount, early access, and a real say in the roadmap";
+  const defaultInvite = [
+    "Hey all 👋 — quick one from the " + product + " team.",
+    "",
+    "We're picking a few people we'd love to learn directly from. If you're up for a short 1:1 (a couple of messages or a quick voice chat, whenever suits you), we'll set you up as a design partner — " + benefit + ", plus a real say in what we build next.",
+    "",
+    "React 👋 or reply and we'll find a time. No pressure either way 🙏",
+  ].join("\n");
+
+  const [open, setOpen] = useStateSS(false);
+  const [invite, setInvite] = useStateSS(defaultInvite);
+  const [posted, setPosted] = useStateSS(false);
+  const wavers = roster.slice(0, 2);
+
+  return (
+    <div className="ss-slackrun">
+      {!open ? (
+        <button type="button" className="ss-slackrun-launch" onClick={() => setOpen(true)}>
+          <Icon name="chat" size={15} /> Invite via Slack Connect <Icon name="arrow" size={14} />
+        </button>
+      ) : (
+        <div className="ss-slackrun-panel">
+          <div className="ss-slackrun-head">
+            <span className="eyebrow no-rule">Invite via Slack Connect</span>
+            <button type="button" className="ss-modal-close" onClick={() => { setOpen(false); setPosted(false); }} aria-label="Close"><Icon name="x" size={16} /></button>
+          </div>
+          <p className="ss-slackrun-lead">Observant composes the invite — you post it as the {product} team in <b>{channel}</b>, inviting the channel's people to a quick 1:1 in exchange for the partnership perks.</p>
+
+          <div className="ss-slackthread">
+            <div className="ss-slackthread-head"><Icon name="chat" size={13} /> {channel}</div>
+            <div className="ss-slackmsg ss-slackmsg-team">
+              <Avatar name={product} color={account.color} cls="ss-slackmsg-ava" />
+              <div>
+                <span className="ss-slackmsg-who">{product} team <em className="ss-slackmsg-app">posting</em></span>
+                {posted
+                  ? invite.split("\n").map((line, i) => <p key={i}>{line || " "}</p>)
+                  : <textarea className="textarea ss-slackrun-topic" value={invite} onChange={(e) => setInvite(e.target.value)} />}
+                {posted && wavers.length > 0 && (
+                  <div className="ss-slackreacts">
+                    <span className="ss-slackreact">👋 {wavers.length}</span>
+                    {wavers.map((p) => <span className="ss-slackreact-who" key={p.id}>{p.name.split(" ")[0]} reacted</span>)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {!posted ? (
+            <div className="ss-slackrun-actions">
+              <Btn variant="primary" size="sm" disabled={!invite.trim()} onClick={() => setPosted(true)}>
+                <Icon name="chat" size={14} /> Post to Slack
+              </Btn>
+            </div>
+          ) : (
+            <>
+              <p className="ss-slackrun-confirm"><Icon name="check" size={14} sw={2.6} /> Posted to {channel} — Observant will pick up anyone who 👋's or replies and set up their 1:1.</p>
+              <div className="ss-slackrun-actions">
+                <Btn variant="ghost" size="sm" onClick={() => setPosted(false)}><Icon name="back" size={14} /> Edit invite</Btn>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // The full-width account page: synthesized state + org timeline up top, then
 // people-by-role rows with room, each opening their own conversations inline.
 function AccountPage({ state, account, navigate, goBack }) {
@@ -1586,6 +1709,9 @@ function AccountPage({ state, account, navigate, goBack }) {
   const roster = account.people || [];
   const byRole = rm.byRole || {};
   const orgMemory = rm.orgMemory || [];
+  const product = SelfServeData.productName(state.workspace);
+  // The active Slack action is account-scoped, and only when the account lives in Slack Connect.
+  const hasSlack = String(account.surface || "").toLowerCase().includes("slack");
 
   return (
     <div className="ss-page-stack ss-account-page">
@@ -1605,6 +1731,7 @@ function AccountPage({ state, account, navigate, goBack }) {
         </div>
         {rm.state && <p className="ss-account-state">{rm.state}</p>}
         <p className="ss-account-note">Each person is assigned a role at onboarding. Observant follows up with each of them individually and keeps per-person and per-account memory — so the team inherits the whole relationship, not just the last reply.</p>
+        {hasSlack && <SlackConnectInvite product={product} account={account} />}
       </section>
 
       {/* Org memory / standing timeline — up top, with space */}
@@ -1622,28 +1749,23 @@ function AccountPage({ state, account, navigate, goBack }) {
         <section className="ss-panel">
           <PanelTitle k="People" title="By role" status={roster.length + " people"} />
           <div className="ss-account-people">
-            {roster.map((p) => {
-              const threads = (p.threads || []).map((id) => conversationsById[id]).filter(Boolean);
-              return (
-                <article className="ss-account-person" key={p.id}>
-                  <div className="ss-account-person-head">
-                    <Avatar name={p.name} color={account.color} cls="ss-profile-avatar" />
-                    <div className="ss-account-person-id">
-                      <b>{p.name}</b>
-                      <span className="ss-account-role">{p.role}</span>
-                    </div>
-                    {p.status && <em className="ss-account-status">{p.status}</em>}
+            {roster.map((p) => (
+              <article className="ss-account-person" key={p.id}>
+                <div className="ss-account-person-head">
+                  <Avatar name={p.name} color={account.color} cls="ss-profile-avatar" />
+                  <div className="ss-account-person-id">
+                    <b>{p.name}</b>
+                    <span className="ss-account-role">{p.role}</span>
                   </div>
-                  {p.summary && <p className="ss-account-summary">{p.summary}</p>}
-                  {byRole[p.role] && <p className="ss-account-needs"><b>Needs</b> {byRole[p.role]}</p>}
-                  <div className="ss-account-threads">
-                    {threads.length
-                      ? threads.map((c) => <SourceThread conversation={c} key={c.id} />)
-                      : <p className="ss-rmem-empty">No conversation with {p.name.split(" ")[0]} yet.</p>}
-                  </div>
-                </article>
-              );
-            })}
+                  {p.status && <em className="ss-account-status">{p.status}</em>}
+                </div>
+                {p.summary && <p className="ss-account-summary">{p.summary}</p>}
+                {byRole[p.role] && <p className="ss-account-needs"><b>Needs</b> {byRole[p.role]}</p>}
+                <div className="ss-account-threads">
+                  <PersonHistory person={p} conversationsById={conversationsById} />
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       )}
