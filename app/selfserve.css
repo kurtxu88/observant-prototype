@@ -3379,3 +3379,6 @@
 .jn-workemail { margin: 0 0 1rem; }
 .jn-field-label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
 .jn-field-help { font-size: .82rem; color: var(--text-muted); line-height: 1.45; margin: 6px 0 0; }
+
+/* Compensation: cash caveat (compliance) */
+.ss-comp-caveat { color: var(--text-secondary); }

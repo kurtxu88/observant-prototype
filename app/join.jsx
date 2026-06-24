@@ -20,8 +20,11 @@ function jnContext() {
     product = product.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   }
   let rate = 2;
-  // B2B partnership benefit (single Design-partner tier) — replaces cash/minutes.
+  // B2B partnership benefit (the feedback-partner reward).
   let partnerBenefit = "8% discount + early access";
+  // Compensation choices the company set. Default = partnership only, no cash.
+  let partnershipOn = true;
+  let cashOn = false;
   // Off-product channels that already exist between the user and the team.
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "slack"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
@@ -32,6 +35,7 @@ function jnContext() {
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
       if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 2;
       if (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) partnerBenefit = state.setup.tierRewards.bronze;
+      if (state.setup) { partnershipOn = state.setup.partnership !== false; cashOn = !!state.setup.cashComp; }
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "slack"].filter((c) => state.setup.surfaces[c]);
       }
@@ -42,13 +46,15 @@ function jnContext() {
     product: product || "Northwind",
     rate,
     partnerBenefit,
+    partnershipOn,
+    cashOn,
     channels: channels.length ? channels : ["email", "slack"],
     route: route || "offproduct",
   };
 }
 
 function JoinApp() {
-  const { product, rate, partnerBenefit, channels, route } = jnContext();
+  const { product, rate, partnerBenefit, partnershipOn, cashOn, channels, route } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
@@ -76,7 +82,7 @@ function JoinApp() {
 
       <JoinProgress phase={phase} route={route} onJump={(i) => goPhase(phaseForStep(i))} />
 
-      {phase === "invite" && <JoinInvite product={product} partnerBenefit={partnerBenefit} channels={channels} route={route} onJoin={onJoin} />}
+      {phase === "invite" && <JoinInvite product={product} partnerBenefit={partnerBenefit} partnershipOn={partnershipOn} cashOn={cashOn} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onBack={() => setPhase("invite")} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} onBack={() => setPhase(route === "inproduct" ? "invite" : "choose")} />}
 
@@ -200,14 +206,16 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
   );
 }
 
-function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
+function JoinInvite({ product, partnerBenefit, partnershipOn, cashOn, rate, channels, route, onJoin }) {
   const benefit = partnerBenefit || "8% discount + early access";
+  const showPartnership = partnershipOn !== false;
+  const cashRate = Number(rate) || 2;
   return (
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're invited</span>
         <h1>Help shape {product}.</h1>
-        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. As a feedback partner, your team gets {benefit} and a real say in the roadmap.</p>
+        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. {showPartnership ? <>As a feedback partner, your team gets {benefit} and a real say in the roadmap.</> : <>As a feedback partner, you get a real say in the roadmap.</>}{cashOn && <> You also accrue minutes you can redeem.</>}</p>
       </section>
 
       <section className="jn-block">
@@ -230,11 +238,21 @@ function JoinInvite({ product, partnerBenefit, channels, route, onJoin }) {
 
       <section className="jn-block">
         <h2>What you get</h2>
-        <p className="jn-block-lead">This is about the relationship, not a payout.</p>
+        <p className="jn-block-lead">{showPartnership ? "This is about the relationship, not a payout." : "A real say in what gets built — and rewards for your time."}</p>
         <div className="jn-rate-card">
-          <b>Feedback partner — {benefit}</b>
-          <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
-          <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
+          {showPartnership ? (
+            <>
+              <b>Feedback partner — {benefit}</b>
+              <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
+              <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
+            </>
+          ) : (
+            <>
+              <b>Feedback partner</b>
+              <p>As a {product} feedback partner, you get a real say in the roadmap — the team builds around what you tell them.</p>
+            </>
+          )}
+          {cashOn && <p className="jn-rate-perks">Plus cash for your time — you accrue minutes (~${cashRate}/min) you can redeem.</p>}
         </div>
       </section>
 

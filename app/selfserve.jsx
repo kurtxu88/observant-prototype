@@ -453,9 +453,16 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const route = setup.route || "offproduct";
   const setRoute = (id) => patchSetup({ route: id });
 
-  // Editable single Design-partner reward, carried in setup.tierRewards.bronze.
+  // Editable single feedback-partner reward, carried in setup.tierRewards.bronze.
   const designReward = (setup.tierRewards && setup.tierRewards.bronze) || "8% discount + early access";
   const setDesignReward = (v) => patchSetup({ tierRewards: { ...(setup.tierRewards || {}), bronze: v } });
+  // Compensation choices: partnership (default on) and/or cash — accrued minutes.
+  // Default = partnership only. At least one must stay on.
+  const partnershipOn = setup.partnership !== false;
+  const cashOn = !!setup.cashComp;
+  const cashRate = Number(setup.rate) || 2;
+  const togglePartnership = () => { if (!partnershipOn) patchSetup({ partnership: true }); else if (cashOn) patchSetup({ partnership: false }); };
+  const toggleCash = () => { if (!cashOn) patchSetup({ cashComp: true }); else if (partnershipOn) patchSetup({ cashComp: false }); };
 
   // Off-product contact channels (email + the shared Slack channel) — both
   // already exist between the user and the team. When Slack is one of them, the
@@ -479,21 +486,23 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "",
     "Hi there,",
     "",
-    "The team at " + product + " is inviting a small group of their most engaged users to become feedback partners. They're building " + product + " around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. As a feedback partner, your team gets " + designReward + " and a real say in the roadmap.",
+    "The team at " + product + " is inviting a small group of their most engaged users to become feedback partners. They're building " + product + " around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands."
+      + (partnershipOn ? " As a feedback partner, your team gets " + designReward + " and a real say in the roadmap." : " As a feedback partner, you get a real say in the roadmap.")
+      + (cashOn ? " You also accrue minutes for your time that you can redeem." : ""),
     "",
     route === "inproduct"
       ? "The one-on-ones reach you right inside " + product + " while you're using it — a couple of messages, sometimes a short voice chat."
       : "The one-on-ones come to you over " + channelPhrase + " — a couple of messages, sometimes a short voice chat — and you say yes or no each time.",
     "",
-    "And it only gets better the longer you're in — the " + product + " team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.",
+    partnershipOn ? "And it only gets better the longer you're in — the " + product + " team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it." : "",
     "",
     "You can opt out anytime, in one tap.",
     "",
     "— The " + product + " team",
-  ].join("\n");
+  ].filter((line) => line !== null && line !== undefined).join("\n");
   const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
   // Surface-route / product / reward changes rewrite the invitation, so the copy always matches the setup.
-  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product, designReward]);
+  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product, designReward, partnershipOn, cashOn]);
   async function sendInvitePreview() {
     if (!previewEmail.includes("@") || previewSending) return;
     setPreviewSending(true); setPreviewErr("");
@@ -559,19 +568,29 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
-                <p>Partners join for <b>the relationship, not a payout</b> — a product discount, early access, and a say in the roadmap.</p>
+                <p>How you'd like to compensate feedback partners — pick partnership, cash, or both.</p>
 
                 <div className="ss-comp-grid">
-                  <article className="ss-comp-card on">
-                    <b>Partnership</b>
-                    <p>Partners trade a product discount and early access for being a feedback partner.</p>
+                  <article className={"ss-comp-card ss-comp-pick" + (partnershipOn ? " on" : "")} role="button" tabIndex={0}
+                    onClick={togglePartnership}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePartnership(); } }}>
+                    <b>Partnership {partnershipOn ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
+                    <p>Partners trade a product discount and early access for being a feedback partner — the relationship, not a payout.</p>
                     <div className="ss-comp-tiers">
-                      <label className="ss-comp-tier ss-comp-tier-edit">
+                      <label className="ss-comp-tier ss-comp-tier-edit" onClick={(e) => e.stopPropagation()}>
                         <b>Feedback partner</b>
                         <input className="input ss-comp-reward-input" value={designReward} onChange={(e) => setDesignReward(e.target.value)} placeholder="8% discount + early access" aria-label="Feedback partner reward" />
                       </label>
                     </div>
-                    <small>Partners can choose how often they'd like to be contacted — set later.</small>
+                    <small>{partnershipOn ? "✓ Offered" : "Tap to offer"}</small>
+                  </article>
+
+                  <article className={"ss-comp-card ss-comp-pick" + (cashOn ? " on" : "")} role="button" tabIndex={0}
+                    onClick={toggleCash}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCash(); } }}>
+                    <b>Cash — accrued minutes {cashOn ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
+                    <p>Partners accrue minutes (~${cashRate}/min) for time spent, which they can redeem.</p>
+                    <small className="ss-comp-caveat">⚠ Only if your compliance allows — cash to business users can hit compliance limits.</small>
                   </article>
 
                   <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
@@ -603,10 +622,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                 <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by Email or Slack alongside it." : "Your users pick one at opt-in."} />
                 <ReviewRowSS
                   k="Compensation"
-                  v="Partnership — managed by Observant"
+                  v={[partnershipOn ? "Partnership" : "", cashOn ? "Cash (accrued minutes)" : ""].filter(Boolean).join(" + ") + " — managed by Observant"}
                   sub={<>
-                    <span className="ss-review-tier">Feedback partner — {designReward}</span>
-                    <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>
+                    {partnershipOn && <span className="ss-review-tier">Feedback partner — {designReward}</span>}
+                    {cashOn && <span className="ss-review-tier">Cash — partners accrue minutes (~${cashRate}/min) to redeem, if your compliance allows.</span>}
+                    {partnershipOn && <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>}
                   </>}
                 />
                 <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
