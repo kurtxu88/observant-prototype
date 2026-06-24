@@ -3395,3 +3395,9 @@
 .ss-team-pending { font-style: normal; font-size: .72rem; color: var(--text-muted); font-weight: 400; }
 .ss-team-role { font-style: normal; font-size: .7rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: 999px; padding: .12rem .5rem; white-space: nowrap; }
 .ss-team-role.admin { color: var(--accent, var(--text-secondary)); border-color: var(--accent-soft, var(--border-strong)); }
+
+/* Join "What you get" — partnership + cash side by side when both are offered */
+.jn-get-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.jn-get-grid .jn-get-col { margin: 0; }
+.jn-get-grid .jn-get-col b { font-size: 1.1rem; }
+@media (max-width: 640px) { .jn-get-grid { grid-template-columns: 1fr; } }

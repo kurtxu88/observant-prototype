@@ -25,6 +25,8 @@ function jnContext() {
   // Compensation choices the company set. Default = partnership only, no cash.
   let partnershipOn = true;
   let cashOn = false;
+  // Editable cash rate (free text like the reward), default "$2/min".
+  let cashRate = "$2/min";
   // Off-product channels that already exist between the user and the team.
   let channels = (params.get("channels") || "").split(",").map((c) => c.trim()).filter((c) => ["email", "slack"].includes(c));
   let route = ["offproduct", "inproduct"].includes(params.get("route")) ? params.get("route") : "";
@@ -35,7 +37,7 @@ function jnContext() {
       if (!product && state.workspace && state.workspace.companyName) product = state.workspace.companyName;
       if (state.setup && state.setup.rate) rate = Number(state.setup.rate) || 2;
       if (state.setup && state.setup.tierRewards && state.setup.tierRewards.bronze) partnerBenefit = state.setup.tierRewards.bronze;
-      if (state.setup) { partnershipOn = state.setup.partnership !== false; cashOn = !!state.setup.cashComp; }
+      if (state.setup) { partnershipOn = state.setup.partnership !== false; cashOn = !!state.setup.cashComp; if (state.setup.cashRate != null && String(state.setup.cashRate).trim()) cashRate = String(state.setup.cashRate); }
       if (!channels.length && state.setup && state.setup.surfaces) {
         channels = ["email", "slack"].filter((c) => state.setup.surfaces[c]);
       }
@@ -45,6 +47,7 @@ function jnContext() {
   return {
     product: product || "Northwind",
     rate,
+    cashRate,
     partnerBenefit,
     partnershipOn,
     cashOn,
@@ -54,7 +57,7 @@ function jnContext() {
 }
 
 function JoinApp() {
-  const { product, rate, partnerBenefit, partnershipOn, cashOn, channels, route } = jnContext();
+  const { product, rate, cashRate, partnerBenefit, partnershipOn, cashOn, channels, route } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
@@ -82,7 +85,7 @@ function JoinApp() {
 
       <JoinProgress phase={phase} route={route} onJump={(i) => goPhase(phaseForStep(i))} />
 
-      {phase === "invite" && <JoinInvite product={product} partnerBenefit={partnerBenefit} partnershipOn={partnershipOn} cashOn={cashOn} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
+      {phase === "invite" && <JoinInvite product={product} partnerBenefit={partnerBenefit} partnershipOn={partnershipOn} cashOn={cashOn} cashRate={cashRate} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onBack={() => setPhase("invite")} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} onBack={() => setPhase(route === "inproduct" ? "invite" : "choose")} />}
 
@@ -206,10 +209,11 @@ function JoinChoose({ product, channels, onConnect, onBack }) {
   );
 }
 
-function JoinInvite({ product, partnerBenefit, partnershipOn, cashOn, rate, channels, route, onJoin }) {
+function JoinInvite({ product, partnerBenefit, partnershipOn, cashOn, cashRate, channels, route, onJoin }) {
   const benefit = partnerBenefit || "8% discount + early access";
   const showPartnership = partnershipOn !== false;
-  const cashRate = Number(rate) || 2;
+  const rateLabel = (cashRate != null && String(cashRate).trim()) ? String(cashRate) : "$2/min";
+  const bothComp = showPartnership && cashOn;
   return (
     <main className="jn-main">
       <section className="jn-hero">
@@ -238,22 +242,31 @@ function JoinInvite({ product, partnerBenefit, partnershipOn, cashOn, rate, chan
 
       <section className="jn-block">
         <h2>What you get</h2>
-        <p className="jn-block-lead">{showPartnership ? "This is about the relationship, not a payout." : "A real say in what gets built — and rewards for your time."}</p>
-        <div className="jn-rate-card">
-          {showPartnership ? (
-            <>
-              <b>Feedback partner — {benefit}</b>
-              <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
+        <p className="jn-block-lead">{bothComp ? "Two ways your time pays off." : showPartnership ? "This is about the relationship, not a payout." : "A real say in what gets built — and cash for your time."}</p>
+        {bothComp ? (
+          <div className="jn-get-grid">
+            <div className="jn-rate-card jn-get-col">
+              <b>Partnership — {benefit}</b>
+              <p>A real say in the roadmap — the team builds around what you tell them.</p>
               <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
-            </>
-          ) : (
-            <>
-              <b>Feedback partner</b>
-              <p>As a {product} feedback partner, you get a real say in the roadmap — the team builds around what you tell them.</p>
-            </>
-          )}
-          {cashOn && <p className="jn-rate-perks">Plus cash for your time — you accrue minutes (~${cashRate}/min) you can redeem.</p>}
-        </div>
+            </div>
+            <div className="jn-rate-card jn-get-col">
+              <b>Cash for your time</b>
+              <p>Accrue minutes (~{rateLabel}) you can redeem.</p>
+            </div>
+          </div>
+        ) : showPartnership ? (
+          <div className="jn-rate-card">
+            <b>Feedback partner — {benefit}</b>
+            <p>As a {product} feedback partner, your team gets {benefit}, plus a real say in the roadmap — the team builds around what you tell them.</p>
+            <p className="jn-rate-perks">And it only gets better the longer you're in — the {product} team brings long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</p>
+          </div>
+        ) : (
+          <div className="jn-rate-card">
+            <b>Cash for your time</b>
+            <p>As a {product} feedback partner, you get a real say in the roadmap, and you accrue minutes (~{rateLabel}) you can redeem.</p>
+          </div>
+        )}
       </section>
 
       <section className="jn-cta">

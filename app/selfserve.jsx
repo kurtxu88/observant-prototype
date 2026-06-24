@@ -460,7 +460,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   // Default = partnership only. At least one must stay on.
   const partnershipOn = setup.partnership !== false;
   const cashOn = !!setup.cashComp;
-  const cashRate = Number(setup.rate) || 2;
+  // Editable cash rate (free text like the reward), carried in setup.cashRate.
+  const cashRate = (setup.cashRate != null && String(setup.cashRate).trim()) ? String(setup.cashRate) : "$2/min";
+  const setCashRate = (v) => patchSetup({ cashRate: v });
   const togglePartnership = () => { if (!partnershipOn) patchSetup({ partnership: true }); else if (cashOn) patchSetup({ partnership: false }); };
   const toggleCash = () => { if (!cashOn) patchSetup({ cashComp: true }); else if (partnershipOn) patchSetup({ cashComp: false }); };
 
@@ -589,7 +591,13 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     onClick={toggleCash}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleCash(); } }}>
                     <b>Cash — accrued minutes {cashOn ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
-                    <p>Partners accrue minutes (~${cashRate}/min) for time spent, which they can redeem.</p>
+                    <p>Partners accrue minutes for time spent, which they can redeem.</p>
+                    <div className="ss-comp-tiers">
+                      <label className="ss-comp-tier ss-comp-tier-edit" onClick={(e) => e.stopPropagation()}>
+                        <b>Rate</b>
+                        <input className="input ss-comp-reward-input" value={cashRate} onChange={(e) => setCashRate(e.target.value)} placeholder="$2/min" aria-label="Cash rate per minute" />
+                      </label>
+                    </div>
                     <small className="ss-comp-caveat">⚠ Only if your compliance allows — cash to business users can hit compliance limits.</small>
                   </article>
 
@@ -625,7 +633,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   v={[partnershipOn ? "Partnership" : "", cashOn ? "Cash (accrued minutes)" : ""].filter(Boolean).join(" + ") + " — managed by Observant"}
                   sub={<>
                     {partnershipOn && <span className="ss-review-tier">Feedback partner — {designReward}</span>}
-                    {cashOn && <span className="ss-review-tier">Cash — partners accrue minutes (~${cashRate}/min) to redeem, if your compliance allows.</span>}
+                    {cashOn && <span className="ss-review-tier">Cash — partners accrue minutes ({cashRate}) to redeem, if your compliance allows.</span>}
                     {partnershipOn && <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>}
                   </>}
                 />
