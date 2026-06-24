@@ -2006,7 +2006,7 @@ function AnswerProgressCard({ stageIndex }) {
 }
 
 function AskObservant({ state, patchState, autoQuestion, focused }) {
-  const [question, setQuestion] = useStateSS(state.workspace.learningGoal);
+  const [question, setQuestion] = useStateSS("What's the one thing users most want us to fix or build next in " + SelfServeData.productName(state.workspace) + "?");
   const [asking, setAsking] = useStateSS(false);
   const [progressStage, setProgressStage] = useStateSS(-1);
   const inputRef = useRefSS(null);
