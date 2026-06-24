@@ -243,7 +243,15 @@ function SelfServeApp() {
         startStep={0}
         onLogin={() => setShowLogin(true)}
         onSample={() => { if (!authed) { ssSetAuth({ name: "Demo workspace", email: "demo@observant.dev" }); setAuthed(true); } setState({ ...SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE), launched: true, section: "home" }); }}
-        onSubmit={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } setState({ ...SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE), launched: false }); }}
+        onSubmit={(form, acct) => {
+          if (acct) { ssSetAuth(acct); setAuthed(true); }
+          const auth = ssAuth();
+          // Build a CUSTOM workspace from what the user actually typed, so the
+          // preview / research questions / intro / voice are all grounded in
+          // THEIR product (not the Magic Patterns sample). The sample is only
+          // loaded by the "Use the sample workspace" button.
+          setState({ ...SelfServeData.createCustomState({ ...form, founderName: form.founderName || auth.name || "", email: form.email || auth.email || "" }), launched: false });
+        }}
       />
     );
   }
