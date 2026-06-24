@@ -51,9 +51,11 @@ module.exports = async function handler(req, res) {
       "ESSENCE (what we're really after): " + (essence || ("understand how this person uses " + product + " so the team can tailor future questions")) + "\n" +
       "THREADS to explore (most important first — a guide, not a script):\n" + qLines + "\n" +
       "Open broad, follow the richest thread, anchor on what they actually did, and wrap warmly once you have a concrete answer. Ground everything in " + product + " specifically.";
+    // Spoken opener — concise: a short greeting + the first real question.
+    // (The two-way-line note is text-only; we don't say it aloud.)
     const firstMessage = deep
-      ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
-      : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";
+      ? "Hey, thanks for making the time — about ten minutes, no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, walk me through how you actually use " + product + " day to day.")
+      : "Hey, thanks for hopping on — just a few quick minutes. " + (questions[0] ? "To start: " + questions[0] : "To start — what got you using " + product + "?");
 
     const voiceId = await resolveVoiceId(process.env.ELEVENLABS_API_KEY, process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE);
     const agent = await createAgent(process.env.ELEVENLABS_API_KEY, {
