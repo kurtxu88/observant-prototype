@@ -22,6 +22,10 @@ module.exports = async function handler(req, res) {
     const payload = await readJson(req);
     const product = limit(payload.product, 100) || "the product";
     const essence = limit(payload.essence, 400);
+    // The ENTERED workspace context, so the agent grounds in THIS product (e.g.
+    // Lassie), not a fixed example: what it does + who uses it.
+    const productDescription = limit(payload.productDescription, 600);
+    const userBase = limit(payload.userBase, 400);
     const deep = !!payload.deep || !!essence;
     const questions = (Array.isArray(payload.introQuestions) ? payload.introQuestions : [])
       .map((q) => limit(q, 240)).filter(Boolean).slice(0, 8);
@@ -41,10 +45,12 @@ module.exports = async function handler(req, res) {
       skill.replace(/\[product\]/g, product) + "\n\n" +
       "================ THIS SESSION ================\n" +
       "PRODUCT: " + product + ".\n" +
+      (productDescription ? "WHAT " + product + " DOES: " + productDescription + "\n" : "") +
+      (userBase ? "WHO USES IT: " + userBase + "\n" : "") +
       (deep ? "This is a DEEP-mode conversation on a specific topic the team wants to understand.\n" : "This is a warm get-to-know-you intro with a brand-new feedback partner who just opted in.\n") +
       "ESSENCE (what we're really after): " + (essence || ("understand how this person uses " + product + " so the team can tailor future questions")) + "\n" +
       "THREADS to explore (most important first — a guide, not a script):\n" + qLines + "\n" +
-      "Open broad, follow the richest thread, anchor on what they actually did, and wrap warmly once you have a concrete answer.";
+      "Open broad, follow the richest thread, anchor on what they actually did, and wrap warmly once you have a concrete answer. Ground everything in " + product + " specifically.";
     const firstMessage = deep
       ? "Hey, thanks so much for making the time — this'll be about ten minutes, and there are no wrong answers. " + (questions[0] ? "To start: " + questions[0] : "To start, tell me a bit about how you actually use " + product + " day to day.")
       : "Hi! Thanks so much for joining the " + product + " feedback program. I'd love to get to know you for a few minutes so the team can tailor what they ask you down the line. To start — what got you using " + product + "?";

@@ -40,6 +40,14 @@ function icPlan(product) {
     subject: "",
   };
 }
+// The entered workspace context, so the voice agent grounds in THIS product.
+function icWorkspaceContext() {
+  try {
+    const s = JSON.parse(localStorage.getItem("observant.selfserve.v1") || "{}");
+    const w = s.workspace || {};
+    return { productDescription: String(w.productDescription || ""), userBase: String(w.userBase || "") };
+  } catch (e) { return { productDescription: "", userBase: "" }; }
+}
 
 async function icPost(body) {
   const r = await fetch("/api/selfserve/interview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -89,7 +97,8 @@ function IntroCall() {
   // Prefer a real ElevenLabs voice agent (custom UI, not the embed widget); fall back to text chat.
   useICFx(() => { (async () => {
     try {
-      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, introQuestions: plan.questions, essence: deep ? plan.essence : "", deep: !!deep }) }).then((r) => r.json());
+      const ws = icWorkspaceContext();
+      const v = await fetch("/api/selfserve/intro-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product, productDescription: ws.productDescription, userBase: ws.userBase, introQuestions: plan.questions, essence: deep ? plan.essence : "", deep: !!deep }) }).then((r) => r.json());
       if (v && v.ok && (v.signedUrl || v.agentId)) { setSignedUrl(v.signedUrl || ""); setAgentId(v.agentId || ""); setMode("voice"); return; }
     } catch (e) { /* fall through to chat */ }
     setMode("chat");
