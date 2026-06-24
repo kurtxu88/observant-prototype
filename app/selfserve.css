@@ -3368,3 +3368,9 @@
 /* Consolidated "Your magic link": Copy link + Send me a test email */
 .ss-magiclink-test { margin-top: .85rem; }
 .ss-magiclink-test-note { font-size: .8rem; color: var(--text-muted); line-height: 1.45; margin: .5rem 0 0; }
+
+/* PeopleView is now a clean list (no right-side detail panel) */
+.ss-people-list-page .ss-table-list { margin-top: .25rem; }
+
+/* Per-person actions on the account page (follow-up + request-live) */
+.ss-account-person-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .7rem; padding-top: .6rem; border-top: 1px solid var(--border); }

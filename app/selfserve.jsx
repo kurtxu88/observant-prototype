@@ -1352,194 +1352,28 @@ function QuestionHistory({ state }) {
   );
 }
 
+// Feedback partners = a clean LIST of accounts only. No right-side detail panel.
+// Clicking a row navigates to the full-page Relationship Memory (AccountPage).
 function PeopleView({ state, patchState, navigate }) {
-  // No auto-select: a detail panel only shows once the user actually clicks a row.
-  const selected = state.selectedConversationId
-    ? (state.conversations.find((c) => c.id === state.selectedConversationId) || null)
-    : null;
-  const person = selected ? ssPersonForConversation(state, selected) : null;
-  const [followUpOpen, setFollowUpOpen] = useStateSS(false);
-  const [followUpQ, setFollowUpQ] = useStateSS("");
-  const [followUpStage, setFollowUpStage] = useStateSS("");
-  const [modeTab, setModeTab] = useStateSS("chat");
-
-  const personConversations = person ? state.conversations.filter((item) => item.userId === person.id || item.id === person.id) : [];
-  const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
-  const voiceConversations = personConversations.filter((item) => item.mode === "voice");
-  // Account → people-by-role: only when the seeded account carries the new model.
-  const hasRelationship = !!(person && person.relationshipMemory && (person.people || []).length);
-  const conversationsById = {};
-  (state.conversations || []).forEach((c) => { conversationsById[c.id] = c; });
-
-  const setSelected = (conversationId) => {
-    const conversation = state.conversations.find((item) => item.id === conversationId);
-    const rowPerson = ssPersonForConversation(state, conversation);
-    setModeTab(conversation && conversation.mode === "voice" ? "voice" : "chat");
-    patchState((current) => ({
-      ...current,
-      section: "people",
-      selectedConversationId: conversationId,
-      focusedTarget: "person-" + (rowPerson ? rowPerson.id : conversationId),
-    }));
-  };
-
-  // Follow-ups go through Observant, never straight to the person —
-  // the staged send makes the relay model felt.
-  const sendFollowUp = () => {
-    const q = followUpQ.trim();
-    if (!q || followUpStage) return;
-    setFollowUpStage("Refining your question");
-    setTimeout(() => setFollowUpStage("Sending it to " + person.name.split(" ")[0] + " over " + person.surface), 1400);
-    setTimeout(() => {
-      patchState((current) => ({
-        ...current,
-        conversations: ssUpdateById(current.conversations, (chatConversation || selected).id, (conversation) => ({
-          messages: [
-            ...conversation.messages,
-            { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
-            { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + person.name.split(" ")[0] + ".", meta: "Observant" },
-          ],
-        })),
-        activity: ["Follow-up sent to " + person.name + " via Observant.", ...current.activity],
-      }));
-      setFollowUpStage("");
-      setFollowUpQ("");
-      setFollowUpOpen(false);
-    }, 2800);
-  };
-
-  const requestLive = () => {
-    patchState((current) => ({
-      ...current,
-      scheduledCalls: [
-        { id: "call-" + (current.scheduledCalls.length + 1), user: person.name, time: "Thu 2:00pm", topic: selected.title },
-        ...current.scheduledCalls,
-      ],
-      conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
-        messages: [
-          ...conversation.messages,
-          { t: "relay", text: "Live 1:1 requested.", meta: "Your team" },
-          { t: "them", text: person.name.split(" ")[0] + " - the team would love 15 minutes to watch this workflow. Does Thursday at 2pm work?", meta: "Observant" },
-          { t: "user", text: "Thursday works. Send the invite.", meta: person.name.split(" ")[0] },
-        ],
-      })),
-      activity: ["Live 1:1 scheduled with " + person.name + ".", ...current.activity],
-    }));
-  };
-
   return (
-    <div className="ss-people-layout">
+    <div className="ss-page-stack ss-people-list-page">
       <section className="ss-panel">
-        <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " partners"} />
+        <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " accounts"} />
+        <p className="ss-step-lead">Each account is a customer team. Open one to see its relationship memory — the people by role, what Observant has learned, and every conversation.</p>
         <div className="ss-table-list">
-          {state.people.map((rowPerson) => {
-            const conversationId = ssConversationIdForPerson(state, rowPerson.id);
-            // Accounts with the relationship model open their own full-width page.
-            const rowHasRelationship = !!(rowPerson.relationshipMemory && (rowPerson.people || []).length);
-            return (
-              <PersonLine
-                key={rowPerson.id}
-                person={rowPerson}
-                meta={rowPerson.segment + " · " + rowPerson.surface}
-                body={rowPerson.last}
-                selected={!rowHasRelationship && !!selected && selected.id === conversationId}
-                focused={state.focusedTarget === "person-" + rowPerson.id}
-                onClick={() => rowHasRelationship && navigate
-                  ? navigate({ section: "account", conversationId: rowPerson.id, focusedTarget: "account-" + rowPerson.id })
-                  : setSelected(conversationId)}
-              />
-            );
-          })}
+          {state.people.map((rowPerson) => (
+            <PersonLine
+              key={rowPerson.id}
+              person={rowPerson}
+              meta={rowPerson.segment + " · " + rowPerson.surface}
+              body={rowPerson.last}
+              onClick={() => navigate
+                ? navigate({ section: "account", conversationId: rowPerson.id, focusedTarget: "account-" + rowPerson.id })
+                : null}
+            />
+          ))}
         </div>
       </section>
-
-      {selected && person ? (
-      <section className={"ss-chat-panel ss-person-detail" + ssFocusClass(state, "person-" + person.id)}>
-        <div className="ss-chat-head">
-          <ProfileAvatar person={person} />
-          <div>
-            <h3>{person.name}</h3>
-            <p>{person.segment} · {person.surface}</p>
-          </div>
-          <span className="ss-via">via Observant over {person.surface}</span>
-        </div>
-        {hasRelationship ? (
-          <>
-            <p className="ss-relay-note">This is the account's relationship memory — Observant holds a separate 1:1 line with each person at {person.name} and keeps per-person and per-account memory.</p>
-            <RelationshipMemory account={person} conversationsById={conversationsById} />
-            <details className="ss-rmem-rawsources">
-              <summary><Icon name="chat" size={14} /> Raw sources — every 1:1 chat, voice interview &amp; sales-call transcript</summary>
-              <div className="ss-rmem-rawsources-body">
-                {personConversations.length ? personConversations.map((conversation) => (
-                  <SourceThread conversation={conversation} key={conversation.id} />
-                )) : <EmptyState title="No threads yet" text="Conversations across this account will collect here." />}
-              </div>
-            </details>
-          </>
-        ) : (
-        <>
-        <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
-        <PartnerMemory person={person} />
-        <div className="ss-mode-tabs">
-          <button type="button" className={modeTab === "chat" ? "on" : ""} onClick={() => setModeTab("chat")}><Icon name="chat" size={15} /> 1:1 chat <em>async</em></button>
-          <button type="button" className={modeTab === "voice" ? "on" : ""} onClick={() => setModeTab("voice")}><Icon name="phone" size={15} /> Voice interviews <em>transcripts{voiceConversations.length ? " · " + voiceConversations.length : ""}</em></button>
-        </div>
-        {modeTab === "chat" ? (
-          <div className="ss-chat-body">
-            {chatConversation
-              ? chatConversation.messages.map((message, i) => <ChatMessage key={i} message={message} />)
-              : <EmptyState title="No chat yet" text={"The async 1:1 with " + person.name.split(" ")[0] + " opens with their first reply."} />}
-          </div>
-        ) : (
-          <div className="ss-chat-body ss-transcript-body">
-            {voiceConversations.length ? voiceConversations.map((conversation) => (
-              <div className="ss-transcript" key={conversation.id}>
-                <div className="ss-transcript-head"><b>{conversation.title}</b><span>{conversation.duration || "voice"} · transcript</span></div>
-                {conversation.messages.map((message, i) => (
-                  <div className="ss-turn" key={i}><b>{message.meta}</b><p>{message.text}</p></div>
-                ))}
-              </div>
-            )) : <EmptyState title="No voice interviews yet" text={"When " + person.name.split(" ")[0] + " takes a focused voice interview, the full transcript lands here."} />}
-          </div>
-        )}
-        </>
-        )}
-        <div className="ss-chat-actions">
-          <Btn variant="primary" size="sm" onClick={() => setFollowUpOpen(true)}><Icon name="relay" size={15} /> Follow up with a question</Btn>
-          <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={15} /> Request live 1:1</Btn>
-        </div>
-      </section>
-      ) : (
-        <section className="ss-chat-panel ss-person-detail ss-person-detail-empty">
-          <EmptyState title="Select an account to see its relationship memory" text="Pick a feedback partner on the left to open their conversations and what Observant has learned." />
-        </section>
-      )}
-      {person && followUpOpen && (
-        <>
-          <button type="button" className="ss-edit-backdrop" aria-label="Close" onClick={() => { if (!followUpStage) { setFollowUpOpen(false); } }} />
-          <div className="ss-modal" role="dialog" aria-label="Follow up with a question">
-            <div className="ss-modal-head">
-              <div>
-                <span className="eyebrow no-rule">Follow up</span>
-                <h2>Ask {person.name.split(" ")[0]} a question</h2>
-              </div>
-              {!followUpStage && <button type="button" className="ss-modal-close" onClick={() => setFollowUpOpen(false)} aria-label="Close"><Icon name="x" size={17} /></button>}
-            </div>
-            <p className="ss-modal-lead">Observant refines your question, phrases it for {person.name.split(" ")[0]}, and sends it over {person.surface} — you'll see the reply land in this line.</p>
-            <div className="ss-modal-body">
-              <textarea className="textarea" value={followUpQ} placeholder={"e.g. Would a live dashboard replace your weekly export?"} onChange={(e) => setFollowUpQ(e.target.value)} disabled={!!followUpStage} />
-              {followUpStage
-                ? <div className="ss-asking"><span className="ss-spinner" /> {followUpStage}…</div>
-                : (
-                  <div className="ss-modal-actions">
-                    <span />
-                    <Btn variant="primary" disabled={!followUpQ.trim()} onClick={sendFollowUp}>Send via Observant</Btn>
-                  </div>
-                )}
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -1719,9 +1553,93 @@ function SlackConnectInvite({ product, account }) {
   );
 }
 
+// Per-person actions on the account page: follow up with this person (staged
+// relay through Observant) + request a live 1:1. Operates on the person's
+// primary thread. Moved here from the old split detail panel so nothing is lost.
+function AccountPersonActions({ state, patchState, account, person }) {
+  const [open, setOpen] = useStateSS(false);
+  const [q, setQ] = useStateSS("");
+  const [stage, setStage] = useStateSS("");
+  const first = String(person.name || "").split(" ")[0];
+  const surface = person.surface || account.surface || "their channel";
+  // The person's primary thread (first of their threads) — where the relay lands.
+  const threadId = (person.threads || [])[0] || "";
+
+  const appendToThread = (cur, msgs) => threadId
+    ? ssUpdateById(cur.conversations, threadId, (c) => ({ messages: [...(c.messages || []), ...msgs] }))
+    : cur.conversations;
+
+  const sendFollowUp = () => {
+    const text = q.trim();
+    if (!text || stage) return;
+    setStage("Refining your question");
+    setTimeout(() => setStage("Sending it to " + first + " over " + surface), 1400);
+    setTimeout(() => {
+      patchState((cur) => ({
+        ...cur,
+        conversations: appendToThread(cur, [
+          { t: "relay", text, meta: "Follow-up from your team — Observant is phrasing it for " + first },
+          { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + first + ".", meta: "Observant" },
+        ]),
+        activity: ["Follow-up sent to " + person.name + " (" + account.name + ") via Observant.", ...(cur.activity || [])],
+      }));
+      setStage(""); setQ(""); setOpen(false);
+    }, 2800);
+  };
+
+  const requestLive = () => {
+    patchState((cur) => ({
+      ...cur,
+      scheduledCalls: [
+        { id: "call-" + ((cur.scheduledCalls || []).length + 1), user: person.name, time: "Thu 2:00pm", topic: account.name + " — " + (person.role || "1:1") },
+        ...(cur.scheduledCalls || []),
+      ],
+      conversations: appendToThread(cur, [
+        { t: "relay", text: "Live 1:1 requested.", meta: "Your team" },
+        { t: "them", text: first + " — the team would love 15 minutes to watch this workflow. Does Thursday at 2pm work?", meta: "Observant" },
+        { t: "user", text: "Thursday works. Send the invite.", meta: first },
+      ]),
+      activity: ["Live 1:1 scheduled with " + person.name + " (" + account.name + ").", ...(cur.activity || [])],
+    }));
+  };
+
+  return (
+    <div className="ss-account-person-actions">
+      <Btn variant="ghost" size="sm" onClick={() => setOpen(true)}><Icon name="relay" size={14} /> Follow up</Btn>
+      <Btn variant="ghost" size="sm" onClick={requestLive}><Icon name="video" size={14} /> Request live 1:1</Btn>
+      {open && (
+        <>
+          <button type="button" className="ss-edit-backdrop" aria-label="Close" onClick={() => { if (!stage) setOpen(false); }} />
+          <div className="ss-modal" role="dialog" aria-label="Follow up with a question">
+            <div className="ss-modal-head">
+              <div>
+                <span className="eyebrow no-rule">Follow up</span>
+                <h2>Ask {first} a question</h2>
+              </div>
+              {!stage && <button type="button" className="ss-modal-close" onClick={() => setOpen(false)} aria-label="Close"><Icon name="x" size={17} /></button>}
+            </div>
+            <p className="ss-modal-lead">Observant refines your question, phrases it for {first}, and sends it over {surface} — you'll see the reply land in their conversation history.</p>
+            <div className="ss-modal-body">
+              <textarea className="textarea" value={q} placeholder={"e.g. What would make the handoff to engineering smoother?"} onChange={(e) => setQ(e.target.value)} disabled={!!stage} />
+              {stage
+                ? <div className="ss-asking"><span className="ss-spinner" /> {stage}…</div>
+                : (
+                  <div className="ss-modal-actions">
+                    <span />
+                    <Btn variant="primary" disabled={!q.trim()} onClick={sendFollowUp}>Send via Observant</Btn>
+                  </div>
+                )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // The full-width account page: synthesized state + org timeline up top, then
 // people-by-role rows with room, each opening their own conversations inline.
-function AccountPage({ state, account, navigate, goBack }) {
+function AccountPage({ state, account, navigate, goBack, patchState }) {
   if (!account) {
     return (
       <div className="ss-page-stack">
@@ -1790,6 +1708,7 @@ function AccountPage({ state, account, navigate, goBack }) {
                 <div className="ss-account-threads">
                   <PersonHistory person={p} conversationsById={conversationsById} />
                 </div>
+                <AccountPersonActions state={state} patchState={patchState} account={account} person={p} />
               </article>
             ))}
           </div>
