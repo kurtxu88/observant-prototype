@@ -397,8 +397,8 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
               <Field label="Who uses it today?" wide>
                 <textarea className="textarea" value={form.userBase} placeholder="Ops leads at small B2B companies. / Early-career designers. — who Observant should listen to." onChange={(e) => update("userBase", e.target.value)} />
               </Field>
-              <Field label="Top-of-mind questions you'd like to learn from users? (optional)" wide>
-                <textarea className="textarea" value={form.learningGoal} placeholder="No need to lock anything in — you can feed Observant questions anytime. But if a few are already on your mind, drop them here." onChange={(e) => update("learningGoal", e.target.value)} />
+              <Field label="Intro questions — a few you'd ask users in the first chat (optional)" wide>
+                <textarea className="textarea" value={form.learningGoal} placeholder="A few things you'd love to learn in an intro chat — who they are, how they use it, what's been frustrating. Add or edit anytime." onChange={(e) => update("learningGoal", e.target.value)} />
               </Field>
             </div>
             <div className="ss-entry-actions">
@@ -639,7 +639,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     {partnershipOn && <span className="ss-review-tier">And it only gets better the longer they're in — bring long-time partners in close: first look at what's coming, invites to in-person events, and real time with the founders building it.</span>}
                   </>}
                 />
-                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
+                <ReviewRowSS k="Intro questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub={"Some questions you'd like to ask your users in an introductory chat — so Observant learns who they are and how they use " + product + ". Edit or add anytime."} />
               </div>
 
               <div className="ss-program-block">
