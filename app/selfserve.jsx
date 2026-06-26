@@ -790,10 +790,15 @@ function InProductConnect({ product, setup, patchSetup, connected, onLaunch, onO
           </div>
           <div className="ss-golive-actions">
             <Btn variant="primary" size="lg" onClick={() => { setScanIdx(0); setPhase("scanning"); }}><Icon name="grid" size={16} /> Sign in with GitHub</Btn>
+            {onOptOut && <Btn variant="ghost" size="lg" onClick={onOptOut}>Can’t connect a repo? Use off-product <Icon name="arrow" size={16} /></Btn>}
           </div>
           <small className="ss-connect-foot">Read-only on your code + permission to open one pull request. No write access to anything but the install PR — which you review before merging.</small>
           {onOptOut && (
-            <p className="ss-connect-optout">Can’t connect a repo right now? <button type="button" className="ss-linklike" onClick={onOptOut}>Reach your existing users off-product instead →</button></p>
+            <div className="ss-connect-alt">
+              <span className="ss-connect-alt-h">Off-product, no code</span>
+              <p>Reach the users you already have over <b>email or Telegram</b> instead — share one magic link, set up a compensated feedback program, and skip the install entirely.</p>
+              <button type="button" className="ss-linklike" onClick={onOptOut}>Set up off-product instead →</button>
+            </div>
           )}
         </div>
       )}
