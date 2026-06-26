@@ -796,7 +796,9 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
               <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
             </div>
           </div>
-          <div className="ss-topbar-actions" />
+          <div className="ss-topbar-actions">
+            <button type="button" className="ss-linklike" onClick={ssLogout} style={{ fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: "0.35rem" }}><Icon name="back" size={14} /> Log out</button>
+          </div>
         </header>
 
         <main className="ss-app-content">
