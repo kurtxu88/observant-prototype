@@ -349,12 +349,10 @@ const SS_FLOW_INPRODUCT = [
   { id: "product", label: "Product" },
   { id: "context", label: "Context" },
   { id: "install", label: "Install" },
-  { id: "review", label: "Review" },
 ];
 const SS_FLOW_OFFPRODUCT = [
   { id: "product", label: "Product" },
   { id: "context", label: "Context" },
-  { id: "channel", label: "Channel" },
   { id: "program", label: "Program" },
   { id: "review", label: "Review" },
 ];
@@ -478,8 +476,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 
 // Header copy per activation step, keyed by the computed step id (path-aware).
 const SS_STEP_META = {
-  surface_in: { t: "Install Observant in your app", d: "Connect your repo — one PR and it watches + researches on its own." },
-  surface_off: { t: "Invite your users", d: "Off-product channels — a magic link to the users you already have." },
+  install: { t: "Install Observant in your app", d: "Connect your repo — one PR and it watches + researches on its own." },
   program: { t: "Set up the program", d: "Compensation and your invitation." },
   review: { t: "Review & launch", d: "Check it, then go live." },
 };
@@ -508,12 +505,13 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const setConnect = (id) => patchSetup({ connectMode: id });
   const route = setup.route || "inproduct";
   const setRoute = (id) => { patchSetup({ route: id }); setStep(0); };
-  // Path-aware steps: in-product installs the snippet (no program/invite); off-product
-  // runs the compensation program + magic-link invite.
-  const stepIds = route === "inproduct" ? ["surface", "review"] : ["surface", "program", "review"];
+  // Everyone defaults to in-product: the Novus-style install IS the onboarding. The
+  // only opt-out is at the Connect-GitHub stage, which switches to the off-product
+  // program (invite existing users + compensation).
+  const stepIds = route === "inproduct" ? ["install"] : ["program", "review"];
   const curId = stepIds[Math.min(step, stepIds.length - 1)];
   const onboardFlow = route === "inproduct" ? SS_FLOW_INPRODUCT : SS_FLOW_OFFPRODUCT;
-  const stepMeta = curId === "surface" ? (route === "inproduct" ? SS_STEP_META.surface_in : SS_STEP_META.surface_off) : SS_STEP_META[curId];
+  const stepMeta = SS_STEP_META[curId];
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -589,34 +587,20 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </aside>
 
         <main className="ss-activation-main">
-          {curId === "surface" && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 3" title="How does Observant reach your users?" status={route === "inproduct" ? "In-product" : "Off-product"} />
-              <p className="ss-step-lead"><b>The default is in-product</b> — install one snippet and Observant watches and researches on its own. Prefer to reach the users you already have over email or Telegram? Switch to off-product.</p>
-              <div className="ss-route-grid">
-                <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Recommended</em></span>
-                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. <b>Install one snippet; it watches and researches on its own.</b></p>
-                  <small>Small feedback flows freely in-app. Only longer 1:1s ask the user's consent and reward their time.</small>
-                </button>
-                <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">No code</em></span>
-                  <p>No install. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
-                  <small>Invite your existing users into a compensated feedback program.</small>
-                </button>
-              </div>
-              {route === "inproduct" && (
-                <>
-                  <InProductConnect product={product} patchSetup={patchSetup} connected={!!setup.connected} />
-                  <InProductIncentive product={product} setup={setup} patchSetup={patchSetup} />
-                </>
-              )}
-            </section>
+          {curId === "install" && (
+            <InProductConnect
+              product={product}
+              setup={setup}
+              patchSetup={patchSetup}
+              connected={!!setup.connected}
+              onLaunch={onLaunch}
+              onOptOut={() => setRoute("offproduct")}
+            />
           )}
 
           {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 4" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 3" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
@@ -661,36 +645,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
             </section>
           )}
 
-          {curId === "review" && route === "inproduct" && (
+          {curId === "review" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 4" title="Review & launch" status={setup.connected ? "Installed ✓" : "Last step"} />
-              <p className="ss-step-lead">{setup.connected ? "The snippet is merged — Observant is ready to watch and run 1:1s on its own." : "Finish merging the install PR in the previous step to go live. You can still open your dashboard to look around."}</p>
-              <div className="ss-review">
-                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="How it reaches users" v={setup.connected ? "In-product — snippet installed" : "In-product — snippet pending merge"} sub="Observant watches your product and starts 1:1s at the moments it finds — no invite to send." />
-                <ReviewRowSS
-                  k="Incentives"
-                  v="Pay only for the deep ones"
-                  sub={<>
-                    <span className="ss-review-tier">Small, in-the-moment feedback flows freely — no opt-in, no cost.</span>
-                    <span className="ss-review-tier">Longer ~10-min 1:1s ask the user's consent and reward their time at ${setup.rate || 2}/min ≈ ${Math.round(10 * (setup.rate || 2))}.</span>
-                  </>}
-                />
-                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Users never see these. Feed in new questions anytime — Observant weaves them into the in-product 1:1s." />
-              </div>
-              <div className="ss-program-block">
-                <h3>{setup.connected ? "You're ready" : "Go live"}</h3>
-                <p>{setup.connected ? "Observant is installed in " + product + ". Open your dashboard to watch insights — and agent-ready fixes — land as it learns." : "Once the snippet is merged, Observant starts on its own. Open your dashboard to look around in the meantime."}</p>
-                <div className="ss-golive-actions">
-                  <Btn variant="primary" size="lg" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {curId === "review" && route !== "inproduct" && (
-            <section className="ss-panel">
-              <PanelTitle k="Step 5" title="Preview" status="Last step" />
+              <PanelTitle k="Step 4" title="Preview" status="Last step" />
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
@@ -778,7 +735,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
 // In-product: install one snippet, and Observant watches + researches on its own.
 // Three screens, modeled on Novus: Connect GitHub → Scan (live reasoning) → Install PR.
-function InProductConnect({ product, patchSetup, connected }) {
+function InProductConnect({ product, setup, patchSetup, connected, onLaunch, onOptOut }) {
   const [phase, setPhase] = useStateSS(connected ? "installed" : "connect");
   const [scanIdx, setScanIdx] = useStateSS(0);
   const [merged, setMerged] = useStateSS(connected);
@@ -811,7 +768,13 @@ function InProductConnect({ product, patchSetup, connected }) {
             </div>
           ))}
         </div>
-        <small className="ss-connect-foot">Watching live · triggers tune themselves as data builds. Off-product email / Telegram still works alongside this.</small>
+        {setup && <InProductIncentive product={product} setup={setup} patchSetup={patchSetup} />}
+        {onLaunch && (
+          <div className="ss-golive-actions">
+            <Btn variant="primary" size="lg" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
+          </div>
+        )}
+        <small className="ss-connect-foot">Watching live · triggers tune themselves as data builds.</small>
       </section>
     );
   }
@@ -829,6 +792,9 @@ function InProductConnect({ product, patchSetup, connected }) {
             <Btn variant="primary" size="lg" onClick={() => { setScanIdx(0); setPhase("scanning"); }}><Icon name="grid" size={16} /> Sign in with GitHub</Btn>
           </div>
           <small className="ss-connect-foot">Read-only on your code + permission to open one pull request. No write access to anything but the install PR — which you review before merging.</small>
+          {onOptOut && (
+            <p className="ss-connect-optout">Can’t connect a repo right now? <button type="button" className="ss-linklike" onClick={onOptOut}>Reach your existing users off-product instead →</button></p>
+          )}
         </div>
       )}
 

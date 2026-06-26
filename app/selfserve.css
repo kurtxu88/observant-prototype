@@ -3279,3 +3279,7 @@
 .ss-incentive-rate .ss-rate-input { display: inline-flex; align-items: center; gap: .3rem; }
 .ss-incentive-rate .input { width: 4.2rem; }
 .ss-incentive-rate b { display: inline; font-size: .82rem; color: var(--accent-hover); margin: 0; }
+
+.ss-connect-optout { margin-top: .8rem; font-size: .82rem; color: var(--text-muted); }
+.ss-connect-optout .ss-linklike { font-size: .82rem; }
+.ss-connect-done .ss-incentive { margin-top: 1.1rem; }
