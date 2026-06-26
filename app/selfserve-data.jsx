@@ -447,6 +447,25 @@ function ssCreateInsights(workspace) {
       evidence: "Grounded in 252 remembered moments and 18 recent private lines.",
       next: "Ship a live dashboard link; keep CSV as secondary.",
       conversationId: "dana",
+      raisedBy: ["dana", "marcus", "owen"],
+      sourceCounts: { conversations: 18, moments: 252 },
+      trigger: "export_completed (3rd weekly export)",
+      rootCause: [
+        "Power users trust the numbers — the real work is turning the CSV into a team-readable view. Dana: “the numbers are fine, the presentation is the work.”",
+        "Their teams have no seats, so the export is really a sharing workaround. Dana: “give me a read-only link and I’d never export again.” Marcus: “a link my ops lead can read, not another CSV.”",
+        "Upgrade evaluators are blocked on the same thing — team visibility, not price (Leah).",
+      ],
+      steps: [
+        { id: "s1", n: 1, type: "Code change", title: "Add read-only dashboard share links (no seat required)", affects: "src/dashboard/ShareLink.tsx",
+          detail: "Generate a per-dashboard read-only link that renders the live view without a login or seat — scoped to one report, revocable from settings. This is the thing Dana, Marcus, and Owen all asked for: a link a teammate can read instead of a CSV.",
+          prompt: "Add a read-only, no-auth share link for a dashboard view in src/dashboard/. It renders the live dashboard read-only (no seat), is scoped to one report, and is revocable. Grounded in user feedback: teams have no seats, so users export CSVs purely to share — they want a link instead." },
+        { id: "s2", n: 2, type: "Copy", title: "Reframe the export action toward sharing", affects: "src/dashboard/ExportButton.tsx",
+          detail: "Make “Share a link” the primary action next to Export, with copy that names the job: “Send your team a read-only view — no seat needed.” Keep CSV as the secondary path.",
+          prompt: "Next to the Export button in src/dashboard/ExportButton.tsx, add a primary “Share a link” action with copy “Send your team a read-only view — no seat needed.” Keep CSV export as secondary." },
+        { id: "s3", n: 3, type: "PRD", title: "Scope per-report link permissions", affects: "docs/share-links.md",
+          detail: "Define link permissions: read-only, per-report, revocable, optional expiry. Upgrade evaluators (Leah) need to trust team-visibility before upgrading — make the permission model legible in the UI.",
+          prompt: "Draft a short PRD for read-only dashboard share-link permissions: per-report scope, revocable, optional expiry, a legible permission model in the UI. Success metric: weekly exports/user drop ≥40% among power users in 30 days." },
+      ],
     },
     {
       id: "insight-onboarding",
@@ -456,6 +475,21 @@ function ssCreateInsights(workspace) {
       evidence: "Surfaced from onboarding lines and feature_opened events.",
       next: "Add reporting intent to first-run setup.",
       conversationId: "priya",
+      raisedBy: ["priya"],
+      sourceCounts: { conversations: 6, moments: 96 },
+      trigger: "onboarding stall (no report opened in week 1)",
+      rootCause: [
+        "New users name the same reporting job in different words, then hunt for settings later (Priya).",
+        "They can’t find the dashboard-sharing flow in week one, so they fall back to emailing a CSV. Priya: “I forwarded the CSV because I couldn’t find the dashboard sharing flow.”",
+      ],
+      steps: [
+        { id: "s1", n: 1, type: "Copy", title: "Add a first-run “what do you need to report on?” step", affects: "src/onboarding/FirstRun.tsx",
+          detail: "After account creation, ask the reporting job in the user’s words and route them to a starting view. Options: Weekly ops report · Exec summary · Custom. Naming the job up front stops users hunting for settings.",
+          prompt: "Add a first-run onboarding step in src/onboarding/FirstRun.tsx: headline “What do you need to report on?”, sub “Pick a starting view — we’ll set up sharing so your team can read it without a seat.”, options Weekly ops report / Exec summary / Custom." },
+        { id: "s2", n: 2, type: "Code change", title: "Route new users to sharing setup, not just the dashboard", affects: "src/onboarding/FirstRun.tsx",
+          detail: "After the report choice, surface the share-link setup in the same flow so week-one users never fall back to emailing a CSV.",
+          prompt: "After the first-run report-type choice, route the user into the dashboard share-link setup in the same flow, so new users set up sharing before they reach for CSV export." },
+      ],
     },
   ];
 }

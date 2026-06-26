@@ -33,6 +33,51 @@ const SS_ANSWER_STAGES = [
   { id: "answer", label: "Summarizing answer", detail: "Turning the evidence into a grounded recommendation." },
 ];
 
+// ── In-product connect (GitHub import → scan → install PR) ───────────────────
+// Modeled screen-for-screen on the Novus-by-Pendo flow, but the scan is looking
+// for the MOMENTS WORTH INTERVIEWING (the why), not just instrumentation points.
+// Simulated against a synthetic repo — no real OAuth / codegen in the prototype.
+const SS_CONNECT_REPO = { owner: "your-org", name: "web-app", branch: "main", stack: "React + Vite + TypeScript" };
+
+const SS_SCAN_STEPS = [
+  { tool: "Bash", cmd: "git clone --depth 1 your-org/web-app", out: "Cloned main @ 4f9c2a1 · 318 files", concl: "Repo reachable. Read-only clone." },
+  { tool: "Read", cmd: "package.json · vite.config.ts", out: "react@18 · vite@5 · typescript@5 · stripe@14", concl: "React + Vite + TypeScript SPA. Stripe billing present." },
+  { tool: "Grep", cmd: "grep -r 'posthog|amplitude|pendo|segment' src/", out: "0 matches", concl: "No product analytics wired — behavior is currently invisible." },
+  { tool: "Read", cmd: "src/routes/* · src/pages/Pricing.tsx", out: "12 routes · 3 plan tiers (Free / Team / Business)", concl: "B2B app with self-serve upgrade. Pricing is a key decision surface." },
+  { tool: "Read", cmd: "src/onboarding/* · src/dashboard/*", out: "FirstRun.tsx · ExportButton.tsx · ShareLink (none)", concl: "Onboarding + export are core flows; no share-link path exists." },
+];
+
+// What the scan submits — the product map, plus the behavioral moments where a
+// 1:1 would pay off most (these become the auto-triggers once the snippet is live).
+const SS_SCAN_DETECTED = [
+  { k: "Platform", v: "React + Vite SPA · Stripe billing" },
+  { k: "Key flows", v: "Onboarding · Reporting / export · Upgrade" },
+  { k: "Personas", v: "Power user · New user · Upgrade evaluator" },
+  { k: "Analytics", v: "None found — Observant will instrument the triggers it needs" },
+];
+const SS_SCAN_TRIGGERS = [
+  { moment: "Abandoned upgrade", detail: "Left the upgrade page after the price reveal", why: "Ask what tipped them off — price, or team-visibility doubt." },
+  { moment: "Repeat export", detail: "3rd CSV export in a week", why: "A power user working around a missing share flow — ask what they're really doing with it." },
+  { moment: "Onboarding stall", detail: "No report opened in week 1", why: "Catch the new-user confusion before it becomes churn." },
+];
+
+// The single PR Observant opens to go live — snippet + init, plus an honest note
+// of what it could NOT wire (the Novus credibility move).
+function ssInstallPR(product) {
+  return {
+    number: 1,
+    title: "Install Observant #1",
+    branch: "observant/install",
+    files: [
+      { path: "index.html", add: ['<script src="https://cdn.observant.dev/o.js" data-app="obs_live_8fa2"></script>'] },
+      { path: "src/main.tsx", add: ['import { observant } from "@observant/web";', 'observant.init({ app: "obs_live_8fa2" });'] },
+      { path: "src/observant.d.ts", add: ['declare module "@observant/web";'] },
+    ],
+    body: "Adds the Observant snippet + init so the product can start its own 1:1s at the moments above. One file each — no behavior change to your app.",
+    caveat: "Did NOT call observant.identify() — your auth lives in a Supabase callback I can't safely edit. When you're ready, call observant.identify(user.id) in src/auth/onSignIn.ts so conversations attach to the right person.",
+  };
+}
+
 function ssLoadState() {
   try {
     const raw = localStorage.getItem(SS_STORAGE_KEY);
@@ -539,10 +584,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                 </button>
                 <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
-                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Simple setup, walked through with our team.</p>
+                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Install one snippet; it watches and researches on its own.</p>
                 </button>
               </div>
-              {route === "inproduct" && <ProUpsell />}
+              {route === "inproduct" && <InProductConnect product={product} patchSetup={patchSetup} connected={!!setup.connected} />}
             </section>
           )}
 
@@ -681,23 +726,121 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   );
 }
 
-function ProUpsell() {
+// In-product: install one snippet, and Observant watches + researches on its own.
+// Three screens, modeled on Novus: Connect GitHub → Scan (live reasoning) → Install PR.
+function InProductConnect({ product, patchSetup, connected }) {
+  const [phase, setPhase] = useStateSS(connected ? "installed" : "connect");
+  const [scanIdx, setScanIdx] = useStateSS(0);
+  const [merged, setMerged] = useStateSS(connected);
+  const pr = ssInstallPR(product);
+
+  useEffectSS(() => {
+    if (phase !== "scanning") return undefined;
+    if (scanIdx >= SS_SCAN_STEPS.length) {
+      const t = setTimeout(() => setPhase("scanned"), 600);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setScanIdx((i) => i + 1), 850);
+    return () => clearTimeout(t);
+  }, [phase, scanIdx]);
+
+  const detectedShown = SS_SCAN_DETECTED.slice(0, Math.min(SS_SCAN_DETECTED.length, scanIdx));
+  const mergePR = () => { setMerged(true); setPhase("installed"); if (patchSetup) patchSetup({ connected: true, route: "inproduct" }); };
+
+  if (phase === "installed") {
+    return (
+      <section className="ss-connect ss-connect-done">
+        <div className="ss-connect-livehead">
+          <span className="ss-connect-dot" />
+          <div><b>Observant is live in {product}.</b><p>The snippet is merged. From here it watches for the moments below and starts 1:1s on its own — feedback and agent-ready fixes land in your workspace. Nothing else to set up.</p></div>
+        </div>
+        <div className="ss-trigger-grid">
+          {SS_SCAN_TRIGGERS.map((t) => (
+            <div className="ss-trigger" key={t.moment}>
+              <b>{t.moment}</b><span className="ss-trigger-when">{t.detail}</span><em>{t.why}</em>
+            </div>
+          ))}
+        </div>
+        <small className="ss-connect-foot">Watching live · triggers tune themselves as data builds. Off-product email / Telegram still works alongside this.</small>
+      </section>
+    );
+  }
+
   return (
-    <section className="ss-pro-upsell">
-      <div className="ss-pro-head">
-        <span className="ss-pro-badge">Pro</span>
-        <b>Want people to provide feedback inside your app?</b>
-        <p>This is a Pro feature — we'll walk you through some simple setup. It unlocks the following:</p>
-      </div>
-      <ul className="ss-pro-list">
-        <li><b>In-product conversations</b><span>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Your users can still connect by email or Telegram too.</span></li>
-        <li><b>Enrich your analysis</b><span>Merge conversations with names, segments, and behavior data from your side — every insight gets sharper.</span></li>
-        <li><b>Behavior triggers</b><span>Control exactly when a conversation starts: a churn signal, a third visit, an abandoned step.</span></li>
-        <li><b>Background recruiting</b><span>We quietly bring the right people into your panel for you, continuously.</span></li>
-      </ul>
-      <div className="ss-pro-cta">
-        <a className="btn btn-primary btn-sm" href={SS_BOOK_CALL_URL} target="_blank" rel="noreferrer">Book a call with us</a>
-      </div>
+    <section className="ss-connect">
+      {phase === "connect" && (
+        <div className="ss-connect-stage">
+          <PanelTitle k="In-product" title="Connect & scan your codebase" status="~2 min · one PR" />
+          <p className="ss-step-lead">Install one snippet and Observant watches your product, finds the moments worth a conversation, and runs the 1:1s itself. Start by connecting the repo so it can read your flows and open the install PR.</p>
+          <div className="ss-repo-row">
+            <Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span>
+          </div>
+          <div className="ss-golive-actions">
+            <Btn variant="primary" size="lg" onClick={() => { setScanIdx(0); setPhase("scanning"); }}><Icon name="grid" size={16} /> Sign in with GitHub</Btn>
+          </div>
+          <small className="ss-connect-foot">Read-only on your code + permission to open one pull request. No write access to anything but the install PR — which you review before merging.</small>
+        </div>
+      )}
+
+      {(phase === "scanning" || phase === "scanned") && (
+        <div className="ss-connect-stage">
+          <PanelTitle k="In-product" title={phase === "scanned" ? "Your product map is ready" : "Observant is reading your product…"} status={phase === "scanned" ? "Scan complete" : "Scanning"} />
+          <div className="ss-scan-grid">
+            <div className="ss-scan-reason">
+              <span className="ss-scan-reason-h">Reasoning · {Math.min(scanIdx, SS_SCAN_STEPS.length)}/{SS_SCAN_STEPS.length} steps</span>
+              {SS_SCAN_STEPS.slice(0, scanIdx).map((s, i) => (
+                <div className="ss-scan-step" key={i}>
+                  <code className="ss-scan-tool">{s.tool}</code>
+                  <div className="ss-scan-step-body">
+                    <span className="ss-scan-cmd">{s.cmd}</span>
+                    <span className="ss-scan-out">{s.out}</span>
+                    <span className="ss-scan-concl"><Icon name="check" size={11} sw={2.6} /> {s.concl}</span>
+                  </div>
+                </div>
+              ))}
+              {phase === "scanning" && scanIdx < SS_SCAN_STEPS.length && <div className="ss-scan-step ss-scan-working"><span className="ss-scan-spinner" /> working…</div>}
+            </div>
+            <div className="ss-scan-map">
+              <span className="ss-scan-map-h">What Observant learned</span>
+              {detectedShown.map((d) => (
+                <div className="ss-scan-fact" key={d.k}><Icon name="check" size={12} sw={2.6} /><b>{d.k}</b><span>{d.v}</span></div>
+              ))}
+              {phase === "scanned" && (
+                <>
+                  <span className="ss-scan-map-h" style={{ marginTop: 14 }}>Moments worth interviewing</span>
+                  {SS_SCAN_TRIGGERS.map((t) => <div className="ss-scan-fact ss-scan-moment" key={t.moment}><Icon name="spark" size={12} /><b>{t.moment}</b><span>{t.detail}</span></div>)}
+                </>
+              )}
+            </div>
+          </div>
+          {phase === "scanned" && (
+            <div className="ss-golive-actions">
+              <Btn variant="primary" size="lg" onClick={() => setPhase("install")}><Icon name="arrow" size={16} /> Go live with a single PR</Btn>
+            </div>
+          )}
+        </div>
+      )}
+
+      {phase === "install" && (
+        <div className="ss-connect-stage">
+          <PanelTitle k="In-product" title="Go live with a single PR" status="Review & merge" />
+          <p className="ss-step-lead">Observant wrote the install as one pull request. Review it like any other PR — merge when you're happy and it's live.</p>
+          <div className="ss-pr">
+            <div className="ss-pr-head"><Icon name="grid" size={14} /><b>{pr.title}</b><span className="ss-pr-branch">{pr.branch} → {SS_CONNECT_REPO.branch}</span></div>
+            <p className="ss-pr-body">{pr.body}</p>
+            {pr.files.map((f) => (
+              <div className="ss-pr-file" key={f.path}>
+                <span className="ss-pr-path">{f.path}</span>
+                {f.add.map((line, i) => <div className="ss-pr-add" key={i}><span>+</span><code>{line}</code></div>)}
+              </div>
+            ))}
+            <div className="ss-pr-caveat"><b>Heads up — what it did not wire, and why</b><p>{pr.caveat}</p></div>
+          </div>
+          <div className="ss-golive-actions">
+            <Btn variant="primary" size="lg" onClick={mergePR}><Icon name="check" size={16} /> Merge PR — go live</Btn>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1527,8 +1670,115 @@ function PreBriefed({ state }) {
   );
 }
 
+// One-click fix — revived for the IN-PRODUCT path. Off-product we couldn't know an
+// insight was actionable or execute a code fix; with the snippet live (repo connected,
+// behavior triggered the conversation) we can: synthesis → root cause → file-scoped
+// plan → open a real PR → close the loop with the humans who raised it.
+function ssCopyClip(text) { try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (e) {} }
+
+function InsightStep({ step }) {
+  const [open, setOpen] = useStateSS(false);
+  const [on, setOn] = useStateSS(true);
+  const [copied, setCopied] = useStateSS(false);
+  const copy = (e) => { e.stopPropagation(); ssCopyClip(step.prompt || step.detail); setCopied(true); setTimeout(() => setCopied(false), 1600); };
+  return (
+    <div className={"ss-step" + (on ? "" : " off")}>
+      <button type="button" className="ss-step-check" aria-label="Include this step" onClick={() => setOn((v) => !v)}>{on ? <Icon name="check" size={13} sw={2.6} /> : null}</button>
+      <div className="ss-step-main">
+        <button type="button" className="ss-step-head" onClick={() => setOpen((v) => !v)}>
+          <span className="ss-step-label">STEP {step.n}</span>
+          <b>{step.title}</b>
+          <span className="ss-step-type">{step.type}</span>
+        </button>
+        {open && (
+          <div className="ss-step-body">
+            <p>{step.detail}</p>
+            {step.affects && <span className="ss-step-affects">Affects: {step.affects}</span>}
+            <button type="button" className="ss-step-copy" onClick={copy}>{copied ? "Copied ✓" : "Copy prompt"}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InsightDetail({ insight, state, patchState, onBack }) {
+  const [closed, setClosed] = useStateSS(false);
+  const [planCopied, setPlanCopied] = useStateSS(false);
+  const [prOpened, setPrOpened] = useStateSS(false);
+  const raised = (insight.raisedBy || []).map((id) => (state.people || []).find((pp) => pp.id === id)).filter(Boolean);
+  const steps = insight.steps || [];
+  const firstNames = raised.map((pp) => pp.name.split(" ")[0]).join(", ");
+  const copyPlan = () => {
+    const text = insight.title + "\n\nRoot cause:\n" + (insight.rootCause || []).map((x) => "- " + x).join("\n") +
+      "\n\nPlan:\n" + steps.map((s) => "STEP " + s.n + " — " + s.title + (s.affects ? " (" + s.affects + ")" : "") + "\n" + s.detail).join("\n\n");
+    ssCopyClip(text); setPlanCopied(true); setTimeout(() => setPlanCopied(false), 1600);
+  };
+  const openPR = () => {
+    setPrOpened(true);
+    patchState((cur) => ({ ...cur, activity: ["Opened PR “Fix: " + insight.title + "” (" + steps.length + " files) from a behavior-triggered insight.", ...(cur.activity || [])] }));
+  };
+  const closeLoop = () => {
+    setClosed(true);
+    patchState((cur) => ({ ...cur, activity: ["Closed the loop with " + firstNames + " on “" + insight.title + "”.", ...(cur.activity || [])] }));
+  };
+  return (
+    <div className="ss-page-stack">
+      <button type="button" className="ss-insight-link" onClick={onBack}><Icon name="back" size={14} /> All insights</button>
+      <section className="ss-panel">
+        <div className="ss-insight-detail-head">
+          <span className="ss-insight-metric-big">{insight.metric}</span>
+          <div>
+            <span className="eyebrow no-rule">Insight · Plan ready{insight.trigger ? " · triggered by " + insight.trigger : ""}</span>
+            <h2>{insight.title}</h2>
+            <p>{insight.detail}</p>
+          </div>
+        </div>
+      </section>
+      <div className="ss-insight-detail-grid">
+        <section className="ss-panel">
+          <PanelTitle k="Root cause" title="What the conversations say" />
+          <ol className="ss-rootcause">{(insight.rootCause || []).map((x, i) => <li key={i}>{x}</li>)}</ol>
+        </section>
+        <section className="ss-panel ss-sources">
+          <PanelTitle k="Sources" title="Grounded in" status={raised.length + " partners"} />
+          <div className="ss-source-people">
+            {raised.map((pp) => <PersonLine key={pp.id} person={pp} meta={pp.segment + " · " + pp.surface} compact />)}
+          </div>
+          {insight.sourceCounts && <p className="ss-source-counts">{insight.sourceCounts.conversations} conversations · {insight.sourceCounts.moments} remembered moments</p>}
+        </section>
+      </div>
+      <section className="ss-panel">
+        <PanelTitle k="Agent-ready fix" title={steps.length + " steps — grounded in the why"} status={prOpened ? "PR opened ✓" : "Plan ready"} />
+        <div className="ss-plan-actions">
+          <Btn variant="ghost" size="sm" onClick={copyPlan}><Icon name="book" size={14} /> {planCopied ? "Copied ✓" : "Copy plan"}</Btn>
+          <Btn variant="ghost" size="sm" onClick={copyPlan}><Icon name="spark" size={14} /> Hand to Claude</Btn>
+          <Btn variant="primary" size="sm" onClick={openPR} disabled={prOpened}><Icon name="link" size={14} /> {prOpened ? "PR opened ✓" : "Open PR"}</Btn>
+        </div>
+        {prOpened && <p className="ss-fix-closed">Observant opened <b>“Fix: {insight.title}”</b> against {SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name} — {steps.length} files, scoped to the plan below. Review and merge like any PR.</p>}
+        <div className="ss-steps">{steps.map((s) => <InsightStep key={s.id} step={s} />)}</div>
+      </section>
+      {raised.length > 0 && (
+        <section className="ss-panel ss-closeloop">
+          <PanelTitle k="Close the loop" title="Tell the people who raised this" status={raised.length + " partners"} />
+          <p className="ss-step-lead">Behavioral tools fix the code and stop. You have the relationship — let {firstNames} know you're acting on what they told you.</p>
+          <Btn variant="primary" size="sm" onClick={closeLoop} disabled={closed}><Icon name="relay" size={14} /> {closed ? "Loop closed ✓" : "Tell " + firstNames}</Btn>
+          {closed && <p className="ss-fix-closed">Observant let {firstNames} know their feedback shaped a fix — the part a behavioral tool can't do.</p>}
+        </section>
+      )}
+    </div>
+  );
+}
+
 function InsightsView({ state, patchState, navigate }) {
   const latestAnswer = state.answers[0];
+  const connected = !!(state.setup && (state.setup.connected || state.setup.route === "inproduct"));
+  const [selectedId, setSelectedId] = useStateSS(() => {
+    const ft = state.focusedTarget || "";
+    return (state.insights || []).some((i) => i.id === ft) ? ft : "";
+  });
+  const selected = connected ? (state.insights || []).find((i) => i.id === selectedId) : null;
+  if (selected) return <InsightDetail insight={selected} state={state} patchState={patchState} onBack={() => setSelectedId("")} />;
 
   return (
     <div className="ss-page-stack">
@@ -1549,13 +1799,15 @@ function InsightsView({ state, patchState, navigate }) {
                 type="button"
                 className={"ss-insight-card ss-card-action" + ssFocusClass(state, insight.id)}
                 key={insight.id}
-                onClick={() => navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) })}
+                onClick={() => connected
+                  ? setSelectedId(insight.id)
+                  : navigate({ section: "people", conversationId: insight.conversationId, focusedTarget: "person-" + (rowPerson ? rowPerson.id : insight.conversationId) })}
               >
                 <span>{insight.metric}</span>
                 <h3>{insight.title}</h3>
                 <p>{insight.detail}</p>
                 <em>{insight.evidence}</em>
-                <div>{insight.next}</div>
+                <div className="ss-insight-cta">{connected && insight.steps ? insight.steps.length + "-step fix ready" : insight.next} <Icon name="arrow" size={13} /></div>
               </button>
             );
           })}

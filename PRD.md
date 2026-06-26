@@ -15,8 +15,19 @@ team and no time to chase feedback**. They ship daily but learn haphazardly: pos
 Product Hunt threads, replying to random comments, DMing users one by one, blasting the occasional
 survey. Their product iteration is fast; their *learning* is not systematized.
 
+**Sharpened (2026-06-26): target builders who don't have the research know-how *themselves*.** The wedge
+isn't just "no research team" — it's "doesn't personally know how to do it." Autopilot is net-new
+*capability* for them, not a faster tool for an existing practitioner. This is the screen that decides
+priority among warm leads:
+- **In:** Maysie/Cindy (coaching app, ~30–40 beta users — wants close user follow-up, no research muscle)
+  → **first**, because the founder is the buyer, the pain is named, and she's ready. Then **MentorMates**
+  (events platform — engineer literally said "our research wasn't professional, no follow-ups") once we
+  reach the decision-maker (Chinat).
+- **Out:** **Tote/Chris** — Chris already *has* the know-how and does it himself. Autopilot isn't for the
+  person who already knows how; it's for the person who doesn't. Warm ≠ ICP.
+
 We are **not** targeting big-company research orgs or teams that already have researchers. Those are
-opportunistic at best.
+opportunistic at best (Wyze = replace-Centercode, support-owned — a separate motion).
 
 ## Problem
 Getting user feedback is manual, scattered, and reactive. It stops the moment the founder stops doing
@@ -32,6 +43,34 @@ Observant takes the **entire** user-learning loop off your plate and runs it on 
 
 You **turn on learning mode once** and watch the data come in. The result: iterate at lightning speed,
 never build blind, and stop spending your own time chasing feedback.
+
+## The in-product / self-evolving experience (north star)
+The off-product loop (magic link → 1:1s over email/Telegram) is the **day-one fast lane** for everyone.
+The destination — and the thing that makes Observant a *self-evolving product*, not a survey tool — is the
+**in-product** path: **install one snippet, and Observant watches and researches on its own.**
+
+The full loop, builder does nothing after the snippet:
+1. **Watch** — reads behavior, finds the moments worth a conversation (abandoned upgrade, repeat export,
+   onboarding stall) — no study to configure.
+2. **Research** — reaches the right user at the moment of use, builds per-user memory, asks the question a
+   researcher would.
+3. **Deliver** — feedback + grounded insight, bottom-up, continuous.
+4. **Fix** — an **agent-ready fix**: root cause → file-scoped plan → **opens a PR** you review and merge.
+   (Hand-to-Claude / copy-prompt for the agentic-coding crowd.)
+5. **Tune** — behavioral triggers self-incorporate; the loop sharpens itself.
+6. **Close the loop** — tell the humans who raised it. The part a behavior-only tool structurally can't do.
+
+**Onboarding = the Novus-grounded import (built in the prototype, `app/selfserve.jsx` → `InProductConnect`):**
+Connect GitHub → **scan with a live reasoning panel** (real tool-calls + conclusions) that surfaces the
+product map *and the moments worth interviewing* → **install via a single PR** that states what it could NOT
+wire and why. The one-click fix is gated to the in-product/connected path (off-product can't reliably
+execute a code fix — that's exactly the in-product capability).
+
+**Honest sequencing — velocity first, data-volume later.** The teams that will install the snippet are
+thin on users (Cindy ~30–40). Behavioral triggers don't fire much at that scale, so early in-product sells
+on **loop velocity** (signal → shipped fix, fast), *not* "we watched 10,000 sessions." The data-rich version
+arrives when a mid-size, lower-regulatory team grants both access and volume (none in the current pipeline).
+Don't promise the 10k-session version to a 40-user team.
 
 ## Messaging pillars
 - **Autopilot is the headline.** "Set it once; it runs itself." End-to-end: find → run → follow up → surface.

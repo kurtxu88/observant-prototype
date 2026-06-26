@@ -3196,3 +3196,70 @@
 /* Voice interview preview (deep compose) */
 .ss-voice-preview { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .ss-voice-preview .btn { margin-top: 8px; }
+
+/* ============================================================
+   In-product connect: GitHub import → scan → install PR
+   (the self-evolving on-ramp — Novus-grounded)
+   ============================================================ */
+.ss-connect { margin-top: 1.4rem; border: 1px solid var(--border); border-radius: 14px; background: var(--canvas); overflow: hidden; }
+.ss-connect-stage { padding: 1.5rem 1.6rem 1.7rem; }
+.ss-connect .ss-step-lead { margin: .5rem 0 1rem; max-width: 60ch; }
+.ss-connect-foot { display: block; margin-top: .9rem; color: var(--text-muted); font-size: .78rem; line-height: 1.5; }
+
+.ss-repo-row { display: inline-flex; align-items: center; gap: .55rem; padding: .5rem .8rem; border: 1px solid var(--border); border-radius: 9px; background: var(--accent-tint); margin: .2rem 0 1.1rem; }
+.ss-repo-row code { font-family: var(--font-mono); font-size: .85rem; color: var(--text-primary); }
+.ss-repo-branch, .ss-pr-branch { font-family: var(--font-mono); font-size: .72rem; color: var(--text-muted); padding: .1rem .4rem; border: 1px solid var(--border); border-radius: 5px; }
+
+/* scan: reasoning panel + product map */
+.ss-scan-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 760px) { .ss-scan-grid { grid-template-columns: 1fr; } }
+.ss-scan-reason { background: var(--night); border-radius: 11px; padding: .9rem 1rem; min-height: 210px; }
+.ss-scan-reason-h, .ss-scan-map-h { display: block; font-family: var(--font-mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: .7rem; }
+.ss-scan-reason-h { color: oklch(0.78 0.02 60); }
+.ss-scan-step { display: flex; gap: .55rem; margin-bottom: .7rem; animation: ssFade .35s ease; }
+.ss-scan-tool { flex: none; font-family: var(--font-mono); font-size: .66rem; font-weight: 600; color: var(--night); background: oklch(0.82 0.02 60); border-radius: 5px; padding: .12rem .4rem; height: fit-content; margin-top: .1rem; }
+.ss-scan-step-body { display: flex; flex-direction: column; gap: .15rem; }
+.ss-scan-cmd { font-family: var(--font-mono); font-size: .76rem; color: oklch(0.86 0.02 60); }
+.ss-scan-out { font-size: .76rem; color: oklch(0.70 0.015 60); }
+.ss-scan-concl { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; color: oklch(0.82 0.07 152); }
+.ss-scan-working { color: oklch(0.72 0.015 60); font-size: .78rem; align-items: center; }
+.ss-scan-spinner, .ss-connect-dot { width: 9px; height: 9px; border-radius: 50%; }
+.ss-scan-spinner { border: 2px solid oklch(0.55 0.02 60); border-top-color: transparent; margin-right: .5rem; animation: ssSpin .7s linear infinite; }
+.ss-scan-map { border: 1px solid var(--border); border-radius: 11px; padding: .9rem 1rem; }
+.ss-scan-map-h { color: var(--text-muted); }
+.ss-scan-fact { display: grid; grid-template-columns: 16px auto 1fr; align-items: baseline; gap: .4rem; padding: .3rem 0; font-size: .82rem; animation: ssFade .35s ease; }
+.ss-scan-fact b { color: var(--text-primary); }
+.ss-scan-fact span { color: var(--text-secondary); }
+.ss-scan-fact svg { color: var(--success); }
+.ss-scan-moment svg { color: var(--accent); }
+
+/* install PR card */
+.ss-pr { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; margin: .3rem 0 .2rem; }
+.ss-pr-head { display: flex; align-items: center; gap: .5rem; padding: .7rem .9rem; background: var(--accent-tint); border-bottom: 1px solid var(--border); }
+.ss-pr-head b { font-size: .92rem; }
+.ss-pr-body { padding: .7rem .9rem 0; color: var(--text-secondary); font-size: .85rem; }
+.ss-pr-file { padding: .6rem .9rem; }
+.ss-pr-path { font-family: var(--font-mono); font-size: .74rem; color: var(--text-muted); }
+.ss-pr-add { display: flex; gap: .5rem; font-family: var(--font-mono); font-size: .76rem; background: var(--success-tint); border-radius: 5px; padding: .2rem .5rem; margin-top: .3rem; overflow-x: auto; }
+.ss-pr-add span { color: var(--success); font-weight: 700; }
+.ss-pr-add code { color: var(--text-primary); white-space: pre; }
+.ss-pr-caveat { margin: .4rem .9rem .9rem; padding: .6rem .8rem; border-left: 3px solid var(--accent); background: var(--accent-tint); border-radius: 0 7px 7px 0; }
+.ss-pr-caveat b { font-size: .8rem; }
+.ss-pr-caveat p { font-size: .82rem; color: var(--text-secondary); margin-top: .2rem; }
+
+/* live / connected state + triggers */
+.ss-connect-done { padding: 1.4rem 1.6rem 1.6rem; }
+.ss-connect-livehead { display: flex; gap: .7rem; align-items: flex-start; margin-bottom: 1.1rem; }
+.ss-connect-livehead b { font-size: .98rem; }
+.ss-connect-livehead p { color: var(--text-secondary); font-size: .85rem; margin-top: .2rem; max-width: 64ch; }
+.ss-connect-dot { background: var(--success); margin-top: .45rem; flex: none; box-shadow: 0 0 0 0 oklch(0.560 0.090 152 / .5); animation: ssPulse 1.8s ease-out infinite; }
+.ss-trigger-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+@media (max-width: 760px) { .ss-trigger-grid { grid-template-columns: 1fr; } }
+.ss-trigger { border: 1px solid var(--border); border-radius: 10px; padding: .7rem .8rem; }
+.ss-trigger b { display: block; font-size: .85rem; }
+.ss-trigger-when { display: block; font-family: var(--font-mono); font-size: .7rem; color: var(--accent); margin: .15rem 0 .35rem; }
+.ss-trigger em { font-style: normal; font-size: .79rem; color: var(--text-secondary); }
+
+@keyframes ssFade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes ssSpin { to { transform: rotate(360deg); } }
+@keyframes ssPulse { 0% { box-shadow: 0 0 0 0 oklch(0.560 0.090 152 / .5); } 70% { box-shadow: 0 0 0 7px oklch(0.560 0.090 152 / 0); } 100% { box-shadow: 0 0 0 0 oklch(0.560 0.090 152 / 0); } }
