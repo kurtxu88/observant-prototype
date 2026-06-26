@@ -397,7 +397,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
               <Btn variant="primary" size="lg" disabled={!ready} onClick={() => setStep(1)}>Continue <Icon name="arrow" size={16} /></Btn>
               {editing
                 ? (onExit ? <Btn variant="ghost" size="lg" onClick={onExit}><Icon name="back" size={16} /> Back to setup</Btn> : null)
-                : <Btn variant="ghost" size="lg" onClick={onSample}>Use the sample workspace</Btn>}
+                : <Btn variant="ghost" size="lg" onClick={() => { setForm({ ...SS_EMPTY_WORKSPACE_FORM, ...SS_DEFAULT_WORKSPACE }); setStep(0); }}>Use the sample workspace</Btn>}
             </div>
             {!editing && <p className="ss-fineprint">Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>. Demo — no password.</p>}
           </>
