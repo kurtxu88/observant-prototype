@@ -3263,3 +3263,19 @@
 @keyframes ssFade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes ssSpin { to { transform: rotate(360deg); } }
 @keyframes ssPulse { 0% { box-shadow: 0 0 0 0 oklch(0.560 0.090 152 / .5); } 70% { box-shadow: 0 0 0 7px oklch(0.560 0.090 152 / 0); } 100% { box-shadow: 0 0 0 0 oklch(0.560 0.090 152 / 0); } }
+
+/* In-product incentive model (fragmented free · deep 1:1s rewarded) */
+.ss-incentive { margin-top: 1.4rem; }
+.ss-incentive .ss-step-lead { margin: .4rem 0 .9rem; }
+.ss-incentive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 720px) { .ss-incentive-grid { grid-template-columns: 1fr; } }
+.ss-incentive-card { border: 1px solid var(--border); border-radius: 11px; padding: .9rem 1rem; }
+.ss-incentive-card.free { background: var(--success-tint); border-color: oklch(0.86 0.05 152); }
+.ss-incentive-card.paid { background: var(--accent-tint); border-color: var(--accent-soft); }
+.ss-incentive-tag { font-family: var(--font-mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+.ss-incentive-card b { display: block; margin: .25rem 0 .3rem; font-size: .95rem; }
+.ss-incentive-card p { font-size: .83rem; color: var(--text-secondary); }
+.ss-incentive-rate { display: flex; align-items: center; gap: .8rem; margin-top: .7rem; }
+.ss-incentive-rate .ss-rate-input { display: inline-flex; align-items: center; gap: .3rem; }
+.ss-incentive-rate .input { width: 4.2rem; }
+.ss-incentive-rate b { display: inline; font-size: .82rem; color: var(--accent-hover); margin: 0; }

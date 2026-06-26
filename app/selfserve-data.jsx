@@ -227,10 +227,15 @@ function ssCreateSetup(workspace) {
     consentAck: true,
     usersSource: "invite",
     inviteUrl: workspace.productUrl.replace(/\/$/, "") + "/observant-invite",
-    // The client's one surface decision: off-product (start today) vs in-product (Pro).
-    // Email vs Telegram is the USER's choice at opt-in — both always available.
-    route: "offproduct",
-    surfaces: { email: true, telegram: true, product: false },
+    // The client's one surface decision. In-product (install the snippet, Observant
+    // watches + researches itself) is now the DEFAULT path; off-product (invite existing
+    // users to be contacted over email/Telegram) is the alternative when they choose it.
+    route: "inproduct",
+    surfaces: { email: true, telegram: true, product: true },
+    // In-product incentive model: small/fragmented feedback flows freely in-app (no
+    // opt-in, no per-minute cost). Only longer-form (~10-min interviews) ask the user's
+    // consent and reward their time. (User-side consent gate built later.)
+    inProduct: { fragmentedFree: true, deepConsent: true },
     // Behavior triggers are an advanced, optional add-on — off by default.
     events: {
       user_signed_up: false,
