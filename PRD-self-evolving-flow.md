@@ -214,11 +214,26 @@ available **from day 1**, never a vanity-volume funnel. Two scopes:
 "Standardized/Light" needs a real name. Candidates: **Pulse** · **Quick loop** · **Moment** · **Tap** ·
 **Check-in**. Extensive tier: **Deep dive** · **Deep 1:1** · **Sit-down**.
 
-### 6.5 TODO — dig the standardized-moment library from the KB
-The standardized program (onboarding · churn · session-based · eval · key-journey) should be grounded in
-Xuan's `~/knowledge-base/` — the right question, cadence, cooldown, and "concrete-behavior bar" for each
-moment. Related TODO: **precisely define the consent boundary** (exactly what flips light → extensive →
-consent). These two are one decision.
+### 6.5 The standardized-moment library (RESOLVED from the KB — full spec: `docs/FEEDBACK-MOMENTS.md`)
+The light tier ships a pre-built **moment library**, each grounded in Xuan's KB methodology: **onboarding/D0
+· churn-risk · session-end · eval/AI-session · key-journey-drop-off** (core), plus activation · resurrection
+· post-purchase · feature-adoption (extensions). Each moment defines its trigger, the *one* behaviorally-
+anchored question, cadence + cooldown, the "concrete-behavior bar," and the trap to avoid. **Three governing
+laws:** (1) anchor on past behavior, never intent/opinion; (2) one round only — *the urge to unfold is the
+escalation trigger*, not a license to keep digging; (3) a global ceiling (≤1/session, ≤~1–2/user/7d, rotate
+targets) to fight survivorship/response bias. *(Distinction held: D0 = first-encounter only; churn = an
+active user disengaging — never the same trigger.)*
+
+### 6.6 The consent boundary (RESOLVED — light = product feedback; extensive = research)
+**A moment runs LIGHT (free, no consent, no pay) ONLY IF all are true:** (1) in-product · (2) text only ·
+(3) ≤1 round · (4) no new PII · (5) not a sensitive topic · (6) no compensation — under the existing privacy
+policy, trivially ignorable, with a one-tap "what is this?" disclosure. **Break any → EXTENSIVE → consent
+required; compensation whenever it's off-product, recorded, or >1 round.** The churned/never-converted are
+off-product by construction → always consent+pay. **Escalation is a user-accepted offer, never automatic —
+accepting the "can I ask a couple more questions? ~10 min, compensated" prompt *is* the consent gate.** This
+also resolves the ethics leak (old Q8): the honest in-product disclosure is *"this product is learning from
+how you use it so it can improve — your answer helps, you can ignore it."* Full lever table + "partners not
+subjects" floor in `docs/FEEDBACK-MOMENTS.md`.
 
 ## 7. Onboarding → first value
 
@@ -313,13 +328,17 @@ high-confidence; the bets in §11 are genuinely open.
   founder brand vs. hybrid. (Distinct from text-vs-voice modality, which is decided. Miner Road precedent:
   AI never writes her personal comms.)
 - **Q6 Signal labels** — Issues/Insights/Opportunities vs. Frictions/Findings/Openings.
-- **Q8 "Never say research"** when a real end-user (or Slack/MCP answer) asks "what is this?" — the ethics
-  of what we tell the humans being learned from.
 - **Build ownership of the user-side surface** — your conversation logic vs. Bin's transport (the known
   build-split gap).
 
-### Open TODOs created by the 6/27 decisions
-1. **Lock the acute-wedge framing line** (§1.5 candidates).
-2. **Name the light tier** (§6.4: Pulse / Quick loop / Moment / Tap…) and the extensive tier (Deep dive…).
-3. **Mine the KB for the standardized-moment library** + **define the exact consent boundary** (§6.5) —
-   one decision.
+### Resolved since
+- **Q8 "what is this?" ethics → RESOLVED** by the consent work (§6.6 + `docs/FEEDBACK-MOMENTS.md`): the
+  in-product disclosure line + "partners not subjects" floor.
+- **KB standardized-moment library + consent boundary → DONE** (§6.5–6.6, full spec in
+  `docs/FEEDBACK-MOMENTS.md`).
+
+### Awaiting Xuan's lock (Jack's recommendations in)
+1. **Wedge line** — Jack's primary: **"Feedback, from the moment you launch."** (hero) + body line *"You
+   launched. Observant installs the feedback loop you know you need — starting with your user journey."*
+2. **Tier names** — Jack's pick: **Pulse** (light) / **Deep dive** (extensive). *Lock these → I write them
+   into §1.5 + §6 and cascade to the GTM plan.*
