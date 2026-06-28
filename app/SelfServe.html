@@ -16,6 +16,24 @@
 
 <script type="text/babel" src="/app/ui.jsx"></script>
 <script type="text/babel" src="/app/selfserve-data.jsx"></script>
+
+<!-- Self-evolving-flow scaffold (Phase A): early synthetic data, then one stub per surface.
+     Load order is load-bearing: ui -> selfserve-data -> surfaces-data -> surfaces/* -> selfserve.
+     Each surface registers onto window.OBS_SURFACES; the dashboard router in selfserve.jsx
+     (ProductShell) renders the selected section off that registry. -->
+<script type="text/babel" src="/app/surfaces/surfaces-data.jsx"></script>
+<script type="text/babel" src="/app/surfaces/home.jsx"></script>
+<script type="text/babel" src="/app/surfaces/signals.jsx"></script>
+<script type="text/babel" src="/app/surfaces/memory.jsx"></script>
+<script type="text/babel" src="/app/surfaces/people.jsx"></script>
+<script type="text/babel" src="/app/surfaces/act.jsx"></script>
+<script type="text/babel" src="/app/surfaces/pulse.jsx"></script>
+<script type="text/babel" src="/app/surfaces/channels.jsx"></script>
+<script type="text/babel" src="/app/surfaces/settings.jsx"></script>
+<script type="text/babel" src="/app/surfaces/conversations.jsx"></script>
+<script type="text/babel" src="/app/surfaces/userside.jsx"></script>
+<script type="text/babel" src="/app/surfaces/ask.jsx"></script>
+
 <script type="text/babel" src="/app/selfserve.jsx"></script>
 </body>
 </html>

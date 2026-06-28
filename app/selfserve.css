@@ -3285,3 +3285,40 @@
 .ss-connect-alt p { font-size: .85rem; color: var(--text-secondary); margin: .3rem 0 .5rem; max-width: 60ch; }
 .ss-connect-alt .ss-linklike { font-size: .88rem; font-weight: 600; color: var(--accent); }
 .ss-connect-done .ss-incentive { margin-top: 1.1rem; }
+
+/* ── Self-evolving-flow dashboard: surface + docked Ask Observant rail (PRD §3) ── */
+.ss-surface-wrap { display: flex; gap: 1.5rem; align-items: flex-start; max-width: 1500px; margin: 0 auto; }
+.ss-surface-main { flex: 1 1 auto; min-width: 0; }
+.ss-ask-rail-dock {
+  flex: 0 0 296px;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+}
+.obs-ask-rail {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  padding: 1rem 1.05rem;
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.03);
+}
+.obs-ask-rail .ss-empty-state { margin-top: .6rem; }
+@media (max-width: 1180px) {
+  .ss-surface-wrap { display: block; }
+  .ss-ask-rail-dock { display: none; }
+}
+
+/* "Preview the user view" side link (sits below the nav) */
+.ss-userview-link {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; margin: 10px 0;
+  padding: 9px 11px;
+  border: 1px dashed var(--border-strong, #d9cfc6);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit; font-size: .82rem; font-weight: 600;
+  cursor: pointer; text-align: left;
+}
+.ss-userview-link:hover { color: var(--accent); border-color: var(--accent); }
+.ss-userview-link.on { color: var(--accent); border-color: var(--accent); background: oklch(0.985 0.006 60); }

@@ -3,7 +3,7 @@
    ============================================================ */
 
 const SS_STORAGE_KEY = "observant.selfserve.v1";
-const SS_STATE_VERSION = 6;
+const SS_STATE_VERSION = 7;
 
 const SS_DEFAULT_WORKSPACE = {
   founderName: "Maya Chen",
@@ -605,12 +605,21 @@ function ssBaseState(workspace, mode) {
     focusedTarget: "",
     selectedLoopId: "",
     selectedConversationId: "",
+    // Self-evolving-flow drill-down selections (Phase A scaffold).
+    selectedSignalId: "",
+    selectedPersonId: "",
+    selectedActId: "",
     setup: ssCreateSetup(workspace),
     people: [],
     groups: [],
     conversations: [],
     events: [],
     insights: [],
+    // Self-evolving-flow entities (seeded for the sample workspace; see window.OBS_DATA).
+    signals: [],
+    pulseMoments: { config: {}, recent: [] },
+    actLedger: [],
+    questionsInFlight: [],
     loops: [],
     loopRuns: [],
     simulationRuns: [],
@@ -634,10 +643,54 @@ function ssBaseState(workspace, mode) {
   };
 }
 
+// Fold the self-evolving-flow entities (window.OBS_DATA, defined in
+// surfaces/surfaces-data.jsx) INTO a seeded state, so every surface reads the
+// SAME data off `state` — not just its own OBS_DATA fallback. Idempotent: it
+// guards against re-appending the off-product extras, so it's safe to run twice
+// (createSampleState → normalizeState). Defensive if OBS_DATA isn't loaded yet.
+function ssApplySelfEvolving(seeded) {
+  if (!seeded) return seeded;
+  const data = (typeof window !== "undefined" && window.OBS_DATA) ? window.OBS_DATA : null;
+  if (!data) return seeded;
+  const workspace = seeded.workspace;
+  const fileById = data.peopleFileById ? data.peopleFileById(workspace) : {};
+  const triggers = data.conversationTriggers ? data.conversationTriggers(workspace) : {};
+  const extraPeople = data.extraPeople ? data.extraPeople(workspace) : [];
+  const extraConversations = data.extraConversations ? data.extraConversations(workspace) : [];
+
+  // merge the living-file extension onto seeded people; append off-product extras once
+  const seenPeople = {};
+  const people = (seeded.people || []).map((person) => {
+    seenPeople[person.id] = true;
+    return fileById[person.id] ? { ...person, file: { ...(person.file || {}), ...fileById[person.id] } } : person;
+  });
+  extraPeople.forEach((person) => { if (!seenPeople[person.id]) { seenPeople[person.id] = true; people.push(person); } });
+
+  // stamp the trigger moment onto seeded conversations; append the extras once
+  const seenConvos = {};
+  const stamp = (conversation) => (triggers[conversation.id] && !conversation.trigger)
+    ? { ...conversation, trigger: triggers[conversation.id] }
+    : conversation;
+  const conversations = (seeded.conversations || []).map((conversation) => {
+    seenConvos[conversation.id] = true;
+    return stamp(conversation);
+  });
+  extraConversations.forEach((conversation) => { if (!seenConvos[conversation.id]) { seenConvos[conversation.id] = true; conversations.push(stamp(conversation)); } });
+
+  return {
+    ...seeded,
+    people,
+    conversations,
+    signals: data.signals ? data.signals(workspace) : (seeded.signals || []),
+    pulseMoments: data.pulseMoments ? data.pulseMoments(workspace) : (seeded.pulseMoments || { config: {}, recent: [] }),
+    actLedger: data.actLedger ? data.actLedger(workspace) : (seeded.actLedger || []),
+  };
+}
+
 function ssCreateSampleState(input) {
   const workspace = ssCreateWorkspace(input || SS_DEFAULT_WORKSPACE);
   const product = ssProductName(workspace);
-  return {
+  return ssApplySelfEvolving({
     ...ssBaseState(workspace, "sample"),
     selectedLoopId: "loop-export",
     selectedConversationId: "dana",
@@ -659,7 +712,7 @@ function ssCreateSampleState(input) {
       "Which part of " + product + " still makes you leave the product?",
       "What should Observant watch after the next release?",
     ],
-  };
+  });
 }
 
 function ssInitialCustomQuestion(workspace) {
@@ -726,7 +779,7 @@ function ssCreateCustomState(input) {
     timeline: simulation.timeline || SS_SIMULATION_STAGES,
   };
 
-  return {
+  return ssApplySelfEvolving({
     ...base,
     selectedLoopId: loop.id,
     selectedConversationId: loop.conversationId,
@@ -745,7 +798,7 @@ function ssCreateCustomState(input) {
       "Question created: " + loop.name + ".",
       ...base.activity,
     ],
-  };
+  });
 }
 
 function ssCreateInitialState(input, mode) {
@@ -949,10 +1002,15 @@ function ssMergeSeededRecords(currentRecords, seededRecords) {
 }
 
 function ssNormalizeSection(section) {
-  if (section === "loops" || section === "install") return "learning";
-  if (section === "conversations") return "people";
-  if (section === "learned") return "insights";
-  if (["home", "learning", "people", "insights", "context", "compose", "settings"].includes(section)) return section;
+  // Self-evolving-flow surfaces (registry keys) + the two non-nav routes (context/compose).
+  const allowed = [
+    "home", "signals", "memory", "people", "act", "pulse",
+    "channels", "conversations", "settings", "userside", "context", "compose",
+  ];
+  if (allowed.includes(section)) return section;
+  // legacy aliases from the pre-redesign IA
+  if (section === "insights" || section === "learned") return "signals";
+  if (section === "learning" || section === "loops" || section === "install") return "home";
   return "home";
 }
 
@@ -997,6 +1055,13 @@ function ssNormalizeState(state) {
     conversations,
     events: ssMergeSeededRecords(state.events, seeded.events),
     insights: ssMergeSeededRecords(state.insights, seeded.insights),
+    // Self-evolving-flow entities: keep the persisted set if it has data, else
+    // fall back to the (folded-in) seeded set so surfaces never see empties.
+    signals: (Array.isArray(state.signals) && state.signals.length) ? state.signals : (seeded.signals || []),
+    pulseMoments: (state.pulseMoments && state.pulseMoments.recent && state.pulseMoments.recent.length)
+      ? state.pulseMoments : (seeded.pulseMoments || { config: {}, recent: [] }),
+    actLedger: (Array.isArray(state.actLedger) && state.actLedger.length) ? state.actLedger : (seeded.actLedger || []),
+    questionsInFlight: Array.isArray(state.questionsInFlight) ? state.questionsInFlight : (seeded.questionsInFlight || []),
     loops,
     loopRuns,
     simulationRuns,

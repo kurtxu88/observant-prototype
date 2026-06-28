@@ -904,12 +904,56 @@ function ReviewRowSS({ k, v, sub }) {
   );
 }
 
+// ── Redesigned dashboard IA (PRD §3) — ~6 nav destinations + a docked assistant.
+// Each id maps to a component registered on window.OBS_SURFACES by app/surfaces/*.
+const OBS_NAV = [
+  { id: "home", label: "Home", icon: "grid" },
+  { id: "signals", label: "Signals", icon: "spark" },
+  { id: "memory", label: "Memory", icon: "book" },
+  { id: "people", label: "People", icon: "users" },
+  { id: "act", label: "Act", icon: "bolt" },
+  { id: "pulse", label: "Pulse", icon: "chat" },
+  { id: "conversations", label: "Conversations", icon: "relay" },
+  { id: "channels", label: "Channels", icon: "link" },
+  { id: "settings", label: "Settings", icon: "settings" },
+];
+
+// Non-nav routes + legacy-section aliases, so old deep-links / in-view jumps still land.
+const OBS_SECTION_LABEL = { compose: "Send a new loop", context: "Memory · Context", userside: "User view (preview)" };
+const OBS_SECTION_ALIAS = { insights: "signals", learning: "home", learned: "signals", loops: "home", context: "memory" };
+
+function obsResolveSection(raw) {
+  const s = raw || "home";
+  if (s === "compose" || s === "userside") return s;
+  const aliased = OBS_SECTION_ALIAS[s] || s;
+  const reg = (typeof window !== "undefined" && window.OBS_SURFACES) || {};
+  return reg[aliased] ? aliased : "home";
+}
+
+// Renders the selected surface off the registry with the shared prop contract.
+function SurfaceHost({ section, state, patchState, navigate, copied, copyText, resetWorkspace }) {
+  const reg = (typeof window !== "undefined" && window.OBS_SURFACES) || {};
+  const Comp = reg[section] || reg.home;
+  if (!Comp) {
+    return <EmptyState title="Surface not wired" text={"No component is registered for “" + section + "”."} />;
+  }
+  return (
+    <Comp
+      state={state}
+      patchState={patchState}
+      navigate={navigate}
+      copied={copied}
+      copyText={copyText}
+      resetWorkspace={resetWorkspace}
+      product={SelfServeData.productName(state.workspace)}
+      ui={window}
+    />
+  );
+}
+
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop" }; // non-nav pages
-  const section = (SS_SECTIONS.some((item) => item.id === state.section) || EXTRA_SECTIONS[state.section]) ? state.section : "home";
+  const section = obsResolveSection(state.section);
   const product = SelfServeData.productName(state.workspace);
-  const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
-  const [slackConnected, setSlackConnected] = useStateSS(false);
   const [navStack, setNavStack] = useStateSS([]);
 
   const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
@@ -943,6 +987,10 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
     });
   };
 
+  const navItem = OBS_NAV.find((s) => s.id === section);
+  const headerLabel = (navItem && navItem.label) || OBS_SECTION_LABEL[section] || "Home";
+  const AskRail = (typeof window !== "undefined" && window.OBS_SURFACES) ? window.OBS_SURFACES.askRail : null;
+
   return (
     <div className="ss-shell">
       <aside className="ss-sidebar">
@@ -953,24 +1001,18 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           <Icon name="spark" size={16} /> Send a new loop
         </button>
         <nav className="ss-nav">
-          {SS_SECTIONS.map((item) => (
+          {OBS_NAV.map((item) => (
             <button key={item.id} type="button" className={section === item.id ? "on" : ""} onClick={() => navigate({ section: item.id })}>
               <Icon name={item.icon} size={17} />
               <span>{item.label}</span>
               {item.id === "people" && <em>{state.people.length}</em>}
+              {item.id === "signals" && state.signals && state.signals.length ? <em>{state.signals.length}</em> : null}
             </button>
           ))}
         </nav>
-        <div className={"ss-slack-side" + (slackConnected ? " on" : "")}>
-          {slackConnected ? (
-            <div className="ss-slack-side-done"><Icon name="check" size={15} sw={2.4} /> <div><b>Slack connected</b><span>Ask straight from your channel — replies pipe back here.</span></div></div>
-          ) : (
-            <>
-              <div className="ss-slack-side-copy"><b>Ask straight from Slack</b><span>Relay your team's questions from your channel — responses pipe back within the hour.</span></div>
-              <button type="button" className="ss-slack-side-btn" onClick={() => setSlackConnected(true)}><Icon name="spark" size={14} /> Connect Slack</button>
-            </>
-          )}
-        </div>
+        <button type="button" className={"ss-userview-link" + (section === "userside" ? " on" : "")} onClick={() => navigate({ section: "userside" })}>
+          <Icon name="phone" size={15} /> <span>Preview the user view</span>
+        </button>
         <button type="button" className="ss-workspace-foot" onClick={() => navigate({ section: "settings", focusedTarget: "settings-workspace" })}>
           <span className="ws-logo">{SelfServeData.initials(product).slice(0, 1)}</span>
           <div>
@@ -986,7 +1028,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             {navStack.length > 0 && <button type="button" className="ss-back-btn" onClick={goBack}><Icon name="back" size={15} /> Back</button>}
             <div>
               <span className="ss-breadcrumb">{product}</span>
-              <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
+              <h1>{headerLabel}</h1>
             </div>
           </div>
           <div className="ss-topbar-actions">
@@ -995,13 +1037,18 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
         </header>
 
         <main className="ss-app-content">
-          {section === "home" && <HomeView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
-          {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "compose" && <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>}
-          {section === "context" && <ContextView state={state} patchState={patchState} />}
-          {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
+          <div className="ss-surface-wrap">
+            <div className="ss-surface-main">
+              {section === "compose"
+                ? <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>
+                : <SurfaceHost section={section} state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} resetWorkspace={resetWorkspace} />}
+            </div>
+            {AskRail && (
+              <aside className="ss-ask-rail-dock" aria-label="Ask Observant">
+                <AskRail state={state} patchState={patchState} navigate={navigate} ui={window} />
+              </aside>
+            )}
+          </div>
         </main>
       </div>
     </div>
