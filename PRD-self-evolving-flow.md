@@ -3,10 +3,12 @@
 _Draft 2026-06-27 · from the PM + Researcher + Designer working session (7-agent debate + synthesis)._
 _Canonical build spec. `PRD.md` = positioning; this = the end-to-end flow. Obsidian mirror in `*Observant/03-product/`._
 
-> **Status: core model LOCKED (Xuan, 2026-06-27); some forks still open (§11).** Decided: acute wedge,
-> triggers + a standardized light tier, the two-tier feedback model + decision path (§6), in-product=text-
-> only, churn→off-product+recruit. Still open: pricing/payments, whose voice, signal labels, the
-> "what-is-this" ethics — plus TODOs to lock the wedge line, name the tiers, and mine the KB moment library.
+> **Status: core model LOCKED (Xuan, 2026-06-27); some forks open (§11).** Locked: acute wedge + the wedge
+> line ("Feedback, from the moment you launch." — doc only, not deployed), the two-tier model + decision
+> path (§6), tier names **Pulse / Deep dive**, in-product=text-only, churn→off-product+recruit, the consent
+> boundary (§6.6) + the "what-is-this" disclosure. **⏳ Pinned temporary, continue 6/28:** the minimal Pulse
+> program (v1 = AI eval ratings + one key CTA follow-up; §6.5). Still open: pricing/payments, whose voice,
+> signal labels.
 
 ---
 
@@ -35,18 +37,16 @@ them the starting point — it installs the feedback loop at the moments every p
 from, **beginning with the user journey**, and for AI products, **session-level / eval feedback.** Autopilot
 is the residue that accrues behind the wedge, not the hero copy.
 
-**Framing candidates** (need Xuan's pick — must be legible to *any* builder/startup founder, "acute"):
-- **A.** "You launched. Are you learning from your users? Observant installs the feedback loop you know you
-  need but don't know how to start — at onboarding, at churn, after every session."
-- **B.** "The feedback layer for your product, in one PR. Start with your user journey; for AI apps,
-  session-level feedback and evals from real users."
-- **C.** "Stop guessing why users drop off. Observant watches your user journey and asks the right user the
-  right question — at onboarding, at churn, every session."
-- **D (AI-native cut):** "Turn every user session into product feedback and evals — automatically."
+**LOCKED (Xuan, 2026-06-27 — documented, NOT yet on the live site):**
 
-> _Recommendation: a blend of B + C — name the concrete starting point (user journey / session-level) AND
-> the acute pain (you don't know where to start / you're guessing). **Open: Xuan to lock the line + the
-> label (see §6).**_
+> **Feedback, from the moment you launch.**
+> You know you should be learning from your users. Observant installs the loop and starts with your user
+> journey — onboarding, churn, every session. For AI apps, session-level feedback and evals.
+
+A 5-word hook built on the *trigger* (launch day), not the feature — leaving the body line to carry the
+"where do I start" pain and the concrete starting points (journey + evals). Runner-up hook:
+**"Stop guessing why users leave."** _(Do not push to the marketing site yet — copy is locked in the doc
+only, pending Xuan's go to deploy.)_
 
 ## 2. The two non-negotiable spines
 
@@ -142,7 +142,7 @@ Five moves (moves 1–2 already half-built in `InsightDetail`):
 > **The most important design decision in this PRD.** Everything about consent, compensation, voice, and
 > recruitment derives from one cut: **Light/Standardized** vs. **Extensive.**
 
-### Tier 1 — LIGHT / "Standardized" feedback  *(label TBD — §6.4)*
+### Tier 1 — PULSE  (light / standardized feedback)
 The **default, free, in-product** loop — and the **acute wedge** (§1.5). The thing a just-launched builder
 who doesn't know where to start gets out of the box.
 - **Standardized moments, shipped pre-built** (the builder does NOT design them): **onboarding · churn-risk ·
@@ -151,7 +151,7 @@ who doesn't know where to start gets out of the box.
 - Why no consent: lightweight, in-the-moment, non-interrupting — a tap or a sentence *while using the
   product*. This is the organic learning that makes a thin-data product alive on day one.
 
-### Tier 2 — EXTENSIVE / "Deep" feedback
+### Tier 2 — DEEP DIVE  (extensive feedback)
 - A **~10-min conversation. Requires consent + compensation.**
 - Runs on a **recruited feedback program** (§6.2).
 - **Voice allowed — but ONLY off-product. In-product is NEVER voice (text only, always).**
@@ -210,19 +210,39 @@ available **from day 1**, never a vanity-volume funnel. Two scopes:
   consent); the **light↔extensive escalation rule**; wiring recruitment to a Signal's evidence gap;
   day-1 recruitment for the feedback program; the in-product=text-only / off-product=voice-allowed rule.
 
-### 6.4 Label — TODO (Xuan to pick)
-"Standardized/Light" needs a real name. Candidates: **Pulse** · **Quick loop** · **Moment** · **Tap** ·
-**Check-in**. Extensive tier: **Deep dive** · **Deep 1:1** · **Sit-down**.
+### 6.4 Tier names — LOCKED (Xuan, 2026-06-27)
+**Pulse** = the light tier (free, in-product, recurring, no-consent, one round). **Deep dive** = the
+extensive tier (~10-min, consent, paid). They pair self-explainingly and the escalation reads as a verb:
+**Pulse → Deep dive.**
 
-### 6.5 The standardized-moment library (RESOLVED from the KB — full spec: `docs/FEEDBACK-MOMENTS.md`)
-The light tier ships a pre-built **moment library**, each grounded in Xuan's KB methodology: **onboarding/D0
-· churn-risk · session-end · eval/AI-session · key-journey-drop-off** (core), plus activation · resurrection
-· post-purchase · feature-adoption (extensions). Each moment defines its trigger, the *one* behaviorally-
-anchored question, cadence + cooldown, the "concrete-behavior bar," and the trap to avoid. **Three governing
-laws:** (1) anchor on past behavior, never intent/opinion; (2) one round only — *the urge to unfold is the
-escalation trigger*, not a license to keep digging; (3) a global ceiling (≤1/session, ≤~1–2/user/7d, rotate
-targets) to fight survivorship/response bias. *(Distinction held: D0 = first-encounter only; churn = an
-active user disengaging — never the same trigger.)*
+### 6.5 The Pulse (light) standardized program — START ABSOLUTELY MINIMAL ⏳ TEMPORARY (Xuan, 2026-06-27)
+
+> **Decision pinned as temporary — revisit 2026-06-28.** The 9-moment library below (`docs/FEEDBACK-MOMENTS.md`)
+> is the **full superset / future reference, NOT v1.** The standardized program has to **fit everyone**, so
+> v1 does the *least* possible.
+
+**Guiding principle (Xuan): asking people feels heavy — not every behavioral trigger is worth a question.**
+Most behavior should just be *watched* (Novus-style — it reads the code, instruments the events, and never
+interrupts the user). **Observant adds a question only at the very few moments that earn the interruption.**
+So the standardized Pulse is closer to Novus's "read your codebase, find the key conversion events" than to
+a broad survey program — auto-discover from the code, prompt almost never. *(TODO 6/28: study exactly how
+Novus picks its default/standard set and mirror that restraint.)*
+
+**v1 Pulse = exactly two moments (temporary):**
+1. **AI eval ratings** — a lightweight rate/why on AI outputs (the AI-native cut; the one place a quick
+   prompt feels native, not intrusive).
+2. **One key conversion-CTA follow-up** — read the codebase to find the single most important convert
+   action (buy / upgrade / sign-up), and prompt only on that one (e.g. abandoned it). Not every CTA — *the*
+   CTA.
+
+Everything else in the moment library (onboarding/D0, churn-risk, session-end, key-journey, activation,
+resurrection, post-purchase, feature-adoption) stays **parked** until we decide it earns the interruption.
+The three governing laws (behavior-not-intent · one-round · global ceiling) and the consent boundary (§6.6)
+still apply to whatever ships.
+
+**⏳ TODO — continue 2026-06-28:** design the minimal standardized Pulse properly — how Novus handles the
+default set, exactly which 1–2 moments ship, the code-read that finds the key CTA, and the "is this worth
+asking?" bar that keeps it from feeling heavy.
 
 ### 6.6 The consent boundary (RESOLVED — light = product feedback; extensive = research)
 **A moment runs LIGHT (free, no consent, no pay) ONLY IF all are true:** (1) in-product · (2) text only ·
@@ -337,8 +357,14 @@ high-confidence; the bets in §11 are genuinely open.
 - **KB standardized-moment library + consent boundary → DONE** (§6.5–6.6, full spec in
   `docs/FEEDBACK-MOMENTS.md`).
 
-### Awaiting Xuan's lock (Jack's recommendations in)
-1. **Wedge line** — Jack's primary: **"Feedback, from the moment you launch."** (hero) + body line *"You
-   launched. Observant installs the feedback loop you know you need — starting with your user journey."*
-2. **Tier names** — Jack's pick: **Pulse** (light) / **Deep dive** (extensive). *Lock these → I write them
-   into §1.5 + §6 and cascade to the GTM plan.*
+### Locked 2026-06-27 (documented, NOT deployed)
+- **Wedge line → "Feedback, from the moment you launch."** + body (§1.5). _Copy lives in the doc only —
+  do NOT push to the marketing site until Xuan says go._
+- **Tier names → Pulse / Deep dive** (§6.4).
+
+### ⏳ TODO — continue 2026-06-28 (temporary decisions pinned today)
+- **Minimal Pulse program (§6.5).** v1 = just **AI eval ratings + one key conversion-CTA follow-up**
+  (auto-found by reading the codebase). Asking feels heavy → prompt almost never; watch (Novus-style)
+  mostly. Tomorrow: study how Novus picks its default set, lock the 1–2 shipping moments + the code-read +
+  the "is this worth asking?" bar. The 9-moment library (`docs/FEEDBACK-MOMENTS.md`) stays parked as the
+  future superset.

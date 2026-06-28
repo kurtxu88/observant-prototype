@@ -1,5 +1,11 @@
 # Standardized-Moment Library + Consent Boundary
 
+> ⚠️ **This is the FULL superset / future reference — NOT v1.** Per Xuan (2026-06-27), the standardized
+> **Pulse** program starts **absolutely minimal**: v1 = **AI eval ratings + one key conversion-CTA
+> follow-up** only (auto-found from the codebase). *Asking feels heavy — prompt almost never; watch
+> (Novus-style) mostly.* The moments below stay **parked** until each earns the interruption. The **consent
+> boundary** (bottom) is locked and applies to whatever ships. Revisit which moments to add: **2026-06-28**.
+
 _From the KB deep-dive (Researcher, 2026-06-27), grounded in `~/knowledge-base/`. Companion to
 `PRD-self-evolving-flow.md` §6. Defines the **LIGHT / "Pulse" tier** (free, in-product, text-only, one
 round, cooldown, no consent) and the exact line that flips a moment into **EXTENSIVE / "Deep dive"**
