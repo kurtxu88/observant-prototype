@@ -3,8 +3,10 @@
 _Draft 2026-06-27 · from the PM + Researcher + Designer working session (7-agent debate + synthesis)._
 _Canonical build spec. `PRD.md` = positioning; this = the end-to-end flow. Obsidian mirror in `*Observant/03-product/`._
 
-> **Status: DRAFT pending Xuan's decisions on the 8 open forks (§11).** The session converged hard on the
-> spine; the real product bets (headline, triggers-vs-questions, voice scope, pricing) are still yours to call.
+> **Status: core model LOCKED (Xuan, 2026-06-27); some forks still open (§11).** Decided: acute wedge,
+> triggers + a standardized light tier, the two-tier feedback model + decision path (§6), in-product=text-
+> only, churn→off-product+recruit. Still open: pricing/payments, whose voice, signal labels, the
+> "what-is-this" ethics — plus TODOs to lock the wedge line, name the tiers, and mine the KB moment library.
 
 ---
 
@@ -24,6 +26,27 @@ triggers (the when/who), and **per-user living memory is the moat.** It is never
 
 **The loop, one line:** *Novus closes the loop in code and stops; Observant closes it in code, in the
 relationship, AND in re-validated evidence — a self-evolving AND self-verifying product.*
+
+## 1.5 The wedge — how we lead (Xuan, 2026-06-27)
+
+**Lead with the acute, in-product-feedback wedge — not "autopilot."** The insight: most builders, once they
+launch, *know* they should be gathering user feedback but have **no idea where to start.** Observant gives
+them the starting point — it installs the feedback loop at the moments every product should be learning
+from, **beginning with the user journey**, and for AI products, **session-level / eval feedback.** Autopilot
+is the residue that accrues behind the wedge, not the hero copy.
+
+**Framing candidates** (need Xuan's pick — must be legible to *any* builder/startup founder, "acute"):
+- **A.** "You launched. Are you learning from your users? Observant installs the feedback loop you know you
+  need but don't know how to start — at onboarding, at churn, after every session."
+- **B.** "The feedback layer for your product, in one PR. Start with your user journey; for AI apps,
+  session-level feedback and evals from real users."
+- **C.** "Stop guessing why users drop off. Observant watches your user journey and asks the right user the
+  right question — at onboarding, at churn, every session."
+- **D (AI-native cut):** "Turn every user session into product feedback and evals — automatically."
+
+> _Recommendation: a blend of B + C — name the concrete starting point (user journey / session-level) AND
+> the acute pain (you don't know where to start / you're guessing). **Open: Xuan to lock the line + the
+> label (see §6).**_
 
 ## 2. The two non-negotiable spines
 
@@ -114,37 +137,88 @@ Five moves (moves 1–2 already half-built in `InsightDetail`):
 > shipped fix, fast), not "we watched 10,000 sessions." The wedge is the **learning** (the moat); the
 > auto-PR is the proof-point — **do not lead with code-gen and fight Cursor on its own turf.**
 
-## 6. Program & recruitment (the sampling lever, scoped)
+## 6. The two feedback tiers + the decision path (CORE — Xuan, 2026-06-27)
 
-**Principle:** the paid program is the **exception that fires when learning DEMAND exceeds organic
-SUPPLY** — wired to the Signal's evidence meter, never a vanity-volume funnel.
+> **The most important design decision in this PRD.** Everything about consent, compensation, voice, and
+> recruitment derives from one cut: **Light/Standardized** vs. **Extensive.**
 
-**Scope A — OFF-PRODUCT (no snippet): program ON by default.** Reaching existing users over email/Telegram
-via magic link interrupts their time *outside* your product, so it's always compensated. Founder sends the
-invite under their **own brand** (built); users opt in as partners, opt out in one tap; Observant audits
-every participated minute. ~5–10% opt-in. The day-one fast lane for anyone who won't connect a repo.
+### Tier 1 — LIGHT / "Standardized" feedback  *(label TBD — §6.4)*
+The **default, free, in-product** loop — and the **acute wedge** (§1.5). The thing a just-launched builder
+who doesn't know where to start gets out of the box.
+- **Standardized moments, shipped pre-built** (the builder does NOT design them): **onboarding · churn-risk ·
+  session-end · eval · key journey steps.** *(The moment library expands from Xuan's KB — TODO §6.5.)*
+- **Text only · one round · cooldown period · NO consent required · NO compensation.**
+- Why no consent: lightweight, in-the-moment, non-interrupting — a tap or a sentence *while using the
+  product*. This is the organic learning that makes a thin-data product alive on day one.
 
-**Scope B — IN-PRODUCT (snippet live): program OFF by default.** Micro-feedback (a tap, a sentence in the
-moment) flows free and unmetered — the organic learning. The program activates **only at three precise
-triggers** (this is the "when in-product feedback must be extensive" line):
+### Tier 2 — EXTENSIVE / "Deep" feedback
+- A **~10-min conversation. Requires consent + compensation.**
+- Runs on a **recruited feedback program** (§6.2).
+- **Voice allowed — but ONLY off-product. In-product is NEVER voice (text only, always).**
 
-1. **DEPTH** (per-conversation, automatic) — a question escalates past ~3 min of focused time into a
-   ~10-min deep 1:1 → flips on consent + per-minute reward. *You only pay for the deep ones.* (= the
-   built `InProductIncentive` model — the baseline, not the "extensive" case.)
-2. **COVERAGE** (per-Signal) — a Signal needs N grounded responses for honest confidence but organic
-   triggers can't supply N in its freshness window. The evidence meter surfaces an inline action: *"Recruit
-   for depth — I have 3 accounts, I'd want ~8."* One tap recruits from your **own opted-in users first.**
-   The literal "feedback must be extensive" case.
-3. **COHORT / REACH** (per-segment) — the people who can answer aren't in the product (churned, never-
-   converted, dormant, too-rare-to-fill). You can't trigger a conversation with someone who left → recruit
-   from a vetted **external panel.** *(See §11-Q5 — for "stop-the-bleed" positioning this is arguably a
-   CORE motion, the cure for in-product survivorship bias, not an edge case.)*
+### The two clean rules (the trust contract, operationalized)
+- **CONSENT + PAY line:** consent + compensation are required for **anything EXTENSIVE** (deep ~10-min) **and
+  anything OFF-PRODUCT** (interrupting someone outside your product). **Light/standardized in-product needs
+  neither.**
+- **VOICE line:** **in-product = text only, always.** **Off-product = text OR voice.**
 
-**The builder sees a decision rule:** *"answer from your own users for free → in-the-moment"* vs. *"needs
-depth/volume/a cohort you don't have → here's the cost to recruit, approve to proceed."* Cost shown
-**before** spend; approve a budget, not a per-message charge. What's NEW vs. what's built: wiring the
-Program's entry point to the Signal's evidence meter + labeling external-panel insight distinctly from
-your-own-users insight.
+### 6.1 The decision path
+
+```
+Builder installs Observant   (in-product is the default on-ramp)
+│
+├── IN-PRODUCT  (snippet live)
+│   │
+│   ├── LIGHT / Standardized          ← DEFAULT · the wedge · FREE
+│   │     moments: onboarding · churn-risk · session-end · eval · key journey
+│   │     text only · one round · cooldown · NO consent · NO pay
+│   │
+│   └── EXTENSIVE / Deep               (opt-in escalation)
+│         ~10-min · TEXT ONLY (no voice in-product) · consent + pay
+│         needs a recruited feedback program  ↓
+│
+└── OFF-PRODUCT — recruit feedback partners    ← available from DAY 1
+      for: extensive/deep work · churned · never-converted · dormant · volume
+      magic-link invite under the founder's brand → opt-in partners
+      consent + pay ALWAYS · text OR voice
+```
+**Minimal path:** a builder can opt out of all recruitment/extensive and run **in-product + light only** —
+*we work with that.* **Maximal path:** recruit a feedback program from day 1 to run extensive/deep work and
+to reach people the in-product loop structurally can't (the churned, the never-converted).
+
+### 6.2 Program & recruitment (the sampling lever)
+**Principle:** the paid program is the **exception that fires when learning DEMAND exceeds organic SUPPLY** —
+available **from day 1**, never a vanity-volume funnel. Two scopes:
+
+- **OFF-PRODUCT (no snippet): program ON by default.** Reaching existing users over email/Telegram via magic
+  link interrupts their time *outside* the product → always consent + compensated. Founder invites under
+  their **own brand** (built); opt in as partners, opt out in one tap; Observant audits every minute. ~5–10%
+  opt-in. The day-one fast lane for anyone who won't connect a repo — **and the home of churn /
+  never-converted / dormant outreach** (Xuan, Q5: reaching people who left is *another reason to run
+  off-product and recruit feedback partners* — it folds in here, not a separate edge case).
+- **IN-PRODUCT (snippet live): program OFF by default.** Light/standardized flows free. The program activates
+  only when a Signal needs more than the light loop can give — **Coverage** (a Signal needs N grounded
+  responses but organic can't supply N in its freshness window → recruit your own opted-in users first) or
+  **Cohort/Reach** (the people who can answer aren't in the product → off-product external panel). Cost shown
+  **before** spend; approve a budget, not a per-message charge. External-panel insight is **hard-labeled**
+  distinct from your-own-users insight.
+
+### 6.3 What's already built vs. new
+- **Built:** the off-product invite + magic link + per-minute compensation + audit; the in-product
+  consent+reward escalation (`InProductIncentive`).
+- **New:** the **standardized light-tier moment library** (onboarding/churn/session/eval/journey, no
+  consent); the **light↔extensive escalation rule**; wiring recruitment to a Signal's evidence gap;
+  day-1 recruitment for the feedback program; the in-product=text-only / off-product=voice-allowed rule.
+
+### 6.4 Label — TODO (Xuan to pick)
+"Standardized/Light" needs a real name. Candidates: **Pulse** · **Quick loop** · **Moment** · **Tap** ·
+**Check-in**. Extensive tier: **Deep dive** · **Deep 1:1** · **Sit-down**.
+
+### 6.5 TODO — dig the standardized-moment library from the KB
+The standardized program (onboarding · churn · session-based · eval · key-journey) should be grounded in
+Xuan's `~/knowledge-base/` — the right question, cadence, cooldown, and "concrete-behavior bar" for each
+moment. Related TODO: **precisely define the consent boundary** (exactly what flips light → extensive →
+consent). These two are one decision.
 
 ## 7. Onboarding → first value
 
@@ -216,24 +290,36 @@ Synthesized from a 7-agent working session (2026-06-27): PM + Researcher (ground
 Recording-3 addendum) and the current build. The session flagged its own near-groupthink — the spine is
 high-confidence; the bets in §11 are genuinely open.
 
-## 11. Open decisions — need Xuan (the unmade bets)
+## 11. Decisions
 
-1. **Headline: autopilot vs. acute wedge.** "Always-on / set-and-forget" (current PRD) OR a legible acute
-   wedge ("find out why your users are leaving right now") with autopilot accruing as the dividend? You
-   can't sell a latent-value muscle a founder has never used directly. *Gates GTM, onboarding promise, and
-   whether it sells at all.*
-2. **Pricing + payments + liability.** Per-minute markup / SaaS + pass-through payouts / pre-bought credits
-   — and who carries Stripe-Connect payout liability, float, chargebacks, tax. Unscoped P0 business call.
-3. **Whose voice** carries close-the-loop & 1:1s — product-interviewer voice (proposed hard rule) vs.
-   founder brand vs. hybrid co-sign. (Miner Road precedent: AI never writes her personal comms.)
-4. **Triggers-first vs. questions-first** at ~40-user scale. Triggers are the Novus vibe but mechanically
-   weakest and heaviest-build exactly at launch scale; the proactive question backlog works at any N.
-   (Triggers install day-one either way to honor constraint #1.)
-5. **Churn / never-converted outreach: core motion or edge case?** For "stop-the-bleed" the best learning
-   lives with people who LEFT — but they're external panelists; label distinctly.
-6. **Signal labels:** keep Novus's Issues/Insights/Opportunities (familiar) vs. native Frictions/Findings/
-   Openings (clearer for a non-researcher).
-7. **User-side surface + voice in v1, and who owns it** — async text only vs. text+voice; Bin (backend) vs.
-   you (conversation logic). The known build-split gap is exactly here.
-8. **Does the "never say research" framing hold** when a real end-user (or a Slack/MCP answer) asks "what
-   is this?" — what do we tell the humans being learned from?
+### Decided (Xuan, 2026-06-27)
+- **Q1 Headline → ACUTE WEDGE.** Lead with the in-product-feedback starting point (you launched, you should
+  be learning, you don't know where to start → user journey / session-level / eval feedback). Autopilot
+  accrues behind it. *Framing line still to lock — candidates in §1.5.*
+- **Q4 Early loop → TRIGGERS + a STANDARDIZED light program.** Keep the behavioral triggers (the Novus
+  vibe), AND add the standardized light-feedback moments (onboarding/churn/session/eval/journey). Captured
+  as the two-tier model (§6). *TODOs: KB moment library + the consent boundary (§6.5).*
+- **Q5 Churn / never-converted → run OFF-PRODUCT + recruit.** Not a separate edge case — it's another reason
+  to run off-product and recruit feedback partners; folds into §6.2.
+- **Q7 User-side surface / voice → IN-PRODUCT IS TEXT-ONLY (always); voice only OFF-PRODUCT.** Light tier =
+  text, no consent. Extensive = consent + pay, text in-product / text-or-voice off-product. Clients can
+  recruit the feedback program from **day 1**; the minimal path (in-product + light only) is supported.
+  *Ownership (you vs. Bin) still to confirm — see below.*
+
+### Still open
+- **Q2 Pricing + payments + liability.** Per-minute markup / SaaS + pass-through payouts / pre-bought
+  credits — and who carries Stripe-Connect payout liability, float, chargebacks, tax. Unscoped P0.
+- **Q3 Whose VOICE** carries close-the-loop & the 1:1s — product-interviewer voice (proposed hard rule) vs.
+  founder brand vs. hybrid. (Distinct from text-vs-voice modality, which is decided. Miner Road precedent:
+  AI never writes her personal comms.)
+- **Q6 Signal labels** — Issues/Insights/Opportunities vs. Frictions/Findings/Openings.
+- **Q8 "Never say research"** when a real end-user (or Slack/MCP answer) asks "what is this?" — the ethics
+  of what we tell the humans being learned from.
+- **Build ownership of the user-side surface** — your conversation logic vs. Bin's transport (the known
+  build-split gap).
+
+### Open TODOs created by the 6/27 decisions
+1. **Lock the acute-wedge framing line** (§1.5 candidates).
+2. **Name the light tier** (§6.4: Pulse / Quick loop / Moment / Tap…) and the extensive tier (Deep dive…).
+3. **Mine the KB for the standardized-moment library** + **define the exact consent boundary** (§6.5) —
+   one decision.
