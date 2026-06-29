@@ -750,7 +750,7 @@ function FeedbackFork({ products, setProducts, step }) {
   return (
     <section className="ss-panel">
       <PanelTitle k={"Step " + (step || 3)} title="How Observant gathers feedback" status="Two kinds of loop" />
-      <p className="ss-step-lead">Two kinds of feedback loop. <b>Baseline</b> loops are preset and gather on their own (passive). <b>Customized</b> loops are questions you design and send (proactive). Start with baseline — add customized anytime. Turn on either or both.</p>
+      <p className="ss-step-lead"><b>Baseline</b> gathers thin signals on its own (passive). <b>Customized</b> is questions you send (proactive). Start with baseline; add customized anytime.</p>
 
       <button type="button" className={"ss-fork-card hero" + (baselineOn ? " on" : "")} role="checkbox" aria-checked={baselineOn} onClick={() => setProducts({ standardized: !baselineOn })}>
         <div className="ss-fork-head">
@@ -758,7 +758,7 @@ function FeedbackFork({ products, setProducts, step }) {
           <div className="ss-fork-title"><b>Baseline feedback loops</b><span className="ss-fork-sub">the smallest viable feedback pipeline</span></div>
           <em className={"ss-fork-pill" + (baselineOn ? "" : " off")}>{baselineOn ? "On · recommended" : "Off"}</em>
         </div>
-        <p>The standard thin signals any product can stand up, collected automatically — no questions to write, no one to recruit. The baseline instrument is a <b>thin scalar/binary attitudinal signal — a score with no reason attached</b>. Observant collects it, then does the part a survey can't: a weak signal triggers <b>one light follow-up that attaches the why</b>.</p>
+        <p>Collected automatically — no questions to write, no one to recruit. A <b>thin scalar/binary attitudinal signal: a score, no reason.</b></p>
         <ul className="ss-fork-list">
           <li>Unsolicited "give feedback" — always one tap away</li>
           <li>Session / AI-output evals — a rating on each output</li>
@@ -774,11 +774,11 @@ function FeedbackFork({ products, setProducts, step }) {
           <div className="ss-fork-title"><b>Customized feedback loops</b><span className="ss-fork-sub">ask anything · Observant runs it · opt-in</span></div>
           <em className="ss-fork-tag">Add-on</em>
         </div>
-        <p>Starts with a <b>feedback partner program</b> — invite users to opt in to a growing panel. Then your team can send a specific question about your product or users <b>anytime</b> — you don't write the research or pick who. <b>Observant translates it into the right depth</b> (a quick light check or a ~10-min deep interview), disseminates it, runs it, and delivers the answer. Reaches people over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
+        <p>Send a question about your product or users — <b>Observant translates it into a light or deep ask</b>, runs it with opted-in users, and delivers the answer. Starts with a feedback partner program. Add now or later.</p>
         <small>Proactive · light or deep · opt-in + consent — off-product (email / IM).</small>
       </button>
 
-      <p className="ss-fork-note"><Icon name="users" size={13} /> Most teams start with baseline (on now) and add customized loops when they have a specific question. Toggle either — at least one stays on.</p>
+      <p className="ss-fork-note"><Icon name="users" size={13} /> Toggle either — at least one stays on.</p>
     </section>
   );
 }
@@ -787,12 +787,16 @@ function FeedbackFork({ products, setProducts, step }) {
 // minimal Pulse (§6.5): AI-output rating + one key conversion-CTA. Listening-verify, then "feel it".
 function SnippetSetup({ product, setup, patchSetup, step }) {
   const [copied, setCopied] = useStateSS(false);
-  const [phase, setPhase] = useStateSS(setup.connected ? "live" : "paste"); // paste → listening → live
+  // start → (github) generating → pr → live   |   (manual) paste → listening → live
+  const [phase, setPhase] = useStateSS(setup.connected ? "live" : "start");
   const [testSent, setTestSent] = useStateSS(false);
   const connected = phase === "live" || !!setup.connected;
   const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
+  const pr = ssInstallPR(product);
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2200); };
+  const connectGitHub = () => { setPhase("generating"); setTimeout(() => setPhase("pr"), 1600); };
+  const merge = () => { setPhase("live"); patchSetup({ connected: true }); };
+  const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
   const liveMoments = [
     { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
     { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
@@ -801,11 +805,43 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
   ];
   return (
     <section className="ss-panel">
-      <PanelTitle k={"Step " + (step || 4)} title={connected ? "Observant is live" : "Install Observant"} status={connected ? "Watching ✓" : "One line"} />
+      <PanelTitle k={"Step " + (step || 4)} title={connected ? "Observant is live" : "Install Observant"} status={connected ? "Watching ✓" : "One PR"} />
+
+      {phase === "start" && (
+        <>
+          <p className="ss-step-lead">Connect your repo and Observant opens a <b>single pull request</b> that adds the snippet — review it like any PR and merge. Or paste the line yourself.</p>
+          <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={connectGitHub}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
+          <small className="ss-snippet-note">Read-only on your code + permission to open <b>one</b> pull request (the install PR you review before merging). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
+          <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
+        </>
+      )}
+
+      {phase === "generating" && (
+        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Generating your install PR for {product}…</div>
+      )}
+
+      {phase === "pr" && (
+        <>
+          <p className="ss-step-lead">Observant opened one PR. Review the change and merge to go live.</p>
+          <div className="ss-pr">
+            <div className="ss-pr-head"><Icon name="grid" size={14} /><b>{pr.title}</b><span className="ss-pr-branch">{pr.branch} → {SS_CONNECT_REPO.branch}</span></div>
+            <p className="ss-pr-body">{pr.body}</p>
+            {pr.files.map((f) => (
+              <div className="ss-pr-file" key={f.path}>
+                <span className="ss-pr-path">{f.path}</span>
+                {f.add.map((line, i) => <div className="ss-pr-add" key={i}><span>+</span><code>{line}</code></div>)}
+              </div>
+            ))}
+            <div className="ss-pr-caveat"><b>Heads up — what it did not wire, and why</b><p>{pr.caveat}</p></div>
+          </div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={merge}><Icon name="check" size={16} /> Merge PR — go live</Btn></div>
+        </>
+      )}
 
       {phase === "paste" && (
         <>
-          <p className="ss-step-lead">Add one line to your app. It gathers light feedback at a couple of key moments automatically — nothing to configure.</p>
+          <p className="ss-step-lead">Add one line to your app — nothing else to configure.</p>
           <div className="ss-snippet"><code>{snippet}</code><button type="button" className="ss-snippet-copy" onClick={copy}>{copied ? "Copied ✓" : "Copy"}</button></div>
           <small className="ss-snippet-note">Drop it before <code>&lt;/body&gt;</code> (or your framework's root). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
           <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={added}><Icon name="check" size={16} /> I've added it</Btn></div>
@@ -818,7 +854,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
       {connected && (
         <>
-          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Your baseline pipeline is gathering — thin signals now, with the <i>why</i> attached on follow-up:</div>
+          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Your baseline pipeline is gathering thin signals:</div>
           <div className="ss-moments">
             {liveMoments.map((m) => (
               <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
@@ -841,12 +877,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
             )}
           </div>
 
-          <details className="ss-moments-more">
-            <summary>The why — how a thin score becomes a real reason</summary>
-            <p className="ss-moments-parked">The baseline instrument is a thin scalar/binary attitudinal signal — a score with no reason attached. When one comes in weak, Observant fires <b>one light follow-up</b> ("what happened there?") to attach the why — and if the answer is worth it, offers a deeper conversation (that's a customized loop, consent + reward).</p>
-          </details>
-
-          <small className="ss-snippet-foot">These baseline loops gather from users still active. To ask your own questions — or reach the churned and never-converted — add customized feedback loops.</small>
+          <small className="ss-snippet-foot">Baseline gives you the score, never the why — and it only reaches users still active. For the why (or to reach the churned and never-converted), add <b>customized feedback loops</b>.</small>
         </>
       )}
     </section>
