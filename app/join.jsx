@@ -90,9 +90,9 @@ function JoinProgress({ phase, route }) {
 }
 
 const JN_CADENCE = [
-  { id: "open", t: "As often as helps", d: "Happy to hear from the team regularly." },
-  { id: "occasional", t: "Every week or two", d: "A light, steady rhythm." },
-  { id: "rare", t: "Only now and then", d: "Sparingly — and whenever I reach out myself." },
+  { id: "open", t: "As often as this helps" },
+  { id: "occasional", t: "Every week or two" },
+  { id: "rare", t: "Only now and then" },
 ];
 
 function JoinChoose({ product, channels, onConnect }) {
@@ -116,7 +116,7 @@ function JoinChoose({ product, channels, onConnect }) {
             <article className="jn-choice jn-choice-pick" role="button" tabIndex={0} onClick={() => setPicked("email")} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked("email"); } }}>
               <span className="jn-choice-ic"><Icon name="mail" size={20} /></span>
               <b>Email</b>
-              <p>Quiet and async — reply whenever you have five minutes.</p>
+              <p>Quiet and async.</p>
               <span className="jn-choice-go">Choose email <Icon name="arrow" size={14} /></span>
             </article>
           )}
@@ -148,7 +148,7 @@ function JoinChoose({ product, channels, onConnect }) {
         <div className="jn-cadence-grid">
           {JN_CADENCE.map((c) => (
             <button key={c.id} type="button" className={"jn-cadence-opt" + (cadence === c.id ? " on" : "")} onClick={() => setCadence(c.id)}>
-              <b>{c.t}</b><span>{c.d}</span>
+              <b>{c.t}</b>
             </button>
           ))}
         </div>
@@ -175,13 +175,13 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
   const channelPhrase = channels.map((c) => c === "telegram" ? "Telegram" : "email").join(" or ");
   const reachLine = route === "inproduct"
     ? <>It reaches you right inside {product}, at the moment you're using it</>
-    : <>You choose where it reaches you — {channelPhrase}</>;
+    : <>You choose how to hear from {product} — {channelPhrase}</>;
   return (
     <main className="jn-main">
       <section className="jn-hero">
         <span className="eyebrow">You're invited</span>
         <h1>Help shape {product}.</h1>
-        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. They're building {product} around the people who actually use it — so from time to time, they'd love a quick one-on-one with you about how it really works in your hands. You earn rewards for your time, tracked automatically.</p>
+        <p>The team at <b>{product}</b> is inviting a small group of their most engaged users to become <b>feedback partners</b>. You earn rewards for your time, tracked automatically.</p>
       </section>
 
       <section className="jn-block">
@@ -189,15 +189,15 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <ol className="jn-steps">
           <li>
             <b>Opt in, then a quick hello</b>
-            <p>Joining takes a minute, then a short ~10-minute intro chat so the {product} team gets to know how you actually use it — that way everything they ask later is tailored to you. Pause or leave anytime.</p>
+            <p>Joining takes a minute, then a short ~10-minute intro chat so the {product} team gets to know how you actually use it. Everything they ask later is tailored to you.</p>
           </li>
           <li>
             <b>Quick one-on-ones, on your time</b>
-            <p>Usually a few messages or a short voice chat with the {product} team's AI interviewer; once in a while, the product folks themselves may ask for a live video call. {reachLine}, and you say yes or no each time — it remembers your context, so you never repeat yourself.</p>
+            <p>Usually a few messages or a short video chat. {reachLine}, and you say yes or no each time. It remembers your context, so you never repeat yourself.</p>
           </li>
           <li>
             <b>Earn as you go — and reach out anytime</b>
-            <p>Every minute you participate counts — text replies, voice chats, and calls alike, tracked and audited automatically. It's a two-way line, too: message the team anytime something goes wrong or you want to share feedback, not just when they ask — genuine feedback you send earns rewards the same way.</p>
+            <p>Every minute you participate counts — email replies, voice chats — tracked and audited automatically. It's a two-way line, too: you can message the team anytime with feedback you want to share.</p>
           </li>
         </ol>
       </section>
@@ -206,9 +206,9 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         <h2>Your rewards</h2>
         <p className="jn-block-lead">Minutes add up like a balance — redeem as you go, whenever you like.</p>
         <div className="jn-rate-card">
-          <b>${rate} per participated minute</b>
-          <p>Every reply, voice chat, and call counts — tracked and audited automatically. 30 minutes ≈ ${Math.round(30 * rate)}, and your balance works like a gift card: claim small amounts often, or save it up.</p>
-          <p className="jn-rate-perks">And for long-time partners: the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
+          <b>${rate} per participating minute</b>
+          <p>Your balance works like a gift card — claim small amounts often, or save it up.</p>
+          <p className="jn-rate-perks">For long-time partners, the {product} team may invite you to extra perks — in-person events, early access, time with the founding team.</p>
         </div>
       </section>
 

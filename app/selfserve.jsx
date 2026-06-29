@@ -306,10 +306,14 @@ const SS_ONBOARD_FLOW = [
   { id: "review", label: "Preview" },
 ];
 
-function OnboardingBar({ current }) {
+// Maps a flow step id to its bar label. `install` only appears when in-product is chosen.
+const SS_STEP_LABELS = { product: "Product", context: "Context", surface: "Feedback surface", install: "Code snippet", program: "Feedback program", preview: "Preview" };
+
+function OnboardingBar({ current, flow }) {
+  const items = flow || SS_ONBOARD_FLOW;
   return (
     <ol className="ss-onboard-bar" aria-label="Setup progress">
-      {SS_ONBOARD_FLOW.map((s, i) => (
+      {items.map((s, i) => (
         <li key={s.id} className={"ss-onboard-bstep" + (i < current ? " done" : i === current ? " on" : "")}>
           <span className="ss-onboard-bdot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
           <span className="ss-onboard-blabel">{s.label}</span>
@@ -466,6 +470,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const stepIds = ["surface"].concat(inproduct ? ["install"] : []).concat(offproduct ? ["program", "preview"] : []);
   const curId = stepIds[Math.min(step, stepIds.length - 1)];
   const curMeta = SS_ONBOARD_STEPS.find((s) => s.id === curId) || {};
+  const stepNo = step + 3; // Product + Context precede the activation steps
+  const onboardFlow = ["product", "context"].concat(stepIds).map((id) => ({ id, label: SS_STEP_LABELS[id] || id }));
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -531,7 +537,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </div>
       </header>
 
-      <div className="ss-activation-bar"><OnboardingBar current={2 + step} /></div>
+      <div className="ss-activation-bar"><OnboardingBar current={2 + step} flow={onboardFlow} /></div>
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
@@ -543,7 +549,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         <main className="ss-activation-main">
           {curId === "surface" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Choose your feedback surface" status="Pick one or both" />
+              <PanelTitle k={"Step " + stepNo} title="Choose your feedback surface" status="Pick one or both" />
               <p className="ss-step-lead"><b>Where does feedback come from? Pick one or both.</b></p>
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (offproduct ? " on" : "")} role="checkbox" aria-checked={offproduct} onClick={() => toggleSurface("offproduct")}>
@@ -560,12 +566,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
           )}
 
           {curId === "install" && (
-            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={4} />
+            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={stepNo} />
           )}
 
           {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 4" title="Set up the feedback program" status="You set the terms" />
+              <PanelTitle k={"Step " + stepNo} title="Set up the feedback program" status="You set the terms" />
               <p className="ss-step-lead">A <b>feedback program</b> is a small panel of your users who opt in to hear from you. You invite a group once; the ones who join become your <b>feedback partners</b>, and Observant runs the 1:1 conversations with them over time — so you always have people to learn from. Set two things here — how partners are <b>compensated</b> and the <b>invitation</b> they'll receive — and change either anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
@@ -612,7 +618,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
           {curId === "preview" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 5" title="Preview" status="Last step" />
+              <PanelTitle k={"Step " + stepNo} title="Preview" status="Last step" />
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
@@ -688,7 +694,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
             {step > 0
               ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
               : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
-            <span className="count">{"Step " + (step + 3) + " of " + SS_ONBOARD_FLOW.length}</span>
+            <span className="count">{"Step " + stepNo + " of " + onboardFlow.length}</span>
             {(() => {
               const isLast = step >= stepIds.length - 1;
               if (curId === "install" && !setup.connected) return <span />; // finish the install first
