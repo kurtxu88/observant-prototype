@@ -561,7 +561,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                   <p>Install a code snippet and Observant will implement <b>a few key feedback loops</b> right inside your app: AI output evals, exit surveys, and CSAT. This is the most minimal viable feedback loop you'd want for your product.</p>
                 </button>
               </div>
-              {inproduct && offproduct && <p className="ss-fork-note"><Icon name="check" size={13} /> You'll set up the in-product snippet first, then the off-product panel.</p>}
+              <p className="ss-fork-note">{inproduct && offproduct
+                ? <><Icon name="check" size={13} /> You'll set up the in-product snippet first, then the off-product panel.</>
+                : <><Icon name="users" size={13} /> Pick one or both — you can change this anytime.</>}</p>
             </section>
           )}
 
