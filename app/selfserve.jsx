@@ -301,9 +301,9 @@ function SelfServeApp() {
 const SS_ONBOARD_FLOW = [
   { id: "product", label: "Product" },
   { id: "context", label: "Context" },
-  { id: "surface", label: "Surface" },
-  { id: "program", label: "Program" },
-  { id: "review", label: "Review" },
+  { id: "surface", label: "Feedback surface" },
+  { id: "program", label: "Feedback program" },
+  { id: "review", label: "Preview" },
 ];
 
 function OnboardingBar({ current }) {
@@ -566,7 +566,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
           {curId === "program" && (
             <section className="ss-panel">
               <PanelTitle k="Step 4" title="Set up the feedback program" status="You set the terms" />
-              <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
+              <p className="ss-step-lead">A <b>feedback program</b> is a small panel of your users who opt in to hear from you. You invite a group once; the ones who join become your <b>feedback partners</b>, and Observant runs the 1:1 conversations with them over time — so you always have people to learn from. Set two things here — how partners are <b>compensated</b> and the <b>invitation</b> they'll receive — and change either anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
                 <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> You pay Observant, we pay your participants, and they redeem as they go — like spending down a gift card balance.</p>
