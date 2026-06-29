@@ -423,7 +423,8 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "surface", t: "Choose feedback surface", d: "Off-product or in-product" },
+  { id: "surface", t: "Choose feedback surface", d: "Off-product, in-product, or both" },
+  { id: "install", t: "Install the snippet", d: "One PR, then it's live" },
   { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
@@ -450,11 +451,21 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
-  const route = setup.route || "offproduct";
-  const setRoute = (id) => { patchSetup({ route: id }); setStep(0); };
-  // Surface-first, then branch: in-product = install a snippet (terminal); off-product = program + preview.
-  const stepIds = route === "inproduct" ? ["surface"] : ["surface", "program", "preview"];
+  // Surfaces are multi-select (pick one or both). Off-product is the easy default.
+  const inproduct = !!setup.inproduct;
+  const offproduct = setup.offproduct !== false;
+  const route = offproduct ? "offproduct" : "inproduct"; // for the invite/magic-link phrasing (the panel is off-product)
+  const toggleSurface = (key) => {
+    const cur = key === "inproduct" ? inproduct : offproduct;
+    const other = key === "inproduct" ? offproduct : inproduct;
+    if (cur && !other) return; // at least one stays on
+    patchSetup({ [key]: !cur }); setStep(0);
+  };
+  // Flow: surface → (in-product install, if chosen) → (off-product program + preview, if chosen).
+  // Both chosen → install first, then the panel.
+  const stepIds = ["surface"].concat(inproduct ? ["install"] : []).concat(offproduct ? ["program", "preview"] : []);
   const curId = stepIds[Math.min(step, stepIds.length - 1)];
+  const curMeta = SS_ONBOARD_STEPS.find((s) => s.id === curId) || {};
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -507,7 +518,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     setTimeout(() => setInviteCopied(false), 1500);
   };
 
-  const next = () => setStep((s) => Math.min(s + 1, SS_ONBOARD_STEPS.length - 1));
+  const next = () => setStep((s) => Math.min(s + 1, stepIds.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (
@@ -525,28 +536,32 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
           <span className="eyebrow">Getting started</span>
-          <h1>{SS_ONBOARD_STEPS[step] ? SS_ONBOARD_STEPS[step].t : "Set up Observant."}</h1>
-          <p>{SS_ONBOARD_STEPS[step] ? SS_ONBOARD_STEPS[step].d : ""} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
+          <h1>{curMeta.t || "Set up Observant."}</h1>
+          <p>{curMeta.d || ""} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
         </aside>
 
         <main className="ss-activation-main">
           {curId === "surface" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Choose your feedback surface" status={route === "inproduct" ? "In-product" : "Off-product"} />
-              <p className="ss-step-lead"><b>One decision: where does feedback come from?</b></p>
+              <PanelTitle k="Step 3" title="Choose your feedback surface" status="Pick one or both" />
+              <p className="ss-step-lead"><b>Where does feedback come from? Pick one or both.</b></p>
               <div className="ss-route-grid">
-                <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
+                <button type="button" className={"ss-route" + (offproduct ? " on" : "")} role="checkbox" aria-checked={offproduct} onClick={() => toggleSurface("offproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Easiest · no code</em></span>
                   <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
                   <small>Invite users to a feedback program and ask them questions — a quick one or a deeper conversation.</small>
                 </button>
-                <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Standardized pipeline</em></span>
-                  <p>Install a code snippet and Observant gathers a standardized feedback pipeline automatically — AI output evals, exit surveys, and CSAT.</p>
+                <button type="button" className={"ss-route" + (inproduct ? " on" : "")} role="checkbox" aria-checked={inproduct} onClick={() => toggleSurface("inproduct")}>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Needs a snippet</em></span>
+                  <p>Install a code snippet and Observant starts with <b>a few key feedback loops</b> right inside your app — AI output evals, exit surveys, and CSAT. More (behavioral triggers and beyond) comes later.</p>
                 </button>
               </div>
-              {route === "inproduct" && <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={4} />}
+              {inproduct && offproduct && <p className="ss-fork-note"><Icon name="check" size={13} /> You'll set up the in-product snippet first, then the off-product panel.</p>}
             </section>
+          )}
+
+          {curId === "install" && (
+            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={4} />
           )}
 
           {curId === "program" && (
@@ -674,11 +689,13 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
               : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
             <span className="count">{"Step " + (step + 3) + " of " + SS_ONBOARD_FLOW.length}</span>
-            {route === "inproduct"
-              ? (setup.connected ? <Btn variant="primary" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn> : <span />)
-              : (step < stepIds.length - 1
-                  ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
-                  : <span />)}
+            {(() => {
+              const isLast = step >= stepIds.length - 1;
+              if (curId === "install" && !setup.connected) return <span />; // finish the install first
+              if (!isLast) return <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>;
+              if (curId === "install") return <Btn variant="primary" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>;
+              return <span />; // preview is last for off-product — its in-panel "Open your dashboard" handles launch
+            })()}
           </div>
         </main>
       </div>
