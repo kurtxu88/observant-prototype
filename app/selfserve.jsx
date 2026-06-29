@@ -224,7 +224,7 @@ function SelfServeApp() {
     let saved = ssLoadState();
     if (SS_VIEW === "portal") {
       if (!saved) saved = SelfServeData.createSampleState(SS_DEFAULT_WORKSPACE);
-      if (!saved.launched) saved = { ...saved, launched: true, section: "home" };
+      if (!saved.launched) saved = { ...saved, launched: true, section: "signals" };
     }
     return saved;
   });
@@ -318,7 +318,7 @@ function SelfServeApp() {
         onLaunch={() => patchState((current) => ({
           ...current,
           launched: true,
-          section: "home",
+          section: "signals",
           activity: ["Learning mode turned on.", ...current.activity],
         }))}
         copied={copied}
@@ -1057,34 +1057,42 @@ function ReviewRowSS({ k, v, sub }) {
 
 // ── Redesigned dashboard IA (PRD §3) — ~6 nav destinations + a docked assistant.
 // Each id maps to a component registered on window.OBS_SURFACES by app/surfaces/*.
-const OBS_NAV = [
-  { id: "home", label: "Home", icon: "grid" },
+// THREE LAYERS, nav = f(setup.products) (Xuan + team, 2026-06-29). No Home page — land on Signals.
+// Always: Signals (overarching: ask-anything + surfaced findings + one-click fix) + Settings.
+// + Standardized pipeline (if baseline on) · + Feedback program (if customized on).
+const OBS_NAV_ALL = [
   { id: "signals", label: "Signals", icon: "spark" },
-  { id: "memory", label: "Memory", icon: "book" },
-  { id: "people", label: "People", icon: "users" },
-  { id: "act", label: "Act", icon: "bolt" },
-  { id: "pulse", label: "Pulse", icon: "chat" },
-  { id: "conversations", label: "Conversations", icon: "relay" },
-  { id: "channels", label: "Channels", icon: "link" },
+  { id: "standardized", label: "Standardized pipeline", icon: "chat" },
+  { id: "feedbackprogram", label: "Feedback program", icon: "users" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
+function obsBuildNav(products) {
+  const p = products || { standardized: true, feedbackProgram: false };
+  return OBS_NAV_ALL.filter((n) =>
+    n.id === "signals" || n.id === "settings"
+    || (n.id === "standardized" && p.standardized !== false)
+    || (n.id === "feedbackprogram" && !!p.feedbackProgram));
+}
+// Canonical section -> the registered OBS_SURFACES key that renders it (surfaces rescope next).
+const OBS_SECTION_SURFACE = { signals: "signals", standardized: "pulse", feedbackprogram: "people", settings: "settings", userside: "userside", compose: "people" };
+// Retired/old section ids -> a canonical section, so deep-links + in-view jumps still land.
+const OBS_SECTION_ALIAS = { home: "signals", insights: "signals", learning: "signals", learned: "signals", loops: "signals", memory: "settings", context: "settings", act: "signals", conversations: "feedbackprogram", channels: "settings", people: "feedbackprogram", pulse: "standardized" };
+const OBS_SECTION_LABEL = { compose: "Send a question", userside: "User view (preview)" };
 
-// Non-nav routes + legacy-section aliases, so old deep-links / in-view jumps still land.
-const OBS_SECTION_LABEL = { compose: "Send a new loop", context: "Memory · Context", userside: "User view (preview)" };
-const OBS_SECTION_ALIAS = { insights: "signals", learning: "home", learned: "signals", loops: "home", context: "memory" };
-
-function obsResolveSection(raw) {
-  const s = raw || "home";
-  if (s === "compose" || s === "userside") return s;
-  const aliased = OBS_SECTION_ALIAS[s] || s;
-  const reg = (typeof window !== "undefined" && window.OBS_SURFACES) || {};
-  return reg[aliased] ? aliased : "home";
+function obsResolveSection(raw, products) {
+  const s = OBS_SECTION_ALIAS[raw] || raw || "signals";
+  const canon = OBS_SECTION_SURFACE[s] ? s : "signals";
+  const p = products || {};
+  if (canon === "standardized" && p.standardized === false) return "signals";
+  if (canon === "feedbackprogram" && !p.feedbackProgram) return "signals";
+  return canon;
 }
 
 // Renders the selected surface off the registry with the shared prop contract.
 function SurfaceHost({ section, state, patchState, navigate, copied, copyText, resetWorkspace }) {
   const reg = (typeof window !== "undefined" && window.OBS_SURFACES) || {};
-  const Comp = reg[section] || reg.home;
+  const key = OBS_SECTION_SURFACE[section] || "signals";
+  const Comp = reg[key] || reg.signals;
   if (!Comp) {
     return <EmptyState title="Surface not wired" text={"No component is registered for “" + section + "”."} />;
   }
@@ -1103,7 +1111,9 @@ function SurfaceHost({ section, state, patchState, navigate, copied, copyText, r
 }
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const section = obsResolveSection(state.section);
+  const products = (state.setup && state.setup.products) || { standardized: true, feedbackProgram: false };
+  const section = obsResolveSection(state.section, products);
+  const nav = obsBuildNav(products);
   const product = SelfServeData.productName(state.workspace);
   const [navStack, setNavStack] = useStateSS([]);
 
@@ -1115,7 +1125,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
     }]).slice(-25));
     patchState((current) => ({
       ...current,
-      section: nextSection || current.section || "home",
+      section: nextSection || current.section || "signals",
       selectedConversationId: conversationId || current.selectedConversationId,
       selectedLoopId: loopId || current.selectedLoopId,
       focusedTarget: focusedTarget || "",
@@ -1129,7 +1139,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       const prev = st[st.length - 1];
       patchState((current) => ({
         ...current,
-        section: prev.section || "home",
+        section: prev.section || "signals",
         selectedConversationId: prev.selectedConversationId,
         selectedLoopId: prev.selectedLoopId,
         focusedTarget: prev.focusedTarget || "",
@@ -1138,25 +1148,27 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
     });
   };
 
-  const navItem = OBS_NAV.find((s) => s.id === section);
-  const headerLabel = (navItem && navItem.label) || OBS_SECTION_LABEL[section] || "Home";
+  const navItem = OBS_NAV_ALL.find((s) => s.id === section);
+  const headerLabel = (navItem && navItem.label) || OBS_SECTION_LABEL[section] || "Signals";
   const AskRail = (typeof window !== "undefined" && window.OBS_SURFACES) ? window.OBS_SURFACES.askRail : null;
 
   return (
     <div className="ss-shell">
       <aside className="ss-sidebar">
-        <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "home" })} aria-label="Go to Home">
+        <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "signals" })} aria-label="Go to Signals">
           <Wordmark size="1.45rem" />
         </button>
-        <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "compose" })}>
-          <Icon name="spark" size={16} /> Send a new loop
-        </button>
+        {products.feedbackProgram && (
+          <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "feedbackprogram", focusedTarget: "send-question" })}>
+            <Icon name="spark" size={16} /> Send a question
+          </button>
+        )}
         <nav className="ss-nav">
-          {OBS_NAV.map((item) => (
+          {nav.map((item) => (
             <button key={item.id} type="button" className={section === item.id ? "on" : ""} onClick={() => navigate({ section: item.id })}>
               <Icon name={item.icon} size={17} />
               <span>{item.label}</span>
-              {item.id === "people" && <em>{state.people.length}</em>}
+              {item.id === "feedbackprogram" && <em>{state.people.length}</em>}
               {item.id === "signals" && state.signals && state.signals.length ? <em>{state.signals.length}</em> : null}
             </button>
           ))}
