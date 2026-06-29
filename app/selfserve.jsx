@@ -476,10 +476,10 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 
 // Header copy per activation step, keyed by the computed step id (path-aware).
 const SS_STEP_META = {
-  fork: { t: "How do you want to gather feedback?", d: "Turn on the standardized program, add a feedback program for deeper questions, or both." },
-  snippet: { t: "Install Observant", d: "One snippet — light feedback starts automatically, from all your users." },
-  program: { t: "Set up your feedback program", d: "Compensation and your invitation, for the people who opt in." },
-  review: { t: "Your invitation & magic link", d: "Generate the link, then send it to your users." },
+  fork: { t: "How do you want to gather feedback?", d: "Always-on feedback installs with a snippet — that's the default. Add a feedback program when you want to ask your own questions or go deep." },
+  snippet: { t: "Install Observant", d: "One line of code. Light feedback gathers itself at the key moments — no one is interrupted, nothing to configure." },
+  program: { t: "Set up your feedback program", d: "Invite users to opt in, set how you compensate them for their time, and write your invitation." },
+  review: { t: "Your invitation & magic link", d: "Generate the link, then send it to your users yourself." },
 };
 
 const SS_CONNECT_OPTIONS = [
@@ -518,6 +518,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     .concat(products.standardized ? [{ id: "snippet", label: "Snippet" }] : [])
     .concat(products.feedbackProgram ? [{ id: "program", label: "Program" }, { id: "review", label: "Invite" }] : []);
   const stepMeta = SS_STEP_META[curId];
+  const stepNum = (id) => { const i = onboardFlow.findIndex((f) => f.id === id); return i >= 0 ? i + 1 : ""; };
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -589,21 +590,21 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         <aside className="ss-checklist">
           <span className="eyebrow">Getting started</span>
           <h1>{stepMeta ? stepMeta.t : "Set up Observant."}</h1>
-          <p>{stepMeta ? stepMeta.d : ""} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
+          <p>{stepMeta ? stepMeta.d : "Observant gathers feedback from your users, while you ship."}</p>
         </aside>
 
         <main className="ss-activation-main">
           {curId === "fork" && (
-            <FeedbackFork products={products} setProducts={setProducts} product={product} />
+            <FeedbackFork products={products} setProducts={setProducts} product={product} step={stepNum("fork")} />
           )}
 
           {curId === "snippet" && (
-            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} />
+            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={stepNum("snippet")} />
           )}
 
           {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="How the program works" status="You set the terms" />
+              <PanelTitle k={"Step " + stepNum("program")} title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
@@ -650,7 +651,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
           {curId === "review" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 4" title="Preview" status="Last step" />
+              <PanelTitle k={"Step " + stepNum("review")} title="Your invitation & magic link" status="Last step" />
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
@@ -663,7 +664,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                     <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
                   </>}
                 />
-                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
+                <ReviewRowSS k="What you want to learn" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Your users never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
                 <ReviewRowSS
                   k="Invitation to users"
                   v={previewSentTo
@@ -742,75 +743,113 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
 // Stage 1 — the bifurcation. Standardized program (snippet, passive/light, default) and/or the
 // Feedback program (proactive add-on — light + deep, off-product, opt-in). Explained side by side.
-function FeedbackFork({ products, setProducts }) {
-  const toggle = (k) => setProducts({ [k]: !products[k] });
+// Stage 1 — the fork, reframed (team critique 6/29): standardized is the DEFAULT hero (on, not a
+// coin-flip); the feedback program is a deferrable add-on ("now or anytime from your dashboard").
+function FeedbackFork({ products, setProducts, step }) {
+  const standardizedOn = products.standardized !== false;
   return (
     <section className="ss-panel">
-      <PanelTitle k="Step 3" title="How do you want to gather feedback?" status="Pick one or both" />
-      <p className="ss-step-lead"><b>Most teams start with the standardized program</b> — it runs itself. Add a feedback program when you want to ask your own questions or go deep.</p>
-      <div className="ss-fork-grid">
-        <button type="button" className={"ss-fork-card" + (products.standardized ? " on" : "")} onClick={() => toggle("standardized")}>
-          <div className="ss-fork-head"><span className="ss-fork-check">{products.standardized ? <Icon name="check" size={13} sw={2.6} /> : null}</span><b>Standardized program</b><em className="ss-fork-tag rec">Recommended</em></div>
-          <p><b>Always-on light feedback</b> at the moments that matter — from all your users, automatically. Install one snippet; it runs itself. No questions to write, no one to recruit.</p>
+      <PanelTitle k={"Step " + (step || 3)} title="How Observant gathers feedback" status="Set in seconds" />
+      <p className="ss-step-lead">Light, always-on feedback installs with a snippet — that's on by default. Add a feedback program only if you also want to ask your own questions or go deep.</p>
+
+      {standardizedOn && (
+        <div className="ss-fork-hero">
+          <div className="ss-fork-hero-head">
+            <span className="ss-fork-hero-ic"><Icon name="bolt" size={16} /></span>
+            <div><b>Always-on feedback</b><span>Install one snippet — light feedback gathers itself at a couple of key moments, from every user who hits them. No questions to write, no one to recruit.</span></div>
+            <em className="ss-fork-pill">On · recommended</em>
+          </div>
           <ul className="ss-fork-list">
-            <li>Session &amp; AI-output ratings</li>
-            <li>An onboarding "why are you here?" survey</li>
-            <li>Key moments — purchase, drop-off, cancel</li>
-            <li>An optional satisfaction pop-up</li>
+            <li>A one-tap rating on each AI output / session</li>
+            <li>One question at your key conversion moment</li>
           </ul>
-          <small>Passive · light · no opt-in · free — installs with a code snippet.</small>
-        </button>
-        <button type="button" className={"ss-fork-card" + (products.feedbackProgram ? " on" : "")} onClick={() => toggle("feedbackProgram")}>
-          <div className="ss-fork-head"><span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span><b>Feedback program</b><em className="ss-fork-tag">Add-on</em></div>
-          <p><b>Ask your own questions — or go deep.</b> Invite users to opt in, then you or your product team send specific questions anytime: a quick one, or a ~10-minute interview. Reaches people over email or IM.</p>
-          <ul className="ss-fork-list">
-            <li>Send the team's questions to real people</li>
-            <li>Go deep with ~10-min interviews</li>
-            <li>Opt-in panel, compensated for their time</li>
-          </ul>
-          <small>Proactive · light or deep · opt-in + consent — off-product (email / IM).</small>
-        </button>
-      </div>
-      <p className="ss-fork-note"><Icon name="bolt" size={13} /> Deep interviews and ongoing product-team questions need the feedback program — you can't deep-interview someone who hasn't opted in. Add it now or anytime later.</p>
+          <small>Passive · light · text only · no opt-in · free — installs next.</small>
+        </div>
+      )}
+
+      <button type="button" className={"ss-fork-addon" + (products.feedbackProgram ? " on" : "")} role="checkbox" aria-checked={!!products.feedbackProgram} onClick={() => setProducts({ feedbackProgram: !products.feedbackProgram })}>
+        <span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
+        <div className="ss-fork-addon-body">
+          <b>Ask your users <em className="ss-fork-tag">Add-on</em></b>
+          <p>Put your own questions to real people — or sit down for a ~10-min conversation to hear the why. Invite users to opt in, then send questions anytime over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
+        </div>
+      </button>
+
+      {standardizedOn
+        ? <button type="button" className="ss-fork-skip" onClick={() => setProducts({ standardized: false, feedbackProgram: true })}>Can't add code right now? Skip the snippet and run a feedback program only →</button>
+        : <button type="button" className="ss-fork-skip" onClick={() => setProducts({ standardized: true })}>← Add the always-on snippet back (recommended)</button>}
     </section>
   );
 }
 
-// Stage 2A — Standardized setup: install one snippet (SDK). No code scan, no consent. The light
-// standardized program starts gathering client-side feedback automatically.
-function SnippetSetup({ product, setup, patchSetup }) {
+// Stage 2A — Standardized setup: paste one snippet (SDK). No code scan, no consent. v1 = the LOCKED
+// minimal Pulse (§6.5): AI-output rating + one key conversion-CTA. Listening-verify, then "feel it".
+function SnippetSetup({ product, setup, patchSetup, step }) {
   const [copied, setCopied] = useStateSS(false);
-  const connected = !!setup.connected;
+  const [phase, setPhase] = useStateSS(setup.connected ? "live" : "paste"); // paste → listening → live
+  const [testSent, setTestSent] = useStateSS(false);
+  const connected = phase === "live" || !!setup.connected;
   const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  const moments = [
-    { k: "AI / session ratings", d: "A light rating on an output, or at the end of a session." },
-    { k: "Onboarding survey", d: "“Why are you here, and what do you want to do?” on first run." },
-    { k: "Key moments", d: "Purchase made or not, drop-off in a flow, cancel or downgrade." },
+  const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2200); };
+  const liveMoments = [
+    { k: "AI / output rating", d: "A one-tap rating on each AI output — tied to that exact output (strong evidence)." },
+    { k: "Your key conversion moment", d: "Found your key action: Upgrade — we ask only here, once, with a cooldown." },
   ];
   return (
     <section className="ss-panel">
-      <PanelTitle k="Step 4" title={connected ? "Observant is installed" : "Install Observant"} status={connected ? "Live ✓" : "One snippet"} />
-      <p className="ss-step-lead">{connected ? "The snippet is live — light feedback starts gathering on its own." : "Add one line to your app. It captures light feedback at the key moments automatically — no questions to write, nothing else to set up."}</p>
-      {!connected ? (
+      <PanelTitle k={"Step " + (step || 4)} title={connected ? "Observant is live" : "Install Observant"} status={connected ? "Watching ✓" : "One line"} />
+
+      {phase === "paste" && (
         <>
+          <p className="ss-step-lead">Add one line to your app. It gathers light feedback at a couple of key moments automatically — nothing to configure.</p>
           <div className="ss-snippet"><code>{snippet}</code><button type="button" className="ss-snippet-copy" onClick={copy}>{copied ? "Copied ✓" : "Copy"}</button></div>
-          <small className="ss-snippet-note">Drop it before <code>&lt;/body&gt;</code> (or in your framework's root). <b>Only the feedback surface is exposed — never your codebase.</b> Bring your own LLM key if you'd like.</small>
-          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={() => patchSetup({ connected: true })}><Icon name="check" size={16} /> I've added it</Btn></div>
+          <small className="ss-snippet-note">Drop it before <code>&lt;/body&gt;</code> (or your framework's root). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={added}><Icon name="check" size={16} /> I've added it</Btn></div>
         </>
-      ) : (
-        <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Gathering light feedback at:</div>
       )}
-      <div className="ss-moments">
-        {moments.map((m) => (
-          <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
-        ))}
-        <label className="ss-moment ss-moment-opt">
-          <input type="checkbox" checked={!!setup.satisfaction} onChange={(e) => patchSetup({ satisfaction: e.target.checked })} />
-          <div><b>Satisfaction pop-up <em>optional</em></b><span>A short "how's it going?" once in a while. Off by default — never annoying.</span></div>
-        </label>
-      </div>
-      <small className="ss-snippet-foot">All text, one tap, no opt-in, free. For deeper or proactive questions, add a feedback program.</small>
+
+      {phase === "listening" && (
+        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Listening for the first signal from {product}…</div>
+      )}
+
+      {connected && (
+        <>
+          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Watching two moments — and only these for now:</div>
+          <div className="ss-moments">
+            {liveMoments.map((m) => (
+              <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
+            ))}
+          </div>
+
+          <div className="ss-feelit">
+            {!testSent ? (
+              <Btn variant="ghost" onClick={() => setTestSent(true)}><Icon name="spark" size={14} /> Send yourself a test — see exactly what your users see</Btn>
+            ) : (
+              <div className="ss-pulse-preview">
+                <span className="ss-pulse-preview-tag">What your user sees</span>
+                <div className="ss-pulse-bubble">
+                  <p>Quick one — did that output do what you needed?</p>
+                  <div className="ss-pulse-row"><span className="ss-pulse-tap">👍</span><span className="ss-pulse-tap">👎</span><span className="ss-pulse-input">a few words (optional)</span></div>
+                  <span className="ss-pulse-what">what is this?</span>
+                </div>
+                <small className="ss-pulse-disclosure">The "what is this?" link says: <i>"This product is learning from how you use it so it can improve — your answer helps, you can ignore it."</i> One tap, dismissible, no account.</small>
+              </div>
+            )}
+          </div>
+
+          <details className="ss-moments-more">
+            <summary>More moments — optional, you control these</summary>
+            <label className="ss-moment ss-moment-opt">
+              <input type="checkbox" checked={!!setup.satisfaction} onChange={(e) => patchSetup({ satisfaction: e.target.checked })} />
+              <div><b>Satisfaction check <em>off · never scored</em></b><span>A short "how's it going?" — temperature only, never a score, and it can only open a conversation. Throttled so it's rare.</span></div>
+            </label>
+            <p className="ss-moments-parked">Onboarding intro · session-end · churn-risk stay parked — added as each earns the interruption.</p>
+          </details>
+
+          <small className="ss-snippet-foot">In-product feedback comes from users still active. To reach the churned and never-converted, add a feedback program.</small>
+        </>
+      )}
     </section>
   );
 }
