@@ -327,30 +327,70 @@ also resolves the ethics leak (old Q8): the honest in-product disclosure is *"th
 how you use it so it can improve — your answer helps, you can ignore it."* Full lever table + "partners not
 subjects" floor in `docs/FEEDBACK-MOMENTS.md`.
 
-## 7. Onboarding → first value
+## 7. Onboarding → first value (REDESIGNED — Xuan, 2026-06-29)
 
-> ⚠️ **SUPERSEDED on-ramp (2026-06-29):** the flow below leads with a **whole-repo scan** (Novus-style). Per
-> §6 + the access-levels investigation, the default in-product on-ramp is now **install a snippet (SDK), no
-> code scan** — only the interview surface is exposed, never the codebase. The repo scan moves to an opt-in
-> *advanced* tier (rarely used). Steps 2–4 below need rewriting to "install the snippet → it captures
-> client-side behavior codelessly → the standardized Pulse program starts." Tracked as a build+PRD edit.
+The whole onboarding now **bifurcates early** into the two setup routes from §6, and explains *why* each
+exists and *what it enables*. No repo scan anywhere. Mail send = **generate-a-magic-link, the client sends
+it** (Mailchimp/ESP integration parked for later).
 
-1. **Land** — same Novus vibe, zero data required: "Connect your repo and Observant watches + researches on
-   its own." Only opt-out (can't/won't connect code) = the off-product fast lane, right here.
-2. **Sign in with GitHub** → read-only clone + permission to open ONE PR.
-3. **Watch the live Reasoning panel** — real Bash/Grep/Read calls + conclusions building your product map
-   (visibly working, not a spinner; the same component reused later for "why this surfaced").
-4. **First value, before any user replies** — the scan returns three things: (1) a pre-filled **Product
-   Memory** (personas, flows, JTBD); (2) **3 proposed "moments worth interviewing"** (keep/edit → live
-   triggers); (3) a drafted **starter question backlog** ("the 6 things I'd ask your users first, and who
-   I'd ask each") — a research plan a no-muscle founder could never write, at minute five.
-5. **Install via a single PR** that honestly states what it could NOT wire and why → review → merge → live.
-6. **See the incentive model** (small feedback free; deep 1:1s ask consent + reward) — cost clear before
-   any user is touched.
-7. **Feel it** — "send a test loop to yourself"; optional "want a reply today? send your first off-product
-   loop" to existing users via magic link.
-8. **Land on the calm thin-data Home** — "watching for these 3 moments; the first 1:1s open as your users
-   hit them." Alive and watching, honest about velocity-now / volume-later.
+```
+  STAGE 0 — Product context (shared, ~30s)
+     name · URL · who uses it · what you'd like to learn
+                          │
+                          ▼
+  STAGE 1 — THE FORK:  "How do you want to gather feedback?"
+     two routes, explained side by side (pick one or both):
+
+   ┌─────────────────────────────────────┐   ┌──────────────────────────────────────┐
+   │ ▸ STANDARDIZED PROGRAM   (default ✓) │   │ ▸ FEEDBACK PROGRAM        (add-on)     │
+   │   passive · light · all users        │   │   proactive · light OR deep · opt-in   │
+   │                                       │   │                                        │
+   │ "Always-on light feedback at the     │   │ "Ask your own questions, or go deep    │
+   │  moments that matter — installed once,│   │  (a real ~10-min conversation). Invite │
+   │  runs itself. No questions to write,  │   │  users to opt in; you or the product   │
+   │  no one to recruit."                  │   │  team send questions anytime."         │
+   │                                       │   │                                        │
+   │ Enables → session/AI evals ·          │   │ Enables → Product 2 (light proactive)  │
+   │   onboarding survey · key-CTA ·       │   │   + Product 3 (deep ~10-min interview) │
+   │   satisfaction pop-up                 │   │                                        │
+   │ Setup → install a code snippet (SDK)  │   │ Setup → invite + compensation +        │
+   │   (no code read, no consent)          │   │   magic link YOU send (consent + pay)  │
+   └─────────────────────────────────────┘   └──────────────────────────────────────┘
+        the default everyone turns on              the gate for deep mode + product-team
+                                                    questions ("you can't deep-interview
+                                                    someone who hasn't opted in")
+                          │
+            ┌─────────────┴──────────────┐
+            ▼                            ▼
+  STAGE 2A — Standardized setup      STAGE 2B — Feedback-program setup
+   • paste the snippet (one line)     • set compensation (cash/min) + perks
+   • it auto-captures client-side     • write the invitation (your brand)
+     behavior, codelessly             • generate the magic link → YOU send it
+   • see the moments it will ask at     to your users (we don't email for you yet)
+     (Pulse) + the satisfaction-popup  • choose surfaces: email or IM
+     toggle                           • light vs deep is a per-question choice later
+            └─────────────┬──────────────┘
+                          ▼
+  STAGE 3 — Launch → calm Home ("watching for these moments; opt-ins flow in")
+```
+
+**The bifurcation copy (Stage 1) — say the why plainly:**
+- **Standardized program** = *what you turn on so you're never flying blind.* Light, ambient, every user,
+  zero work — the snippet does it. This is the default; recommended ON.
+- **Feedback program** = *what you set up when you have something specific to ask, or want to go deep.* It
+  needs people who've opted in (you can't run a 10-min interview on an anonymous tap), so it carries the
+  invite + consent + compensation. Add it now or anytime later.
+- **The relationship between them:** standardized is the floor everyone gets; the feedback program is the
+  add-on that unlocks **proactive questions (Product 2)** and **deep interviews (Product 3)**. A team that
+  can't/won't install the snippet can run the feedback program alone (pure off-product).
+
+**Notes:**
+- **No "first value from a scan" anymore** — the snippet's value is that it starts gathering immediately and
+  codelessly; the standardized moments are pre-built, so there's nothing to configure.
+- **"Feel it"** still applies — "send a test Pulse to yourself" / "send a test loop to yourself" so the
+  founder sees the user-side experience before a real user does.
+- **Deep mode + ongoing product-team questions are gated on the feedback program** — surface that gate at
+  Stage 1 so the choice is legible, and let them add the program later from the dashboard if they skipped it.
 
 ## 8. What ships first (v1)
 
