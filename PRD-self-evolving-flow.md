@@ -176,26 +176,29 @@ Five moves (moves 1–2 already half-built in `InsightDetail`):
               └─────────────────────────┴─────────────────┴─────────────────┘
 ```
 
-**Product 1 — Standardized program (passive · light · no consent · all users · SNIPPET).** Ships pre-built,
-runs in-product on the installed snippet. The moments: **(a) session-based evals** — a lightweight rating on
-an AI output / at session end; **(b) onboarding context** — a survey-type intro ("why are you here / where
-will you use this?"), with an optional deeper intro conversation for those who want it; **(c) key-CTA
-moments** — purchase made / not made, left the main flow, cancel / downgrade / close-account; **(d) a general
-satisfaction pop-up** (optional, throttled, never annoying). All text, one-round, no consent — it's ambient
-product feedback under the existing privacy policy.
+**Product 1 — Baseline feedback loops** *(formerly "Standardized program"; passive · light · no consent ·
+all users · SNIPPET)* — **"the smallest viable feedback pipeline"** (Xuan, 2026-06-29). The thin attitudinal
+layer any product can stand up, collected automatically on the installed snippet:
+- **Unsolicited** — an always-available "give feedback" affordance (the user volunteers, unprompted).
+- **Solicited, at touchpoints** — session-based **AI evals (ratings)**, an **exit survey** (leave / downgrade
+  / cancel), **CSAT** (periodic satisfaction tap).
 
-> **v1 ships only the LOCKED minimal (§6.5): (a) the AI-output rating + ONE auto-found key-CTA.** The
-> onboarding survey, the blanket key-moments, and the satisfaction pop-up are **optional / parked** — the
-> build surfaces them as a "more moments, you control these" group, not defaults (team critique 6/29: the
-> 4-moment default over-claimed and made the two *weakest* evidence classes — stated onboarding intent +
-> floating satisfaction — the most prominent no-consent inputs, cracking the Evidence-Grade trust contract).
+> **The framing (precise register):** *the baseline instrument is a thin scalar/binary attitudinal signal —
+> a score with no reason attached.* It's cheap, it's everywhere, and on its own it tells you *that* someone
+> is unhappy, never *why*. Baseline loops collect the signal; **Observant's move is to not stop at the
+> score** — a weak signal fires **one light follow-up** that attaches the why (and if the answer's worth it,
+> offers a deeper conversation → a customized loop). All text, one-round, no consent — ambient product
+> feedback under the existing privacy policy. *(Honesty guard from the 6/29 critique: present these as the
+> thin signals they are — never launder a bare score into a Signal/finding; the why comes from the
+> follow-up, graded by evidence.)*
 
-**Product 2 — Light proactive (off-product · light · consent · opt-in).** A PM has a specific question and
-wants to ask real people. Goes **off-product** (email / IM) to opt-in feedback partners; 1–2 rounds. Needs
-PII to send — **or the client sends it themselves** (Mailchimp model).
-
-**Product 3 — Deep proactive (off-product · deep · consent · opt-in).** Same channel/recruitment as Product
-2, but a ~10-min interview (= the old "Deep dive"). Off-product; voice allowed off-product.
+**Products 2 & 3 — Customized feedback loops** *(proactive · off-product · consent · opt-in)* — **you don't
+craft research; you ask, Observant runs it.** Starts with a **feedback partner program**: invite users to
+opt in to a growing panel. Then the team sends a **specific question about the product or its users** anytime
+— they don't write the study or pick who. **Observant translates it into the right depth — light mode
+(Product 2, 1–2 rounds) or deep mode (Product 3, ~10-min interview) — disseminates it, runs it, and delivers
+the insight/answer.** Off-product (email / IM); voice allowed off-product. Needs PII to send — **or the
+client sends the magic link themselves** (Mailchimp model, parked).
 
 ### Does this design still need the whole code scan? → **NO (for v1).**
 Per-moment check of Product 1 against *snippet (client-side, codeless) vs. scan (server-side, code-read)*:
