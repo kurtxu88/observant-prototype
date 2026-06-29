@@ -3388,3 +3388,14 @@
 .ss-moments-more .ss-moment { margin-top:.5rem; }
 .ss-moment b em { color:var(--text-muted); }
 .ss-moments-parked { font-size:.76rem; color:var(--text-muted); margin-top:.5rem; }
+
+/* Fork v3 — two stacked, CLICKABLE cards (baseline default-hero + customized add-on) */
+.ss-fork-card { display:block; width:100%; margin-bottom:.7rem; }
+.ss-fork-card.hero { background:var(--accent-tint); border-color:var(--accent-soft); }
+.ss-fork-card.hero.on { box-shadow:0 0 0 3px var(--accent-tint); }
+.ss-fork-title { flex:1; min-width:0; }
+.ss-fork-title b { font-size:1rem; display:block; }
+.ss-fork-sub { display:block; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted); margin-top:.1rem; }
+.ss-fork-pill.off { background:var(--border-strong); color:#fff; }
+.ss-fork-card .ss-fork-head { align-items:flex-start; }
+.ss-fork-card .ss-fork-tag { align-self:center; }

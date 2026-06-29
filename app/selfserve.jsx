@@ -476,7 +476,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 
 // Header copy per activation step, keyed by the computed step id (path-aware).
 const SS_STEP_META = {
-  fork: { t: "How do you want to gather feedback?", d: "Always-on feedback installs with a snippet — that's the default. Add a feedback program when you want to ask your own questions or go deep." },
+  fork: { t: "How Observant gathers feedback", d: "Baseline loops gather feedback on their own (passive). Customized loops are questions you design and send (proactive). Start with baseline." },
   snippet: { t: "Install Observant", d: "One line of code. Light feedback gathers itself at the key moments — no one is interrupted, nothing to configure." },
   program: { t: "Set up your feedback program", d: "Invite users to opt in, set how you compensate them for their time, and write your invitation." },
   review: { t: "Your invitation & magic link", d: "Generate the link, then send it to your users yourself." },
@@ -746,38 +746,37 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 // Stage 1 — the fork, reframed (team critique 6/29): standardized is the DEFAULT hero (on, not a
 // coin-flip); the feedback program is a deferrable add-on ("now or anytime from your dashboard").
 function FeedbackFork({ products, setProducts, step }) {
-  const standardizedOn = products.standardized !== false;
+  const baselineOn = products.standardized !== false;
   return (
     <section className="ss-panel">
-      <PanelTitle k={"Step " + (step || 3)} title="How Observant gathers feedback" status="Set in seconds" />
-      <p className="ss-step-lead">Light, always-on feedback installs with a snippet — that's on by default. Add a feedback program only if you also want to ask your own questions or go deep.</p>
+      <PanelTitle k={"Step " + (step || 3)} title="How Observant gathers feedback" status="Two kinds of loop" />
+      <p className="ss-step-lead">Two kinds of feedback loop. <b>Baseline</b> loops are preset and gather on their own (passive). <b>Customized</b> loops are questions you design and send (proactive). Start with baseline — add customized anytime. Turn on either or both.</p>
 
-      {standardizedOn && (
-        <div className="ss-fork-hero">
-          <div className="ss-fork-hero-head">
-            <span className="ss-fork-hero-ic"><Icon name="bolt" size={16} /></span>
-            <div><b>Always-on feedback</b><span>Install one snippet — light feedback gathers itself at a couple of key moments, from every user who hits them. No questions to write, no one to recruit.</span></div>
-            <em className="ss-fork-pill">On · recommended</em>
-          </div>
-          <ul className="ss-fork-list">
-            <li>A one-tap rating on each AI output / session</li>
-            <li>One question at your key conversion moment</li>
-          </ul>
-          <small>Passive · light · text only · no opt-in · free — installs next.</small>
+      <button type="button" className={"ss-fork-card hero" + (baselineOn ? " on" : "")} role="checkbox" aria-checked={baselineOn} onClick={() => setProducts({ standardized: !baselineOn })}>
+        <div className="ss-fork-head">
+          <span className="ss-fork-check">{baselineOn ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
+          <div className="ss-fork-title"><b>Baseline feedback loops</b><span className="ss-fork-sub">preset · passive · gathers itself</span></div>
+          <em className={"ss-fork-pill" + (baselineOn ? "" : " off")}>{baselineOn ? "On · recommended" : "Off"}</em>
         </div>
-      )}
-
-      <button type="button" className={"ss-fork-addon" + (products.feedbackProgram ? " on" : "")} role="checkbox" aria-checked={!!products.feedbackProgram} onClick={() => setProducts({ feedbackProgram: !products.feedbackProgram })}>
-        <span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
-        <div className="ss-fork-addon-body">
-          <b>Ask your users <em className="ss-fork-tag">Add-on</em></b>
-          <p>Put your own questions to real people — or sit down for a ~10-min conversation to hear the why. Invite users to opt in, then send questions anytime over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
-        </div>
+        <p>A few standard, lightweight feedback moments come <b>built in and run on their own</b> — no questions to write, no one to recruit. Install one snippet and they gather from every user who hits them.</p>
+        <ul className="ss-fork-list">
+          <li>A one-tap rating on each AI output / session</li>
+          <li>One short question at your key conversion moment</li>
+        </ul>
+        <small>Passive · light · text only · no opt-in · free — installs next.</small>
       </button>
 
-      {standardizedOn
-        ? <button type="button" className="ss-fork-skip" onClick={() => setProducts({ standardized: false, feedbackProgram: true })}>Can't add code right now? Skip the snippet and run a feedback program only →</button>
-        : <button type="button" className="ss-fork-skip" onClick={() => setProducts({ standardized: true })}>← Add the always-on snippet back (recommended)</button>}
+      <button type="button" className={"ss-fork-card" + (products.feedbackProgram ? " on" : "")} role="checkbox" aria-checked={!!products.feedbackProgram} onClick={() => setProducts({ feedbackProgram: !products.feedbackProgram })}>
+        <div className="ss-fork-head">
+          <span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
+          <div className="ss-fork-title"><b>Customized feedback loops</b><span className="ss-fork-sub">you design · proactive · opt-in</span></div>
+          <em className="ss-fork-tag">Add-on</em>
+        </div>
+        <p>Craft <b>your own questions</b> and put them to real users — a quick one, or a ~10-min conversation to hear the why. Invite users to opt in, then send whenever you like over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
+        <small>Proactive · light or deep · opt-in + consent — off-product (email / IM).</small>
+      </button>
+
+      <p className="ss-fork-note"><Icon name="users" size={13} /> Most teams start with baseline (on now) and add customized loops when they have a specific question. Toggle either — at least one stays on.</p>
     </section>
   );
 }
@@ -847,7 +846,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
             <p className="ss-moments-parked">Onboarding intro · session-end · churn-risk stay parked — added as each earns the interruption.</p>
           </details>
 
-          <small className="ss-snippet-foot">In-product feedback comes from users still active. To reach the churned and never-converted, add a feedback program.</small>
+          <small className="ss-snippet-foot">These baseline loops gather from users still active. To ask your own questions — or reach the churned and never-converted — add customized feedback loops.</small>
         </>
       )}
     </section>
