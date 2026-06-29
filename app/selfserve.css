@@ -3399,3 +3399,13 @@
 .ss-fork-pill.off { background:var(--border-strong); color:#fff; }
 .ss-fork-card .ss-fork-head { align-items:flex-start; }
 .ss-fork-card .ss-fork-tag { align-self:center; }
+
+/* GitHub-App authorize screen (faithful Novus install step) */
+.ss-ghauth { }
+.ss-ghauth-head { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; }
+.ss-ghauth-head b { font-size:1.05rem; }
+.ss-ghauth-mark { width:30px; height:30px; border-radius:8px; background:var(--night); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; }
+.ss-ghauth-perms { list-style:none; margin:.8rem 0 1rem; padding:0; display:flex; flex-direction:column; gap:.5rem; }
+.ss-ghauth-perms li { display:flex; align-items:baseline; gap:.45rem; font-size:.86rem; }
+.ss-ghauth-perms li svg { color:var(--success); flex:none; }
+.ss-ghauth-perms li span { color:var(--text-muted); }

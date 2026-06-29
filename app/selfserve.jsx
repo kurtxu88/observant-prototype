@@ -53,7 +53,7 @@ const SS_SCAN_DETECTED = [
   { k: "Platform", v: "React + Vite SPA · Stripe billing" },
   { k: "Key flows", v: "Onboarding · Reporting / export · Upgrade" },
   { k: "Personas", v: "Power user · New user · Upgrade evaluator" },
-  { k: "Analytics", v: "None found — Observant will instrument the triggers it needs" },
+  { k: "Analytics", v: "None found — Observant adds its own feedback snippet" },
 ];
 const SS_SCAN_TRIGGERS = [
   { moment: "Abandoned upgrade", detail: "Left the upgrade page after the price reveal", why: "Ask what tipped them off — price, or team-visibility doubt." },
@@ -750,35 +750,26 @@ function FeedbackFork({ products, setProducts, step }) {
   return (
     <section className="ss-panel">
       <PanelTitle k={"Step " + (step || 3)} title="How Observant gathers feedback" status="Two kinds of loop" />
-      <p className="ss-step-lead"><b>Baseline</b> gathers thin signals on its own (passive). <b>Customized</b> is questions you send (proactive). Start with baseline; add customized anytime.</p>
+      <p className="ss-step-lead">Baseline installs automatically and is recommended to start. Add customized anytime to send your own questions.</p>
 
       <button type="button" className={"ss-fork-card hero" + (baselineOn ? " on" : "")} role="checkbox" aria-checked={baselineOn} onClick={() => setProducts({ standardized: !baselineOn })}>
         <div className="ss-fork-head">
           <span className="ss-fork-check">{baselineOn ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
-          <div className="ss-fork-title"><b>Baseline feedback loops</b><span className="ss-fork-sub">the smallest viable feedback pipeline</span></div>
+          <div className="ss-fork-title"><b>Baseline feedback loops</b></div>
           <em className={"ss-fork-pill" + (baselineOn ? "" : " off")}>{baselineOn ? "On · recommended" : "Off"}</em>
         </div>
-        <p>Collected automatically — no questions to write, no one to recruit. A <b>thin scalar/binary attitudinal signal: a score, no reason.</b></p>
-        <ul className="ss-fork-list">
-          <li>Unsolicited "give feedback" — always one tap away</li>
-          <li>Session / AI-output evals — a rating on each output</li>
-          <li>Exit survey — one question on leave or cancel</li>
-          <li>CSAT — a periodic satisfaction tap</li>
-        </ul>
-        <small>Passive · light · text only · no opt-in · free — installs next.</small>
+        <p>Installs a baseline feedback pipeline for any app — <b>AI output evals, exit surveys, and CSAT</b>. The easiest to set up, and the most recommended way to collect attitudinal signals.</p>
+        <small>Requires a code integration.</small>
       </button>
 
       <button type="button" className={"ss-fork-card" + (products.feedbackProgram ? " on" : "")} role="checkbox" aria-checked={!!products.feedbackProgram} onClick={() => setProducts({ feedbackProgram: !products.feedbackProgram })}>
         <div className="ss-fork-head">
           <span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
-          <div className="ss-fork-title"><b>Customized feedback loops</b><span className="ss-fork-sub">ask anything · Observant runs it · opt-in</span></div>
+          <div className="ss-fork-title"><b>Customized feedback loops</b></div>
           <em className="ss-fork-tag">Add-on</em>
         </div>
-        <p>Send a question about your product or users — <b>Observant translates it into a light or deep ask</b>, runs it with opted-in users, and delivers the answer. Starts with a feedback partner program. Add now or later.</p>
-        <small>Proactive · light or deep · opt-in + consent — off-product (email / IM).</small>
+        <p>Send your own research questions to your users — Observant runs them and delivers the answers. <b>Requires setting up a feedback partner program first</b>, so your users opt in.</p>
       </button>
-
-      <p className="ss-fork-note"><Icon name="users" size={13} /> Toggle either — at least one stays on.</p>
     </section>
   );
 }
@@ -787,16 +778,24 @@ function FeedbackFork({ products, setProducts, step }) {
 // minimal Pulse (§6.5): AI-output rating + one key conversion-CTA. Listening-verify, then "feel it".
 function SnippetSetup({ product, setup, patchSetup, step }) {
   const [copied, setCopied] = useStateSS(false);
-  // start → (github) generating → pr → live   |   (manual) paste → listening → live
+  // Faithful Novus install: start (Sign in w/ GitHub) → authorize (GitHub App) → scanning (reasoning panel)
+  //   → pr (the single install PR) → live.   Manual fallback: paste → listening → live.
   const [phase, setPhase] = useStateSS(setup.connected ? "live" : "start");
+  const [scanIdx, setScanIdx] = useStateSS(0);
   const [testSent, setTestSent] = useStateSS(false);
   const connected = phase === "live" || !!setup.connected;
   const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
   const pr = ssInstallPR(product);
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  const connectGitHub = () => { setPhase("generating"); setTimeout(() => setPhase("pr"), 1600); };
+  const grant = () => { setScanIdx(0); setPhase("scanning"); };
   const merge = () => { setPhase("live"); patchSetup({ connected: true }); };
   const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
+  useEffectSS(() => {
+    if (phase !== "scanning") return undefined;
+    if (scanIdx >= SS_SCAN_STEPS.length) { const t = setTimeout(() => setPhase("pr"), 700); return () => clearTimeout(t); }
+    const t = setTimeout(() => setScanIdx((i) => i + 1), 750);
+    return () => clearTimeout(t);
+  }, [phase, scanIdx]);
   const liveMoments = [
     { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
     { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
@@ -811,14 +810,52 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
         <>
           <p className="ss-step-lead">Connect your repo and Observant opens a <b>single pull request</b> that adds the snippet — review it like any PR and merge. Or paste the line yourself.</p>
           <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
-          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={connectGitHub}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={() => setPhase("authorize")}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
           <small className="ss-snippet-note">Read-only on your code + permission to open <b>one</b> pull request (the install PR you review before merging). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
           <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
         </>
       )}
 
-      {phase === "generating" && (
-        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Generating your install PR for {product}…</div>
+      {phase === "authorize" && (
+        <div className="ss-ghauth">
+          <div className="ss-ghauth-head"><span className="ss-ghauth-mark"><Icon name="grid" size={16} /></span> <b>Install &amp; authorize Observant</b></div>
+          <p className="ss-step-lead">Observant is requesting access to one repository.</p>
+          <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
+          <ul className="ss-ghauth-perms">
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Read</b> access to code &amp; metadata <span>— to place the snippet correctly</span></li>
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Read &amp; write</b> on pull requests <span>— to open the one install PR you review</span></li>
+          </ul>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Authorize &amp; install</Btn></div>
+          <small className="ss-snippet-note"><b>Only the feedback surface is exposed — never your codebase.</b> Hashed identity, no new PII · bring your own LLM key · revoke anytime.</small>
+        </div>
+      )}
+
+      {phase === "scanning" && (
+        <div className="ss-connect-stage">
+          <PanelTitle k="Setting up" title={"Reading " + product + " to place the snippet…"} status="Working" />
+          <div className="ss-scan-grid">
+            <div className="ss-scan-reason">
+              <span className="ss-scan-reason-h">Reasoning · {Math.min(scanIdx, SS_SCAN_STEPS.length)}/{SS_SCAN_STEPS.length} steps</span>
+              {SS_SCAN_STEPS.slice(0, scanIdx).map((s, i) => (
+                <div className="ss-scan-step" key={i}>
+                  <code className="ss-scan-tool">{s.tool}</code>
+                  <div className="ss-scan-step-body">
+                    <span className="ss-scan-cmd">{s.cmd}</span>
+                    <span className="ss-scan-out">{s.out}</span>
+                    <span className="ss-scan-concl"><Icon name="check" size={11} sw={2.6} /> {s.concl}</span>
+                  </div>
+                </div>
+              ))}
+              {scanIdx < SS_SCAN_STEPS.length && <div className="ss-scan-step ss-scan-working"><span className="ss-scan-spinner" /> working…</div>}
+            </div>
+            <div className="ss-scan-map">
+              <span className="ss-scan-map-h">What Observant found</span>
+              {SS_SCAN_DETECTED.slice(0, Math.min(SS_SCAN_DETECTED.length, scanIdx)).map((d) => (
+                <div className="ss-scan-fact" key={d.k}><Icon name="check" size={12} sw={2.6} /><b>{d.k}</b><span>{d.v}</span></div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {phase === "pr" && (
