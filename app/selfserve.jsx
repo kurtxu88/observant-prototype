@@ -547,13 +547,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <p className="ss-step-lead"><b>Where does feedback come from? Pick one or both.</b></p>
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (offproduct ? " on" : "")} role="checkbox" aria-checked={offproduct} onClick={() => toggleSurface("offproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Easiest · no code</em></span>
-                  <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
-                  <small>Invite users to a feedback program and ask them questions — a quick one or a deeper conversation.</small>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product feedback</b><em className="ss-route-tag start">Easy to set up</em></span>
+                  <p><b>Set up a feedback partner program.</b> You share one magic link, and users who opt in choose how they want to be reached — email or Telegram — and their identifier arrives with that choice. You never hand over user data.</p>
                 </button>
                 <button type="button" className={"ss-route" + (inproduct ? " on" : "")} role="checkbox" aria-checked={inproduct} onClick={() => toggleSurface("inproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Needs a snippet</em></span>
-                  <p>Install a code snippet and Observant starts with <b>a few key feedback loops</b> right inside your app — AI output evals, exit surveys, and CSAT. More (behavioral triggers and beyond) comes later.</p>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product feedback</b><em className="ss-route-tag pro">Code integration</em></span>
+                  <p>Install a code snippet and Observant starts with <b>a few key feedback loops</b> right inside your app — AI output evals, exit surveys, and CSAT. The most minimal viable feedback loop you'd want for your product.</p>
                 </button>
               </div>
               {inproduct && offproduct && <p className="ss-fork-note"><Icon name="check" size={13} /> You'll set up the in-product snippet first, then the off-product panel.</p>}
