@@ -755,13 +755,15 @@ function FeedbackFork({ products, setProducts, step }) {
       <button type="button" className={"ss-fork-card hero" + (baselineOn ? " on" : "")} role="checkbox" aria-checked={baselineOn} onClick={() => setProducts({ standardized: !baselineOn })}>
         <div className="ss-fork-head">
           <span className="ss-fork-check">{baselineOn ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
-          <div className="ss-fork-title"><b>Baseline feedback loops</b><span className="ss-fork-sub">preset · passive · gathers itself</span></div>
+          <div className="ss-fork-title"><b>Baseline feedback loops</b><span className="ss-fork-sub">the smallest viable feedback pipeline</span></div>
           <em className={"ss-fork-pill" + (baselineOn ? "" : " off")}>{baselineOn ? "On · recommended" : "Off"}</em>
         </div>
-        <p>A few standard, lightweight feedback moments come <b>built in and run on their own</b> — no questions to write, no one to recruit. Install one snippet and they gather from every user who hits them.</p>
+        <p>The standard thin signals any product can stand up, collected automatically — no questions to write, no one to recruit. The baseline instrument is a <b>thin scalar/binary attitudinal signal — a score with no reason attached</b>. Observant collects it, then does the part a survey can't: a weak signal triggers <b>one light follow-up that attaches the why</b>.</p>
         <ul className="ss-fork-list">
-          <li>A one-tap rating on each AI output / session</li>
-          <li>One short question at your key conversion moment</li>
+          <li>Unsolicited "give feedback" — always one tap away</li>
+          <li>Session / AI-output evals — a rating on each output</li>
+          <li>Exit survey — one question on leave or cancel</li>
+          <li>CSAT — a periodic satisfaction tap</li>
         </ul>
         <small>Passive · light · text only · no opt-in · free — installs next.</small>
       </button>
@@ -769,10 +771,10 @@ function FeedbackFork({ products, setProducts, step }) {
       <button type="button" className={"ss-fork-card" + (products.feedbackProgram ? " on" : "")} role="checkbox" aria-checked={!!products.feedbackProgram} onClick={() => setProducts({ feedbackProgram: !products.feedbackProgram })}>
         <div className="ss-fork-head">
           <span className="ss-fork-check">{products.feedbackProgram ? <Icon name="check" size={13} sw={2.6} /> : null}</span>
-          <div className="ss-fork-title"><b>Customized feedback loops</b><span className="ss-fork-sub">you design · proactive · opt-in</span></div>
+          <div className="ss-fork-title"><b>Customized feedback loops</b><span className="ss-fork-sub">ask anything · Observant runs it · opt-in</span></div>
           <em className="ss-fork-tag">Add-on</em>
         </div>
-        <p>Craft <b>your own questions</b> and put them to real users — a quick one, or a ~10-min conversation to hear the why. Invite users to opt in, then send whenever you like over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
+        <p>Starts with a <b>feedback partner program</b> — invite users to opt in to a growing panel. Then your team can send a specific question about your product or users <b>anytime</b> — you don't write the research or pick who. <b>Observant translates it into the right depth</b> (a quick light check or a ~10-min deep interview), disseminates it, runs it, and delivers the answer. Reaches people over email or IM. <b>Add now, or anytime from your dashboard.</b></p>
         <small>Proactive · light or deep · opt-in + consent — off-product (email / IM).</small>
       </button>
 
@@ -792,8 +794,10 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
   const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2200); };
   const liveMoments = [
-    { k: "AI / output rating", d: "A one-tap rating on each AI output — tied to that exact output (strong evidence)." },
-    { k: "Your key conversion moment", d: "Found your key action: Upgrade — we ask only here, once, with a cooldown." },
+    { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
+    { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
+    { k: "Exit survey", d: "One question on the way out — leave, downgrade, or cancel." },
+    { k: "CSAT", d: "A periodic satisfaction tap, throttled so it's rare." },
   ];
   return (
     <section className="ss-panel">
@@ -814,7 +818,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
       {connected && (
         <>
-          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Watching two moments — and only these for now:</div>
+          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Your baseline pipeline is gathering — thin signals now, with the <i>why</i> attached on follow-up:</div>
           <div className="ss-moments">
             {liveMoments.map((m) => (
               <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
@@ -838,12 +842,8 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
           </div>
 
           <details className="ss-moments-more">
-            <summary>More moments — optional, you control these</summary>
-            <label className="ss-moment ss-moment-opt">
-              <input type="checkbox" checked={!!setup.satisfaction} onChange={(e) => patchSetup({ satisfaction: e.target.checked })} />
-              <div><b>Satisfaction check <em>off · never scored</em></b><span>A short "how's it going?" — temperature only, never a score, and it can only open a conversation. Throttled so it's rare.</span></div>
-            </label>
-            <p className="ss-moments-parked">Onboarding intro · session-end · churn-risk stay parked — added as each earns the interruption.</p>
+            <summary>The why — how a thin score becomes a real reason</summary>
+            <p className="ss-moments-parked">The baseline instrument is a thin scalar/binary attitudinal signal — a score with no reason attached. When one comes in weak, Observant fires <b>one light follow-up</b> ("what happened there?") to attach the why — and if the answer is worth it, offers a deeper conversation (that's a customized loop, consent + reward).</p>
           </details>
 
           <small className="ss-snippet-foot">These baseline loops gather from users still active. To ask your own questions — or reach the churned and never-converted — add customized feedback loops.</small>
