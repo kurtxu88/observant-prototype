@@ -423,8 +423,8 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 }
 
 const SS_ONBOARD_STEPS = [
-  { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
   { id: "surface", t: "Choose feedback surface", d: "Off-product or in-product" },
+  { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
@@ -451,7 +451,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
   const route = setup.route || "offproduct";
-  const setRoute = (id) => patchSetup({ route: id });
+  const setRoute = (id) => { patchSetup({ route: id }); setStep(0); };
+  // Surface-first, then branch: in-product = install a snippet (terminal); off-product = program + preview.
+  const stepIds = route === "inproduct" ? ["surface"] : ["surface", "program", "preview"];
+  const curId = stepIds[Math.min(step, stepIds.length - 1)];
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -527,28 +530,28 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </aside>
 
         <main className="ss-activation-main">
-          {step === 1 && (
+          {curId === "surface" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 2" title="Choose your feedback surface" status={route === "inproduct" ? "In-product" : "Off-product"} />
-              <p className="ss-step-lead"><b>One decision: where do the conversations live?</b></p>
+              <PanelTitle k="Step 3" title="Choose your feedback surface" status={route === "inproduct" ? "In-product" : "Off-product"} />
+              <p className="ss-step-lead"><b>One decision: where does feedback come from?</b></p>
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (route === "offproduct" ? " on" : "")} onClick={() => setRoute("offproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Start today</em></span>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product channels</b><em className="ss-route-tag start">Easiest · no code</em></span>
                   <p>No setup needed. You share one magic link, and <b>each user chooses how to be reached — email or Telegram</b> — when they opt in. Their identifier arrives with that choice; you never hand over user data.</p>
-                  <small>Email: quiet async 1:1s, whenever they have five minutes. Telegram: a one-tap private chat with the Observant bot.</small>
+                  <small>Invite users to a feedback program and ask them questions — a quick one or a deeper conversation.</small>
                 </button>
                 <button type="button" className={"ss-route" + (route === "inproduct" ? " on" : "")} onClick={() => setRoute("inproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Pro · richer data</em></span>
-                  <p>Observant lives inside your app and catches people at the exact moment of use — the richest surface. Simple setup, walked through with our team.</p>
+                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product</b><em className="ss-route-tag pro">Standardized pipeline</em></span>
+                  <p>Install a code snippet and Observant gathers a standardized feedback pipeline automatically — AI output evals, exit surveys, and CSAT.</p>
                 </button>
               </div>
-              {route === "inproduct" && <ProUpsell />}
+              {route === "inproduct" && <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={4} />}
             </section>
           )}
 
-          {step === 0 && (
+          {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 1" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 4" title="How the program works" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
@@ -593,9 +596,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
             </section>
           )}
 
-          {step === 2 && (
+          {curId === "preview" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 3" title="Preview" status="Last step" />
+              <PanelTitle k="Step 5" title="Preview" status="Last step" />
               <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
               <div className="ss-review">
                 <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
@@ -671,13 +674,203 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
               : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
             <span className="count">{"Step " + (step + 3) + " of " + SS_ONBOARD_FLOW.length}</span>
-            {step < SS_ONBOARD_STEPS.length - 1
-              ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
-              : <span />}
+            {route === "inproduct"
+              ? (setup.connected ? <Btn variant="primary" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn> : <span />)
+              : (step < stepIds.length - 1
+                  ? <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>
+                  : <span />)}
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+
+// ── Faithful Novus install (ported from session branch): Connect→Authorize→Scan→PR→live ──
+const SS_CONNECT_REPO = { owner: "your-org", name: "web-app", branch: "main", stack: "React + Vite + TypeScript" };
+
+const SS_SCAN_STEPS = [
+  { tool: "Bash", cmd: "git clone --depth 1 your-org/web-app", out: "Cloned main @ 4f9c2a1 · 318 files", concl: "Repo reachable. Read-only clone." },
+  { tool: "Read", cmd: "package.json · vite.config.ts", out: "react@18 · vite@5 · typescript@5 · stripe@14", concl: "React + Vite + TypeScript SPA. Stripe billing present." },
+  { tool: "Grep", cmd: "grep -r 'posthog|amplitude|pendo|segment' src/", out: "0 matches", concl: "No product analytics wired — behavior is currently invisible." },
+  { tool: "Read", cmd: "src/routes/* · src/pages/Pricing.tsx", out: "12 routes · 3 plan tiers (Free / Team / Business)", concl: "B2B app with self-serve upgrade. Pricing is a key decision surface." },
+  { tool: "Read", cmd: "src/onboarding/* · src/dashboard/*", out: "FirstRun.tsx · ExportButton.tsx · ShareLink (none)", concl: "Onboarding + export are core flows; no share-link path exists." },
+];
+
+// What the scan submits — the product map, plus the behavioral moments where a
+// 1:1 would pay off most (these become the auto-triggers once the snippet is live).
+const SS_SCAN_DETECTED = [
+  { k: "Platform", v: "React + Vite SPA · Stripe billing" },
+  { k: "Key flows", v: "Onboarding · Reporting / export · Upgrade" },
+  { k: "Personas", v: "Power user · New user · Upgrade evaluator" },
+  { k: "Analytics", v: "None found — Observant adds its own feedback snippet" },
+];
+const SS_SCAN_TRIGGERS = [
+  { moment: "Abandoned upgrade", detail: "Left the upgrade page after the price reveal", why: "Ask what tipped them off — price, or team-visibility doubt." },
+  { moment: "Repeat export", detail: "3rd CSV export in a week", why: "A power user working around a missing share flow — ask what they're really doing with it." },
+  { moment: "Onboarding stall", detail: "No report opened in week 1", why: "Catch the new-user confusion before it becomes churn." },
+];
+
+// The single PR Observant opens to go live — snippet + init, plus an honest note
+// of what it could NOT wire (the Novus credibility move).
+function ssInstallPR(product) {
+  return {
+    number: 1,
+    title: "Install Observant #1",
+    branch: "observant/install",
+    files: [
+      { path: "index.html", add: ['<script src="https://cdn.observant.dev/o.js" data-app="obs_live_8fa2"></script>'] },
+      { path: "src/main.tsx", add: ['import { observant } from "@observant/web";', 'observant.init({ app: "obs_live_8fa2" });'] },
+      { path: "src/observant.d.ts", add: ['declare module "@observant/web";'] },
+    ],
+    body: "Adds the Observant snippet + init so the product can start its own 1:1s at the moments above. One file each — no behavior change to your app.",
+    caveat: "Did NOT call observant.identify() — your auth lives in a Supabase callback I can't safely edit. When you're ready, call observant.identify(user.id) in src/auth/onSignIn.ts so conversations attach to the right person.",
+  };
+}
+
+function SnippetSetup({ product, setup, patchSetup, step }) {
+  const [copied, setCopied] = useStateSS(false);
+  // Faithful Novus install: start (Sign in w/ GitHub) → authorize (GitHub App) → scanning (reasoning panel)
+  //   → pr (the single install PR) → live.   Manual fallback: paste → listening → live.
+  const [phase, setPhase] = useStateSS(setup.connected ? "live" : "start");
+  const [scanIdx, setScanIdx] = useStateSS(0);
+  const [testSent, setTestSent] = useStateSS(false);
+  const connected = phase === "live" || !!setup.connected;
+  const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
+  const pr = ssInstallPR(product);
+  const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
+  const grant = () => { setScanIdx(0); setPhase("scanning"); };
+  const merge = () => { setPhase("live"); patchSetup({ connected: true }); };
+  const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
+  useEffectSS(() => {
+    if (phase !== "scanning") return undefined;
+    if (scanIdx >= SS_SCAN_STEPS.length) { const t = setTimeout(() => setPhase("pr"), 700); return () => clearTimeout(t); }
+    const t = setTimeout(() => setScanIdx((i) => i + 1), 750);
+    return () => clearTimeout(t);
+  }, [phase, scanIdx]);
+  const liveMoments = [
+    { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
+    { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
+    { k: "Exit survey", d: "One question on the way out — leave, downgrade, or cancel." },
+    { k: "CSAT", d: "A periodic satisfaction tap, throttled so it's rare." },
+  ];
+  return (
+    <section className="ss-panel">
+      <PanelTitle k={"Step " + (step || 4)} title={connected ? "Observant is live" : "Install Observant"} status={connected ? "Watching ✓" : "One PR"} />
+
+      {phase === "start" && (
+        <>
+          <p className="ss-step-lead">Connect your repo and Observant opens a <b>single pull request</b> that adds the snippet — review it like any PR and merge. Or paste the line yourself.</p>
+          <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={() => setPhase("authorize")}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
+          <small className="ss-snippet-note">Read-only on your code + permission to open <b>one</b> pull request (the install PR you review before merging). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
+          <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
+        </>
+      )}
+
+      {phase === "authorize" && (
+        <div className="ss-ghauth">
+          <div className="ss-ghauth-head"><span className="ss-ghauth-mark"><Icon name="grid" size={16} /></span> <b>Install &amp; authorize Observant</b></div>
+          <p className="ss-step-lead">Observant is requesting access to one repository.</p>
+          <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
+          <ul className="ss-ghauth-perms">
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Read</b> access to code &amp; metadata <span>— to place the snippet correctly</span></li>
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Read &amp; write</b> on pull requests <span>— to open the one install PR you review</span></li>
+          </ul>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Authorize &amp; install</Btn></div>
+          <small className="ss-snippet-note"><b>Only the feedback surface is exposed — never your codebase.</b> Hashed identity, no new PII · bring your own LLM key · revoke anytime.</small>
+        </div>
+      )}
+
+      {phase === "scanning" && (
+        <div className="ss-connect-stage">
+          <PanelTitle k="Setting up" title={"Reading " + product + " to place the snippet…"} status="Working" />
+          <div className="ss-scan-grid">
+            <div className="ss-scan-reason">
+              <span className="ss-scan-reason-h">Reasoning · {Math.min(scanIdx, SS_SCAN_STEPS.length)}/{SS_SCAN_STEPS.length} steps</span>
+              {SS_SCAN_STEPS.slice(0, scanIdx).map((s, i) => (
+                <div className="ss-scan-step" key={i}>
+                  <code className="ss-scan-tool">{s.tool}</code>
+                  <div className="ss-scan-step-body">
+                    <span className="ss-scan-cmd">{s.cmd}</span>
+                    <span className="ss-scan-out">{s.out}</span>
+                    <span className="ss-scan-concl"><Icon name="check" size={11} sw={2.6} /> {s.concl}</span>
+                  </div>
+                </div>
+              ))}
+              {scanIdx < SS_SCAN_STEPS.length && <div className="ss-scan-step ss-scan-working"><span className="ss-scan-spinner" /> working…</div>}
+            </div>
+            <div className="ss-scan-map">
+              <span className="ss-scan-map-h">What Observant found</span>
+              {SS_SCAN_DETECTED.slice(0, Math.min(SS_SCAN_DETECTED.length, scanIdx)).map((d) => (
+                <div className="ss-scan-fact" key={d.k}><Icon name="check" size={12} sw={2.6} /><b>{d.k}</b><span>{d.v}</span></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === "pr" && (
+        <>
+          <p className="ss-step-lead">Observant opened one PR. Review the change and merge to go live.</p>
+          <div className="ss-pr">
+            <div className="ss-pr-head"><Icon name="grid" size={14} /><b>{pr.title}</b><span className="ss-pr-branch">{pr.branch} → {SS_CONNECT_REPO.branch}</span></div>
+            <p className="ss-pr-body">{pr.body}</p>
+            {pr.files.map((f) => (
+              <div className="ss-pr-file" key={f.path}>
+                <span className="ss-pr-path">{f.path}</span>
+                {f.add.map((line, i) => <div className="ss-pr-add" key={i}><span>+</span><code>{line}</code></div>)}
+              </div>
+            ))}
+            <div className="ss-pr-caveat"><b>Heads up — what it did not wire, and why</b><p>{pr.caveat}</p></div>
+          </div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={merge}><Icon name="check" size={16} /> Merge PR — go live</Btn></div>
+        </>
+      )}
+
+      {phase === "paste" && (
+        <>
+          <p className="ss-step-lead">Add one line to your app — nothing else to configure.</p>
+          <div className="ss-snippet"><code>{snippet}</code><button type="button" className="ss-snippet-copy" onClick={copy}>{copied ? "Copied ✓" : "Copy"}</button></div>
+          <small className="ss-snippet-note">Drop it before <code>&lt;/body&gt;</code> (or your framework's root). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={added}><Icon name="check" size={16} /> I've added it</Btn></div>
+        </>
+      )}
+
+      {phase === "listening" && (
+        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Listening for the first signal from {product}…</div>
+      )}
+
+      {connected && (
+        <>
+          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Your baseline pipeline is gathering thin signals:</div>
+          <div className="ss-moments">
+            {liveMoments.map((m) => (
+              <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
+            ))}
+          </div>
+
+          <div className="ss-feelit">
+            {!testSent ? (
+              <Btn variant="ghost" onClick={() => setTestSent(true)}><Icon name="spark" size={14} /> Send yourself a test — see exactly what your users see</Btn>
+            ) : (
+              <div className="ss-pulse-preview">
+                <span className="ss-pulse-preview-tag">What your user sees</span>
+                <div className="ss-pulse-bubble">
+                  <p>Quick one — did that output do what you needed?</p>
+                  <div className="ss-pulse-row"><span className="ss-pulse-tap">👍</span><span className="ss-pulse-tap">👎</span><span className="ss-pulse-input">a few words (optional)</span></div>
+                  <span className="ss-pulse-what">what is this?</span>
+                </div>
+                <small className="ss-pulse-disclosure">The "what is this?" link says: <i>"This product is learning from how you use it so it can improve — your answer helps, you can ignore it."</i> One tap, dismissible, no account.</small>
+              </div>
+            )}
+          </div>
+
+          <small className="ss-snippet-foot">Baseline gives you the score, never the why — and it only reaches users still active. For the why (or to reach the churned and never-converted), add <b>customized feedback loops</b>.</small>
+        </>
+      )}
+    </section>
   );
 }
 
