@@ -13,11 +13,14 @@ this doc ever disagree, fix it here. Last synced to build: **2026-06-29 (PM)**.
 > Xuan rolled the build back to the demo we showed MentorMates last week (the **original dashboard** + the
 > **off-product vs in-product** surface fork) and made ONE change on top: **in-product no longer dead-ends at
 > "book a call" — it goes forward into the faithful Novus install** (Sign in with GitHub → Authorize →
-> "reading your app" reasoning panel → single install PR → merge → live **standardized pipeline**: AI evals ·
-> exit survey · CSAT). Off-product = the feedback program (invite + light/deep, magic link), unchanged.
+> "reading your app" reasoning panel → single install PR → merge → live with **a few key feedback loops** —
+> AI evals · exit survey · CSAT (the day-1 MVP; **not** framed as a "standardized pipeline" — full behavioral
+> triggers and more come later). Off-product = the feedback program (invite + light/deep, magic link), unchanged.
+> **Surfaces are pick-one-or-both** (off-product is the easy default); if both, you set up the in-product
+> snippet **first**, then the off-product panel.
 > **The elaborate three-product (baseline/customized) model + the three-layer dashboard redesign in §6–§8
 > below are PARKED as future/advanced direction — NOT the current MVP.** Current MVP = off-product program +
-> in-product standardized pipeline. Live on branch **`xuan/demo-rebuild`**.
+> in-product key feedback loops. Live on branch **`xuan/demo-rebuild`**.
 
 **Where it lives.** Live prototype: **observant-prototype.vercel.app** (current build = branch
 **`xuan/demo-rebuild`** on Bin's repo `kurtxu88/observant-prototype`; the parked redesign lives on
@@ -47,11 +50,13 @@ dive*. On-ramp = **install a snippet** (the earlier *connect GitHub → scan the
 repo scan is opt-in/advanced only). _Body sections below may still use the older terms — they mean the above._
 
 **Build state (2026-06-29 PM):** prototype only — React + Babel SPA, **synthetic data, NO backend/auth**.
-- **Current build (`xuan/demo-rebuild`):** onboarding = product context → the **off-product vs in-product**
-  surface fork → **in-product:** the faithful Novus install (Sign in with GitHub → Authorize → reading-your-app
-  reasoning panel → single install PR → merge → live **standardized pipeline**: AI evals · exit survey · CSAT);
-  **off-product:** program setup + magic link. Dashboard = the **original demo dashboard** (Home · Loop history ·
-  Feedback partners · Insights · Settings).
+- **Current build (`xuan/demo-rebuild`):** onboarding = product context → the **off-product / in-product**
+  surface choice (**multi-select — pick one or both**; off-product default) → **in-product** (its own page):
+  the faithful Novus install (Sign in with GitHub → Authorize → reading-your-app reasoning panel → single
+  install PR → merge → live with **a few key feedback loops**: AI evals · exit survey · CSAT — the day-1 MVP,
+  *not* a "standardized pipeline"; behavioral triggers come later); **off-product:** program setup + magic link.
+  If both are chosen, **install first, then the panel.** Dashboard = the **original demo dashboard** (Home ·
+  Loop history · Feedback partners · Insights · Settings).
 - **Parked (`xuan/inproduct-self-evolving`):** the baseline/customized three-product model + the three-layer
   dashboard redesign described in §6–§8 — future/advanced direction, NOT the MVP.
 - **Open (need Xuan):** pricing/payments + payout liability, whose voice carries the messages, the off-product
@@ -63,8 +68,10 @@ repo scan is opt-in/advanced only). _Body sections below may still use the older
   install** (was a "book a call" dead-end). Why: off-product/in-product is the cleaner *buyer* decision point —
   some teams prefer off-product-only (light, no code) and shouldn't be pushed to install just to start; the
   baseline-vs-advanced framing wrongly implied baseline is a required minimum. MVP for day one = off-product
-  program + in-product **standardized pipeline**; advanced (customized loops, the three-layer dashboard) is built
-  later. The §6–§8 elaboration is kept but **parked**.
+  program + in-product **a few key feedback loops** (AI evals · exit survey · CSAT — deliberately *not* called a
+  "standardized pipeline"; behavioral triggers and more come later). Surfaces are **multi-select** (pick one or
+  both; both → install first, then panel). Advanced (customized loops, the three-layer dashboard) is built later.
+  The §6–§8 elaboration is kept but **parked**.
 - **6/27** — Three-product architecture (passive/proactive × light/deep). Wedge = the acute "feedback from the
   moment you launch," not "autopilot" (you can't sell a latent-value muscle a founder's never used).
 - **6/28 (Siyu)** — On-ramp = **install a snippet, not read-the-repo**: a snippet exposes only the interview
