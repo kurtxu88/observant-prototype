@@ -438,6 +438,64 @@ const SS_CONNECT_OPTIONS = [
   { id: "inproduct", icon: "globe", title: "Connect inside your product", text: "Observant loads with a hashed user ID you pass it, so it always knows who it's talking to — without ever holding your real user data.", tag: "One-time setup" },
 ];
 
+// Docked "{product} setup" chat — narrates the connect/install, answers questions, queues the role ask.
+function ObsSetupChat({ product, curId }) {
+  const [open, setOpen] = useStateSS(true);
+  const [input, setInput] = useStateSS("");
+  const [noted, setNoted] = useStateSS({});
+  const [msgs, setMsgs] = useStateSS([
+    { from: "them", text: "Welcome! I'll get " + product + " connected to Observant. We open one PR that adds the SDK — read-only on the repo you pick, just enough to place it. Nothing is scanned or stored. Ask me anything as we go." },
+    { from: "them", text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
+  ]);
+  const bodyRef = useRefSS(null);
+  useEffectSS(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, open]);
+  useEffectSS(() => {
+    if (curId === "install" && !noted.install) {
+      setNoted((n) => ({ ...n, install: true }));
+      setMsgs((m) => m.concat([{ from: "them", text: "Prepping your install PR now — this'll take a moment. It'll appear on the left, ready for you to review and merge." }]));
+    }
+  }, [curId]);
+
+  const answer = (q) => {
+    const s = q.toLowerCase();
+    if (/access|permission|secur|scan|read|why.*(github|access)/.test(s)) return "We only open one install PR on the repo you pick — we don't clone or scan your codebase. The grant is scoped to that single repo, just enough to add the snippet. Prefer to grant nothing? You can paste the line yourself.";
+    if (/role|founder|pm|engineer|designer/.test(s)) return "Got it — thanks. That helps us tune what we ask your users later.";
+    if (/snippet|sdk|install|\bpr\b|pull request|code/.test(s)) return "It's a single line that loads the Observant SDK. We add it via a PR you review and merge — or paste it yourself. Once it's live, the feedback loops start.";
+    if (/program|partner|off.?product|panel|invite/.test(s)) return "The feedback program is your opt-in panel — you invite users, the ones who join become partners, and we run the 1:1s. You set it up in a couple of steps here.";
+    return "Good question — noted for the team. Anything blocking you from finishing setup?";
+  };
+  const send = (text) => {
+    const t = (text || input).trim();
+    if (!t) return;
+    setInput("");
+    setMsgs((m) => m.concat([{ from: "me", text: t }, { from: "them", text: answer(t) }]));
+  };
+
+  if (!open) {
+    return <button type="button" className="obs-chat-bubble" onClick={() => setOpen(true)} aria-label={"Open " + product + " setup chat"}><Icon name="chat" size={20} /></button>;
+  }
+  return (
+    <aside className="obs-chat" aria-label={product + " setup chat"}>
+      <header className="obs-chat-head">
+        <div><b>{product} setup</b><span>run by Observant</span></div>
+        <button type="button" className="obs-chat-min" onClick={() => setOpen(false)} aria-label="Minimize">–</button>
+      </header>
+      <div className="obs-chat-body" ref={bodyRef}>
+        {msgs.map((m, i) => (
+          <div key={i} className={"obs-chat-msg " + m.from}>
+            <p>{m.text}</p>
+            {m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
+          </div>
+        ))}
+      </div>
+      <div className="obs-chat-input">
+        <input value={input} placeholder="Ask anything about setup…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+        <button type="button" onClick={() => send()} aria-label="Send"><Icon name="arrow" size={16} /></button>
+      </div>
+    </aside>
+  );
+}
+
 function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
@@ -538,6 +596,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
       </header>
 
       <div className="ss-activation-bar"><OnboardingBar current={2 + step} flow={onboardFlow} /></div>
+      <ObsSetupChat product={product} curId={curId} />
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
@@ -573,11 +632,11 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
           {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k={"Step " + stepNo} title="Set up the feedback program" status="You set the terms" />
+              <PanelTitle k={"Step " + stepNo} title="Set up the feedback program" />
               <p className="ss-step-lead">A <b>feedback program</b> is a small panel of your users who opt in to hear from you. You invite a group once; the ones who join become your <b>feedback partners</b>, and Observant runs the 1:1 conversations with them over time — so you always have people to learn from. Set two things here — how partners are <b>compensated</b> and the <b>invitation</b> they'll receive — and change either anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
-                <p>People earn by <b>participated minutes</b> — every text reply, voice chat, and call counts. <b>Observant measures and audits every minute for you.</b> You pay Observant, we pay your participants, and they redeem as they go — like spending down a gift card balance.</p>
+                <p>People earn by the <b>minutes they participate</b> — every reply, voice chat, and call counts, tracked and audited automatically. You pay Observant; we pay your participants, and they redeem as they go.</p>
 
                 <div className="ss-comp-grid">
                   <article className="ss-comp-card on">
@@ -756,24 +815,17 @@ function ssInstallPR(product) {
 
 function SnippetSetup({ product, setup, patchSetup, step }) {
   const [copied, setCopied] = useStateSS(false);
-  // Faithful Novus install: start (Sign in w/ GitHub) → authorize (GitHub App) → scanning (reasoning panel)
-  //   → pr (the single install PR) → live.   Manual fallback: paste → listening → live.
+  // No-scan install: start (Sign in w/ GitHub) → authorize (pick one repo, open-PR permission only) →
+  //   opening (we add the SDK) → pr (the install PR you review + merge) → live.  Fallback: paste → listening → live.
   const [phase, setPhase] = useStateSS(setup.connected ? "live" : "start");
-  const [scanIdx, setScanIdx] = useStateSS(0);
   const [testSent, setTestSent] = useStateSS(false);
   const connected = phase === "live" || !!setup.connected;
   const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
   const pr = ssInstallPR(product);
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  const grant = () => { setScanIdx(0); setPhase("scanning"); };
+  const grant = () => { setPhase("opening"); setTimeout(() => setPhase("pr"), 1500); };
   const merge = () => { setPhase("live"); patchSetup({ connected: true }); };
   const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
-  useEffectSS(() => {
-    if (phase !== "scanning") return undefined;
-    if (scanIdx >= SS_SCAN_STEPS.length) { const t = setTimeout(() => setPhase("pr"), 700); return () => clearTimeout(t); }
-    const t = setTimeout(() => setScanIdx((i) => i + 1), 750);
-    return () => clearTimeout(t);
-  }, [phase, scanIdx]);
   const liveMoments = [
     { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
     { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
@@ -786,54 +838,29 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
       {phase === "start" && (
         <>
-          <p className="ss-step-lead">Connect your repo and Observant opens a <b>single pull request</b> that adds the snippet — review it like any PR and merge. Or paste the line yourself.</p>
-          <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
+          <p className="ss-step-lead">Sign in with GitHub and pick one repo. Observant opens a <b>single pull request</b> that adds the web SDK — <b>we never scan your code</b>. Review it like any PR and merge — or paste the line yourself.</p>
           <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={() => setPhase("authorize")}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
-          <small className="ss-snippet-note">Read-only on your code + permission to open <b>one</b> pull request (the install PR you review before merging). <b>Only the feedback surface is exposed — never your codebase</b> · hashed identity, no new PII · bring your own LLM key.</small>
+          <small className="ss-snippet-note">You choose the repo on GitHub's own screen. We ask only for permission to <b>open one pull request</b> — no codebase scan, nothing cloned or stored · hashed identity, no new PII.</small>
           <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
         </>
       )}
 
       {phase === "authorize" && (
         <div className="ss-ghauth">
-          <div className="ss-ghauth-head"><span className="ss-ghauth-mark"><Icon name="grid" size={16} /></span> <b>Install &amp; authorize Observant</b></div>
-          <p className="ss-step-lead">Observant is requesting access to one repository.</p>
+          <div className="ss-ghauth-head"><span className="ss-ghauth-mark"><Icon name="grid" size={16} /></span> <b>Install Observant on GitHub</b></div>
+          <p className="ss-step-lead">Pick the repository to add the SDK to — Observant only ever touches this one repo.</p>
           <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
           <ul className="ss-ghauth-perms">
-            <li><Icon name="check" size={13} sw={2.6} /> <b>Read</b> access to code &amp; metadata <span>— to place the snippet correctly</span></li>
-            <li><Icon name="check" size={13} sw={2.6} /> <b>Read &amp; write</b> on pull requests <span>— to open the one install PR you review</span></li>
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Open one pull request</b> <span>— the install PR you review and merge</span></li>
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Scoped to this repo only</b> <span>— no codebase scan, nothing cloned or stored</span></li>
           </ul>
-          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Authorize &amp; install</Btn></div>
-          <small className="ss-snippet-note"><b>Only the feedback surface is exposed — never your codebase.</b> Hashed identity, no new PII · bring your own LLM key · revoke anytime.</small>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Install &amp; authorize</Btn></div>
+          <small className="ss-snippet-note">This is GitHub's own install screen — you choose the repo, and can revoke anytime.</small>
         </div>
       )}
 
-      {phase === "scanning" && (
-        <div className="ss-connect-stage">
-          <PanelTitle k="Setting up" title={"Reading " + product + " to place the snippet…"} status="Working" />
-          <div className="ss-scan-grid">
-            <div className="ss-scan-reason">
-              <span className="ss-scan-reason-h">Reasoning · {Math.min(scanIdx, SS_SCAN_STEPS.length)}/{SS_SCAN_STEPS.length} steps</span>
-              {SS_SCAN_STEPS.slice(0, scanIdx).map((s, i) => (
-                <div className="ss-scan-step" key={i}>
-                  <code className="ss-scan-tool">{s.tool}</code>
-                  <div className="ss-scan-step-body">
-                    <span className="ss-scan-cmd">{s.cmd}</span>
-                    <span className="ss-scan-out">{s.out}</span>
-                    <span className="ss-scan-concl"><Icon name="check" size={11} sw={2.6} /> {s.concl}</span>
-                  </div>
-                </div>
-              ))}
-              {scanIdx < SS_SCAN_STEPS.length && <div className="ss-scan-step ss-scan-working"><span className="ss-scan-spinner" /> working…</div>}
-            </div>
-            <div className="ss-scan-map">
-              <span className="ss-scan-map-h">What Observant found</span>
-              {SS_SCAN_DETECTED.slice(0, Math.min(SS_SCAN_DETECTED.length, scanIdx)).map((d) => (
-                <div className="ss-scan-fact" key={d.k}><Icon name="check" size={12} sw={2.6} /><b>{d.k}</b><span>{d.v}</span></div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {phase === "opening" && (
+        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Adding the Observant web SDK to {product} — opening your install PR…</div>
       )}
 
       {phase === "pr" && (
@@ -850,7 +877,10 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
             ))}
             <div className="ss-pr-caveat"><b>Heads up — what it did not wire, and why</b><p>{pr.caveat}</p></div>
           </div>
-          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={merge}><Icon name="check" size={16} /> Merge PR — go live</Btn></div>
+          <div className="ss-golive-actions">
+            <Btn variant="ghost" size="lg" onClick={() => {}}>Review on GitHub <Icon name="arrow" size={15} /></Btn>
+            <Btn variant="primary" size="lg" onClick={merge}><Icon name="check" size={16} /> Merge PR — go live</Btn>
+          </div>
         </>
       )}
 
@@ -869,7 +899,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
       {connected && (
         <>
-          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Your baseline pipeline is gathering thin signals:</div>
+          <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Observant is now running your key feedback loops:</div>
           <div className="ss-moments">
             {liveMoments.map((m) => (
               <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
