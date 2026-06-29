@@ -184,6 +184,12 @@ moments** — purchase made / not made, left the main flow, cancel / downgrade /
 satisfaction pop-up** (optional, throttled, never annoying). All text, one-round, no consent — it's ambient
 product feedback under the existing privacy policy.
 
+> **v1 ships only the LOCKED minimal (§6.5): (a) the AI-output rating + ONE auto-found key-CTA.** The
+> onboarding survey, the blanket key-moments, and the satisfaction pop-up are **optional / parked** — the
+> build surfaces them as a "more moments, you control these" group, not defaults (team critique 6/29: the
+> 4-moment default over-claimed and made the two *weakest* evidence classes — stated onboarding intent +
+> floating satisfaction — the most prominent no-consent inputs, cracking the Evidence-Grade trust contract).
+
 **Product 2 — Light proactive (off-product · light · consent · opt-in).** A PM has a specific question and
 wants to ask real people. Goes **off-product** (email / IM) to opt-in feedback partners; 1–2 rounds. Needs
 PII to send — **or the client sends it themselves** (Mailchimp model).
