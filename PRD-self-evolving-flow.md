@@ -1,7 +1,64 @@
 # Observant — Self-Evolving Product: Comprehensive Flow Redesign (PRD)
 
-_Draft 2026-06-27 · from the PM + Researcher + Designer working session (7-agent debate + synthesis)._
-_Canonical build spec. `PRD.md` = positioning; this = the end-to-end flow. Obsidian mirror in `*Observant/03-product/`._
+_**THE single, always-current PRD** for Observant's product + flow — kept in sync with the live build on
+every change. Hand this to anyone joining the team. (`PRD.md` = positioning copy only; this = the end-to-end
+product + the logic behind it.) Obsidian mirror: `*Observant/03-product/`._
+
+## 0. Read this first (for anyone joining)
+
+**Rule for this doc:** it is the **single source of truth**, kept current with the build. If the build and
+this doc ever disagree, fix it here. Last synced to build: **2026-06-29**.
+
+**Where it lives.** Live prototype: **observant-prototype.vercel.app** (branch `xuan/inproduct-self-evolving`
+on Bin's repo `kurtxu88/observant-prototype`). Deeper detail (all in `*Observant/03-product/`):
+`access-levels-architecture` (snippet vs scan), `feedback-moments-and-consent` (moment library + consent
+rule), `onboarding-flow-team-critique`, `real-build-prerequisites`.
+
+**Observant in one paragraph.** The mirror image of Novus (Pendo). Novus reads your repo to instrument
+*behavior* (the *what*); Observant gathers the *why* — it installs in your product, runs feedback loops,
+turns thin signals into reasons, ships fixes as PRs, and closes the loop with the named humans who raised
+them. We never say "user research" — it's a **self-evolving product**. Wedge: *"Feedback, from the moment
+you launch."*
+
+**The model at a glance — three products** (current canonical names):
+
+| Product | What | Who | Access | Consent |
+|---|---|---|---|---|
+| **Baseline feedback loops** | the smallest viable feedback pipeline — thin attitudinal signals (give-feedback · AI evals · exit survey · CSAT). A score, no reason; **no follow-up** (the *why* is a customized loop) | all users | install a **snippet** (no repo scan) | none (ambient) |
+| **Customized — light** | the team sends a question → Observant *translates* it → light, runs it | opt-in panel | feedback partner program (magic link) | consent + reward |
+| **Customized — deep** | same, but a ~10-min interview | opt-in panel | same | consent + reward |
+
+Rule: **proactive = off-product** (email / IM only); **in-product = text only**.
+
+**Glossary (names evolved — same things):** "Baseline feedback loops" = earlier *Standardized program* /
+*Pulse*. "Customized feedback loops" = earlier *Feedback program* / Products 2–3; "deep" = earlier *Deep
+dive*. On-ramp = **install a snippet** (the earlier *connect GitHub → scan the repo* is **retired**; the
+repo scan is opt-in/advanced only). _Body sections below may still use the older terms — they mean the above._
+
+**Build state (2026-06-29):** prototype only — React + Babel SPA, **synthetic data, NO backend/auth**.
+- **Built:** onboarding (product context → the baseline/customized fork → snippet install with a test-Pulse →
+  feedback-program setup) + dashboard surfaces (Home · Signals · Memory · People · Act · Pulse · Conversations
+  · Channels · Settings + a docked Ask-Observant rail).
+- **Open (need Xuan):** pricing/payments + payout liability, whose voice carries the messages, the off-product
+  PII/Mailchimp send mechanic, and the real backend (auth/DB/GitHub-App/Stripe — see `real-build-prerequisites`).
+
+**Decision changelog (the logic behind):**
+- **6/27** — Three-product architecture (passive/proactive × light/deep). Wedge = the acute "feedback from the
+  moment you launch," not "autopilot" (you can't sell a latent-value muscle a founder's never used).
+- **6/28 (Siyu)** — On-ramp = **install a snippet, not read-the-repo**: a snippet exposes only the interview
+  surface; reading the whole codebase pipes the app to cloud (a security non-starter for an MVP). Triple-sourced
+  (Siyu + access-levels + the Novus teardown, which confirmed Novus does *both* — we deliberately skip the scan).
+- **6/29** — Verified the snippet alone covers the baseline program (no scan needed). Onboarding bifurcates
+  early: baseline (default) + customized (add-on). Team critique (Jack/PM/Researcher/Designer) applied: a
+  default-hero fork (not a coin-flip), honest install (listening-verify), evidence-graded moments, a test-Pulse
+  with the consent disclosure. Renamed to **baseline / customized feedback loops** (the axis is passive vs
+  proactive — both are "always-on," so that wording was dropped). Baseline reframed as *"the smallest viable
+  feedback pipeline"* — thin scalar/binary attitudinal signals; a score with no reason, **no follow-up** (the
+  why is a customized loop). Install step duplicates the Novus connect-GitHub → install-PR → merge flow.
+  Customized = Observant **translates** the team's question (you don't craft research), gated on a feedback
+  partner program.
+
+---
 
 > **Status: core model LOCKED; architecture clarified 2026-06-29.** Locked: acute wedge + wedge line ("Feedback,
 > from the moment you launch." — doc only, not deployed), the **three-product architecture** (§6: Product 1
@@ -185,12 +242,11 @@ layer any product can stand up, collected automatically on the installed snippet
 
 > **The framing (precise register):** *the baseline instrument is a thin scalar/binary attitudinal signal —
 > a score with no reason attached.* It's cheap, it's everywhere, and on its own it tells you *that* someone
-> is unhappy, never *why*. Baseline loops collect the signal; **Observant's move is to not stop at the
-> score** — a weak signal fires **one light follow-up** that attaches the why (and if the answer's worth it,
-> offers a deeper conversation → a customized loop). All text, one-round, no consent — ambient product
-> feedback under the existing privacy policy. *(Honesty guard from the 6/29 critique: present these as the
-> thin signals they are — never launder a bare score into a Signal/finding; the why comes from the
-> follow-up, graded by evidence.)*
+> is unhappy, never *why*. **Baseline stops at the score — it does NOT follow up** (Xuan, 6/29: follow-ups
+> belong to *customized* loops). All text, one-round, no consent — ambient product feedback under the
+> existing privacy policy. *(Honesty guard from the 6/29 critique: present these as the thin signals they
+> are — never launder a bare score into a Signal/finding. To turn a weak score into a reason, the team runs
+> a customized loop.)*
 
 **Products 2 & 3 — Customized feedback loops** *(proactive · off-product · consent · opt-in)* — **you don't
 craft research; you ask, Observant runs it.** Starts with a **feedback partner program**: invite users to
