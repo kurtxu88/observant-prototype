@@ -548,7 +548,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
               <div className="ss-route-grid">
                 <button type="button" className={"ss-route" + (offproduct ? " on" : "")} role="checkbox" aria-checked={offproduct} onClick={() => toggleSurface("offproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product feedback</b><em className="ss-route-tag start">Easy to set up</em></span>
-                  <p><b>Set up a feedback partner program.</b> You share one magic link, and users who opt in choose how they want to be reached — email or Telegram — and their identifier arrives with that choice. You never hand over user data.</p>
+                  <p><b>Set up a feedback partner program.</b> Invite some or all of your users; those who opt in choose how they want to be reached — email or Telegram — and their identifier arrives with that choice. Feedback partners are compensated for their participating minutes.</p>
                 </button>
                 <button type="button" className={"ss-route" + (inproduct ? " on" : "")} role="checkbox" aria-checked={inproduct} onClick={() => toggleSurface("inproduct")}>
                   <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product feedback</b><em className="ss-route-tag pro">Code integration</em></span>
