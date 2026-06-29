@@ -3409,3 +3409,12 @@
 .ss-ghauth-perms li { display:flex; align-items:baseline; gap:.45rem; font-size:.86rem; }
 .ss-ghauth-perms li svg { color:var(--success); flex:none; }
 .ss-ghauth-perms li span { color:var(--text-muted); }
+
+/* Collapsible "who to send it to" tip (preview step) */
+details.ss-suggest { cursor: default; }
+details.ss-suggest > .ss-suggest-summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; color: var(--accent); font-size: .92rem; user-select: none; }
+details.ss-suggest > .ss-suggest-summary::-webkit-details-marker { display: none; }
+details.ss-suggest > .ss-suggest-summary::after { content: "\25B8"; font-size: .72rem; color: var(--text-muted); transition: transform .15s ease; }
+details.ss-suggest[open] > .ss-suggest-summary::after { transform: rotate(90deg); }
+.ss-suggest-body { margin-top: .7rem; }
+.ss-suggest-body > p { color: var(--text-secondary); font-size: .9rem; margin: 0 0 .6rem; }

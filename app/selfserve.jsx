@@ -667,19 +667,20 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
                 )}
               </div>
 
-              <div className="ss-program-block ss-suggest">
-                <span className="ss-suggest-badge">Our suggestions</span>
-                <h3>Who to send it to</h3>
-                <p>When you're thinking about who to send the magic link to — who you're inviting into your feedback program — here are a few ways to think about your first batch, if you want them. Keep in mind: usually <b>5–10% of those you invite opt in</b>, and they tend to be your most engaged.</p>
-                <div className="ss-advice-block">
-                  {SS_AUDIENCE_OPTIONS.map((opt) => (
-                    <div className="ss-advice-item" key={opt.id}>
-                      <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
-                      <div><b>{opt.label}{opt.tag && <em className="ss-advice-tag">{opt.tag}</em>}</b><p>{opt.text}</p></div>
-                    </div>
-                  ))}
+              <details className="ss-program-block ss-suggest">
+                <summary className="ss-suggest-summary"><Icon name="spark" size={14} /> Wonder who to send it to?</summary>
+                <div className="ss-suggest-body">
+                  <p>Here are a few ways to think about your first batch — who you invite to your feedback partner program:</p>
+                  <div className="ss-advice-block">
+                    {SS_AUDIENCE_OPTIONS.map((opt) => (
+                      <div className="ss-advice-item" key={opt.id}>
+                        <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                        <div><b>{opt.label}{opt.tag && <em className="ss-advice-tag">{opt.tag}</em>}</b><p>{opt.text}</p></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </details>
             </section>
           )}
 
