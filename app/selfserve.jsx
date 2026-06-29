@@ -301,8 +301,8 @@ function SelfServeApp() {
 const SS_ONBOARD_FLOW = [
   { id: "product", label: "Product" },
   { id: "context", label: "Context" },
-  { id: "program", label: "Program" },
   { id: "surface", label: "Surface" },
+  { id: "program", label: "Program" },
   { id: "review", label: "Review" },
 ];
 
@@ -425,7 +425,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
 const SS_ONBOARD_STEPS = [
   { id: "surface", t: "Choose feedback surface", d: "Off-product, in-product, or both" },
   { id: "install", t: "Install the snippet", d: "One PR, then it's live" },
-  { id: "program", t: "Set up the program", d: "Compensation, your invitation" },
+  { id: "program", t: "Set up the feedback program", d: "Compensation, your invitation" },
   { id: "preview", t: "Preview", d: "Check it, generate your magic link" },
 ];
 
@@ -565,7 +565,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
 
           {curId === "program" && (
             <section className="ss-panel">
-              <PanelTitle k="Step 4" title="How the program works" status="You set the terms" />
+              <PanelTitle k="Step 4" title="Set up the feedback program" status="You set the terms" />
               <p className="ss-step-lead">Observant handles the logistics. You set the terms once, and can change them anytime.</p>
               <div className="ss-program-block">
                 <h3><span className="ss-substep">1</span> Compensation</h3>
