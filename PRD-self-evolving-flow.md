@@ -3,12 +3,13 @@
 _Draft 2026-06-27 · from the PM + Researcher + Designer working session (7-agent debate + synthesis)._
 _Canonical build spec. `PRD.md` = positioning; this = the end-to-end flow. Obsidian mirror in `*Observant/03-product/`._
 
-> **Status: core model LOCKED (Xuan, 2026-06-27); some forks open (§11).** Locked: acute wedge + the wedge
-> line ("Feedback, from the moment you launch." — doc only, not deployed), the two-tier model + decision
-> path (§6), tier names **Pulse / Deep dive**, in-product=text-only, churn→off-product+recruit, the consent
-> boundary (§6.6) + the "what-is-this" disclosure. **⏳ Pinned temporary, continue 6/28:** the minimal Pulse
-> program (v1 = AI eval ratings + one key CTA follow-up; §6.5). Still open: pricing/payments, whose voice,
-> signal labels.
+> **Status: core model LOCKED; architecture clarified 2026-06-29.** Locked: acute wedge + wedge line ("Feedback,
+> from the moment you launch." — doc only, not deployed), the **three-product architecture** (§6: Product 1
+> passive/in-product/snippet · Products 2–3 proactive/off-product/consent), in-product=text-only,
+> **proactive=off-product**, the consent boundary (§6.6). **Verified 6/29: NO whole-repo scan needed** — the
+> standardized program runs on the snippet alone; the scan is opt-in/advanced only (on-ramp in §7 to be
+> rewritten to snippet-install). Still open: pricing/payments, whose voice, signal labels, the off-product
+> PII/Mailchimp send mechanic.
 
 ---
 
@@ -137,10 +138,81 @@ Five moves (moves 1–2 already half-built in `InsightDetail`):
 > shipped fix, fast), not "we watched 10,000 sessions." The wedge is the **learning** (the moat); the
 > auto-PR is the proof-point — **do not lead with code-gen and fight Cursor on its own turf.**
 
-## 6. The two feedback tiers + the decision path (CORE — Xuan, 2026-06-27)
+## 6. The feedback architecture — THREE PRODUCTS (CORE — Xuan, 2026-06-29)
 
-> **The most important design decision in this PRD.** Everything about consent, compensation, voice, and
-> recruitment derives from one cut: **Light/Standardized** vs. **Extensive.**
+> **The system, organized.** Two questions decide everything: **WHO initiates the feedback?** (passive vs.
+> proactive) and **HOW DEEP?** (light vs. deep). That yields three products. The earlier Pulse / Deep-dive
+> tiers map in: **Product 1 = Pulse**; **Product 3 = Deep dive**; **Product 2** is the new middle (light,
+> proactive, off-product). One governing rule: **proactive = off-product** (never disturb people *inside*
+> the product); off-product surfaces are **email or IM only.**
+
+```
+                              WHO INITIATES?
+              ┌─────────────────────────┬───────────────────────────────────┐
+              │  PASSIVE                 │  PROACTIVE                          │
+              │  the product asks in the │  you reach out to specific people   │
+              │  moment of use           │  with a question                    │
+  ────────────┼─────────────────────────┼───────────────────────────────────┤
+   WHERE      │  IN-PRODUCT (snippet)    │  OFF-PRODUCT (email / IM only)       │
+   CONSENT    │  none (ambient feedback) │  required (opt-in program)           │
+   WHO        │  ALL users               │  only opt-in feedback partners       │
+   ACCESS     │  install SDK snippet     │  PII to email — or the client sends   │
+              │  (NO code read)          │  themselves (Mailchimp model)         │
+  ────────────┼─────────────────────────┼─────────────────┬─────────────────┤
+              │  ▸ PRODUCT 1             │  ▸ PRODUCT 2     │  ▸ PRODUCT 3     │
+              │  Standardized program    │  Light proactive │  Deep proactive  │
+              │  passive · light ·       │  proactive·light │  proactive·deep  │
+              │  no-consent              │  · consent       │  · consent       │
+              │                          │                  │                  │
+              │  • session evals (AI     │  a PM's specific │  ~10-min         │
+              │    output rating)        │  question to an  │  interview to an │
+              │  • onboarding survey     │  opt-in cohort   │  opt-in cohort   │
+              │    (why here? + optional │  · 1–2 rounds    │  · full convo    │
+              │    deeper intro convo)   │                  │                  │
+              │  • key-CTA moments       │  = off-product   │  = off-product   │
+              │  • satisfaction pop-up   │    LIGHT         │    DEEP (= "Deep │
+              │    (optional)            │                  │    dive")        │
+              │  = "PULSE" (snippet)     │                  │                  │
+              └─────────────────────────┴─────────────────┴─────────────────┘
+```
+
+**Product 1 — Standardized program (passive · light · no consent · all users · SNIPPET).** Ships pre-built,
+runs in-product on the installed snippet. The moments: **(a) session-based evals** — a lightweight rating on
+an AI output / at session end; **(b) onboarding context** — a survey-type intro ("why are you here / where
+will you use this?"), with an optional deeper intro conversation for those who want it; **(c) key-CTA
+moments** — purchase made / not made, left the main flow, cancel / downgrade / close-account; **(d) a general
+satisfaction pop-up** (optional, throttled, never annoying). All text, one-round, no consent — it's ambient
+product feedback under the existing privacy policy.
+
+**Product 2 — Light proactive (off-product · light · consent · opt-in).** A PM has a specific question and
+wants to ask real people. Goes **off-product** (email / IM) to opt-in feedback partners; 1–2 rounds. Needs
+PII to send — **or the client sends it themselves** (Mailchimp model).
+
+**Product 3 — Deep proactive (off-product · deep · consent · opt-in).** Same channel/recruitment as Product
+2, but a ~10-min interview (= the old "Deep dive"). Off-product; voice allowed off-product.
+
+### Does this design still need the whole code scan? → **NO (for v1).**
+Per-moment check of Product 1 against *snippet (client-side, codeless) vs. scan (server-side, code-read)*:
+
+| Standardized moment | Snippet alone? | Why |
+|---|---|---|
+| Session / AI-output eval rating | ✅ | the output renders in the UI; the snippet injects the rating client-side |
+| Onboarding context survey | ✅ | onboarding routes / first-session are client-side events |
+| Key-CTA: purchase made/not, left main flow, cancel/downgrade/close (has a UI flow) | ✅ | clicks + page-abandon are client-side; the SDK auto-captures them codelessly |
+| Satisfaction pop-up | ✅ | client-side injection |
+| **Silent backend churn** (subscription lapsed / stopped paying, *no UI event*) | ⚠️ not the snippet | a server-side event the client SDK can't see — **but this is handled as PRODUCT 2/3 off-product** (the client already knows their churn list and emails them). So it never needs an in-product server-side trigger. |
+
+**Conclusion:** every Product-1 moment is **snippet-only**; the one server-side case (silent churn) routes to
+**off-product proactive** instead. **So we do NOT need the full codebase scan in this architecture.** The scan
+was only ever required for the *advanced, auto-firing, custom/server-side in-product triggers* (e.g. "show a
+form when they click X but don't reach Y," auto-detected drop-off, auto-detected resurrection) — and Xuan's
+call is **we likely don't do that**; the standardized snippet program is the starting point. The scan stays a
+**future / opt-in depth tier**, not the on-ramp. *(This retires the repo-scan on-ramp in §7 — see §7 note.)*
+
+### The original two tiers (kept for reference; folded into the three products above)
+
+> **The cut underneath it all:** **Light/Standardized** vs. **Extensive** — Product 1 is light/no-consent;
+> Products 2–3 are the consent+pay program.
 
 ### Tier 1 — PULSE  (light / standardized feedback)
 The **default, free, in-product** loop — and the **acute wedge** (§1.5). The thing a just-launched builder
@@ -256,6 +328,12 @@ how you use it so it can improve — your answer helps, you can ignore it."* Ful
 subjects" floor in `docs/FEEDBACK-MOMENTS.md`.
 
 ## 7. Onboarding → first value
+
+> ⚠️ **SUPERSEDED on-ramp (2026-06-29):** the flow below leads with a **whole-repo scan** (Novus-style). Per
+> §6 + the access-levels investigation, the default in-product on-ramp is now **install a snippet (SDK), no
+> code scan** — only the interview surface is exposed, never the codebase. The repo scan moves to an opt-in
+> *advanced* tier (rarely used). Steps 2–4 below need rewriting to "install the snippet → it captures
+> client-side behavior codelessly → the standardized Pulse program starts." Tracked as a build+PRD edit.
 
 1. **Land** — same Novus vibe, zero data required: "Connect your repo and Observant watches + researches on
    its own." Only opt-out (can't/won't connect code) = the off-product fast lane, right here.
