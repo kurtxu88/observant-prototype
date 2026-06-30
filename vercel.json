@@ -8,6 +8,9 @@
       "includeFiles": "mvp/conversation-logic/**"
     }
   },
+  "crons": [
+    { "path": "/api/cron/cadence", "schedule": "0 15 * * *" }
+  ],
   "rewrites": [
     { "source": "/", "destination": "/observant/Landing.html" },
     { "source": "/setup", "destination": "/app/SelfServe.html" },
