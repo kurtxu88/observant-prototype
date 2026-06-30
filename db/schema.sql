@@ -1,8 +1,9 @@
 -- Observant — off-product backend schema (Postgres / Supabase)
 -- Run in the Supabase SQL editor once the project exists.
 -- The serverless functions talk to this via the REST API using the SERVICE ROLE key
--- (api/_db.js), so RLS is left OFF for now. Add RLS policies before exposing a
--- partner-facing portal that uses the anon key.
+-- (api/_db.js), which BYPASSES RLS. RLS is enabled at the bottom (no policies yet) so
+-- the anon/authenticated keys are denied by default. Add anon policies when the
+-- partner portal (#9) reads from the browser.
 
 create extension if not exists "pgcrypto";   -- gen_random_uuid()
 
@@ -89,3 +90,11 @@ create or replace view partner_balances as
   from partners p
   left join minutes_ledger l on l.partner_id = p.id
   group by p.id;
+
+-- Enable RLS (no policies yet → anon/authenticated denied by default; service-role bypasses).
+alter table programs       enable row level security;
+alter table partners       enable row level security;
+alter table conversations  enable row level security;
+alter table messages       enable row level security;
+alter table minutes_ledger enable row level security;
+alter table redemptions    enable row level security;
