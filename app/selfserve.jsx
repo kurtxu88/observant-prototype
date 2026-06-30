@@ -309,11 +309,20 @@ const SS_ONBOARD_FLOW = [
 // Maps a flow step id to its bar label. `install` only appears when in-product is chosen.
 const SS_STEP_LABELS = { product: "Product", context: "Context", surface: "Feedback surface", install: "Code snippet", program: "Feedback program", preview: "Preview" };
 
-function OnboardingBar({ current, flow }) {
-  const items = flow || SS_ONBOARD_FLOW;
+// The stepper is consolidated into 4 phases; the screens map onto these.
+const SS_PHASES = [
+  { id: "product", label: "Product", screens: ["product", "context"] },
+  { id: "feedback", label: "Feedback", screens: ["surface"] },
+  { id: "setup", label: "Set up", screens: ["install", "program"] },
+  { id: "preview", label: "Preview", screens: ["preview"] },
+];
+function ssPhaseOf(screenId) { const p = SS_PHASES.find((ph) => ph.screens.includes(screenId)); return p ? p.id : "product"; }
+
+function OnboardingBar({ phase }) {
+  const current = Math.max(0, SS_PHASES.findIndex((p) => p.id === phase));
   return (
     <ol className="ss-onboard-bar" aria-label="Setup progress">
-      {items.map((s, i) => (
+      {SS_PHASES.map((s, i) => (
         <li key={s.id} className={"ss-onboard-bstep" + (i < current ? " done" : i === current ? " on" : "")}>
           <span className="ss-onboard-bdot">{i < current ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
           <span className="ss-onboard-blabel">{s.label}</span>
@@ -364,7 +373,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
       </div>
 
       <main className="ss-entry-card">
-        <OnboardingBar current={step} />
+        <OnboardingBar phase="product" />
 
         {step === 0 && (
           <>
@@ -528,8 +537,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const stepIds = ["surface"].concat(inproduct ? ["install"] : []).concat(offproduct ? ["program", "preview"] : []);
   const curId = stepIds[Math.min(step, stepIds.length - 1)];
   const curMeta = SS_ONBOARD_STEPS.find((s) => s.id === curId) || {};
-  const stepNo = step + 3; // Product + Context precede the activation steps
-  const onboardFlow = ["product", "context"].concat(stepIds).map((id) => ({ id, label: SS_STEP_LABELS[id] || id }));
+  const curPhase = ssPhaseOf(curId);
+  const stepNo = SS_PHASES.findIndex((p) => p.id === curPhase) + 1; // phase number (Product · Feedback · Set up · Preview)
 
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
@@ -595,7 +604,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </div>
       </header>
 
-      <div className="ss-activation-bar"><OnboardingBar current={2 + step} flow={onboardFlow} /></div>
+      <div className="ss-activation-bar"><OnboardingBar phase={curPhase} /></div>
       <ObsSetupChat product={product} curId={curId} />
 
       <div className="ss-activation-wrap">
@@ -755,7 +764,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
             {step > 0
               ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
               : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
-            <span className="count">{"Step " + stepNo + " of " + onboardFlow.length}</span>
+            <span className="count">{"Step " + stepNo + " of " + SS_PHASES.length}</span>
             {(() => {
               const isLast = step >= stepIds.length - 1;
               if (curId === "install" && !setup.connected) return <span />; // finish the install first
