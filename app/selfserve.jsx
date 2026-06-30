@@ -124,6 +124,135 @@ function ssWait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// --- sign-in gate plumbing ---------------------------------------------------
+// SelfServe.html doesn't ship the Supabase CDN + auth.js (Login/Portal pages do),
+// so the gate loads them on demand the first time /setup mounts. Everything
+// degrades to null if a script can't load → caller skips the gate.
+function ssLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    const found = Array.from(document.scripts).find((s) => s.src && s.src.indexOf(src) !== -1);
+    if (found) {
+      if (found.dataset.ssLoaded === "1") return resolve();
+      found.addEventListener("load", () => resolve());
+      found.addEventListener("error", reject);
+      return;
+    }
+    const tag = document.createElement("script");
+    tag.src = src;
+    tag.onload = () => { tag.dataset.ssLoaded = "1"; resolve(); };
+    tag.onerror = reject;
+    document.head.appendChild(tag);
+  });
+}
+
+let _ssAuthLoad = null;
+function ssEnsureAuth() {
+  if (_ssAuthLoad) return _ssAuthLoad;
+  _ssAuthLoad = (async () => {
+    if (window.ObservantAuth) return window.ObservantAuth;
+    try {
+      if (!window.supabase || !window.supabase.createClient) {
+        await ssLoadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+      }
+      if (!window.ObservantAuth) await ssLoadScript("/app/auth.js");
+    } catch (_e) {
+      return null; // can't load → degrade to no-gate
+    }
+    return window.ObservantAuth || null;
+  })();
+  return _ssAuthLoad;
+}
+
+// Quiet loading state while we check the session — no flash of the wizard.
+function SsAuthChecking() {
+  return <div className="ss-auth-loading"><span>Loading…</span></div>;
+}
+
+function SsGoogleMark() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
+      <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"/>
+    </svg>
+  );
+}
+
+// First thing a signed-out user sees on /setup. Mirrors the standalone /login
+// page (Google + magic link) but wears the warm onboarding split layout so the
+// gate feels continuous with the wizard behind it.
+function SsAuthGate({ redirectTo }) {
+  const [email, setEmail] = useStateSS("");
+  const [sent, setSent] = useStateSS(false);
+  const [busy, setBusy] = useStateSS(false);
+  const [note, setNote] = useStateSS("");
+  const emailValid = email.includes("@") && email.includes(".");
+
+  const google = async () => {
+    setBusy(true); setNote("");
+    const { error } = await window.ObservantAuth.signInWithGoogle(redirectTo);
+    if (error) { setNote(error.message); setBusy(false); }
+  };
+  const magic = async () => {
+    if (!emailValid || busy) return;
+    setBusy(true); setNote("");
+    const { error } = await window.ObservantAuth.signInWithEmail(email, redirectTo);
+    setBusy(false);
+    if (error) { setNote(error.message); return; }
+    setSent(true);
+  };
+
+  return (
+    <div className="ss-entry">
+      <div className="ss-entry-left">
+        <div className="ss-entry-brand"><Wordmark size="1.65rem" /></div>
+        <div className="ss-entry-copy">
+          <span className="eyebrow">Get started</span>
+          <h1>Sign in to set up Observant.</h1>
+          <p>Sign in to get started — then a few steps and Observant starts learning from your users one-on-one, continuously, on their own time.</p>
+        </div>
+        <div className="ss-proof-grid" aria-label="Product signals">
+          <div><b>1:1</b><span>with every user</span></div>
+          <div><b>Always on</b><span>learning runs itself</span></div>
+          <div><b>MCP</b><span>agent-ready output</span></div>
+        </div>
+      </div>
+
+      <main className="ss-entry-card">
+        <div className="ss-card-head"><span className="eyebrow gray">Sign in</span><h2>Sign in to get started.</h2></div>
+        {sent ? (
+          <div className="ss-auth-sent">
+            <Icon name="check" size={16} sw={2.4} /> Check your inbox — we sent a sign-in link to <b>{email}</b>.
+          </div>
+        ) : (
+          <div className="ss-auth-signin">
+            <button type="button" className="btn btn-ghost btn-lg ss-auth-google" onClick={google} disabled={busy}>
+              <SsGoogleMark /> Continue with Google
+            </button>
+            <div className="ss-auth-or"><span>or</span></div>
+            <Field label="Work email">
+              <input
+                className="input"
+                type="email"
+                value={email}
+                placeholder="you@company.com"
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && emailValid && !busy) magic(); }}
+              />
+            </Field>
+            <Btn variant="primary" size="lg" disabled={!emailValid || busy} onClick={magic}>
+              Email me a sign-in link
+            </Btn>
+          </div>
+        )}
+        {note && <p className="ss-auth-err">{note}</p>}
+        <p className="ss-fineprint">No password — we email you a secure sign-in link, or continue with Google.</p>
+      </main>
+    </div>
+  );
+}
+
 // Deep links: /setup always lands on onboarding (clears a launched workspace,
 // keeps an in-progress one); /portal always lands on the dashboard (sample
 // workspace auto-created if none exists yet).
@@ -188,6 +317,40 @@ function SelfServeApp() {
   const [authed, setAuthed] = useStateSS(() => ssIsAuthed());
   const [showLogin, setShowLogin] = useStateSS(false);
   const [editing, setEditing] = useStateSS(false);
+  // Supabase sign-in gate: "checking" while we read the session, "signin" if
+  // signed-out, "pass" once signed in OR when Supabase isn't configured (degrade).
+  const [gate, setGate] = useStateSS("checking");
+  const [authEmail, setAuthEmail] = useStateSS("");
+
+  useEffectSS(() => {
+    let cancelled = false;
+    let unsub = () => {};
+    (async () => {
+      const A = await ssEnsureAuth();
+      if (cancelled) return;
+      if (!A) { setGate("pass"); return; }          // scripts unavailable → no gate
+      await A.init();
+      if (cancelled) return;
+      if (!A.isConfigured()) { setGate("pass"); return; } // configured:false → no gate
+      const session = await A.getSession();
+      if (cancelled) return;
+      const user = session ? session.user : null;
+      if (user) { setAuthEmail(user.email || ""); setGate("pass"); }
+      else setGate("signin");
+      // Pick up the OAuth / magic-link redirect (or any later change).
+      A.onAuthChange((u) => {
+        if (cancelled || !u) return;
+        setAuthEmail(u.email || "");
+        setGate("pass");
+      }).then((fn) => { unsub = fn; });
+    })();
+    return () => { cancelled = true; unsub(); };
+  }, []);
+
+  const signOutAuth = async () => {
+    try { if (window.ObservantAuth) await window.ObservantAuth.signOut(); } catch (_e) {}
+    window.location.href = "/setup";
+  };
 
   useEffectSS(() => {
     if (state) ssSaveState(state);
@@ -231,6 +394,11 @@ function SelfServeApp() {
     setTimeout(() => setCopied(""), 1400);
   };
 
+  // Sign-in gate — the first thing on /setup. Check the Supabase session before
+  // anything else; quiet loading while checking, sign-in screen if signed out.
+  if (gate === "checking") return <SsAuthChecking />;
+  if (gate === "signin") return <SsAuthGate redirectTo={window.location.href} />;
+
   // Returning users can reach login; it's a side door, not the front door.
   if (showLogin && !authed && !(state && state.launched)) {
     return <LoginGate onLogin={(info) => { ssSetAuth(info); setAuthed(true); setShowLogin(false); }} onBack={() => setShowLogin(false)} />;
@@ -270,6 +438,8 @@ function SelfServeApp() {
       <ActivationScreen
         state={state}
         patchState={patchState}
+        authEmail={authEmail}
+        onSignOut={signOutAuth}
         onBackToProduct={() => setEditing(true)}
         onLaunch={() => patchState((current) => ({
           ...current,
@@ -919,7 +1089,7 @@ function OffProductTrack({ state, patchState, product, setup, patchSetup, onBack
 
 // Onboarding host for the Set-up hub. After Product/Context, the user lands here and
 // sets up each surface as an independent track — now, or later from the dashboard.
-function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct }) {
+function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct, authEmail, onSignOut }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
@@ -934,8 +1104,10 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         <Wordmark size="1.3rem" />
         <nav className="ss-activation-nav"><OnboardingBar phase={phase} /></nav>
         <div className="ss-top-right">
+          {authEmail && <span className="ss-auth-who" title={authEmail}>{authEmail}</span>}
           <span>{product}</span>
           <button type="button" onClick={resetWorkspace}>Start over</button>
+          {authEmail && <button type="button" onClick={onSignOut}>Sign out</button>}
         </div>
       </header>
 

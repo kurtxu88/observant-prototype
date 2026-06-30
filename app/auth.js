@@ -99,11 +99,36 @@ window.ObservantAuth = (function () {
     }
   }
 
+  // Local session getter — reads the persisted session without a network
+  // round-trip (unlike getUser, which calls the server). Returns the full
+  // session object (with .user / .access_token) or null.
+  async function getSession() {
+    const c = await init();
+    if (!c) return null;
+    try {
+      const { data } = await c.auth.getSession();
+      return data ? data.session : null;
+    } catch (_e) {
+      return null;
+    }
+  }
+
   async function onAuth(cb) {
     const c = await init();
     if (!c) return () => {};
     const { data } = c.auth.onAuthStateChange((_event, session) => {
       cb(session ? session.user : null);
+    });
+    return () => { try { data.subscription.unsubscribe(); } catch (_e) {} };
+  }
+
+  // Like onAuth, but hands the callback the full session (and event) too —
+  // for callers that want to react to the whole auth lifecycle.
+  async function onAuthChange(cb) {
+    const c = await init();
+    if (!c) return () => {};
+    const { data } = c.auth.onAuthStateChange((event, session) => {
+      cb(session ? session.user : null, event, session);
     });
     return () => { try { data.subscription.unsubscribe(); } catch (_e) {} };
   }
@@ -120,8 +145,10 @@ window.ObservantAuth = (function () {
     signInWithGoogle,
     signInWithEmail,
     getUser,
+    getSession,
     getAccessToken,
     onAuth,
+    onAuthChange,
     signOut,
     client: () => _client,
   };

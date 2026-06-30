@@ -97,6 +97,47 @@
   margin-top: 0.9rem;
 }
 
+/* ── sign-in gate (shown before onboarding) ─────────────────── */
+.ss-auth-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--canvas);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.ss-auth-signin { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1.5rem; }
+.ss-auth-signin > .btn { width: 100%; justify-content: center; }
+.ss-auth-google { display: flex; align-items: center; justify-content: center; gap: 0.6rem; width: 100%; }
+.ss-auth-or {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin: 0.1rem 0;
+}
+.ss-auth-or::before, .ss-auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.ss-auth-or span { padding: 0 0.8rem; }
+.ss-auth-sent {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin-top: 1.5rem;
+  line-height: 1.45;
+}
+.ss-auth-err { color: var(--danger, #b54034); font-size: 0.86rem; margin-top: 0.8rem; }
+.ss-auth-who {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ss-activation {
   min-height: 100%;
   background: var(--canvas);
