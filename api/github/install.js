@@ -8,7 +8,7 @@
    to /api/github/install.
    ============================================================ */
 module.exports = async function handler(req, res) {
-  const slug = String(process.env.GITHUB_APP_SLUG || "").trim();
+  const slug = String(process.env.GITHUB_APP_SLUG || "observanthq").trim();
   if (!slug) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
