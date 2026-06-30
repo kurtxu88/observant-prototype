@@ -7,7 +7,8 @@
    Env required (set in Vercel): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
    The service-role key bypasses RLS — keep it server-side only.
    ============================================================ */
-const SB_URL = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+// Tolerate a pasted base URL with a trailing slash and/or a "/rest/v1" suffix.
+const SB_URL = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "").replace(/\/rest\/v1$/, "");
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 function dbConfigured() { return !!(SB_URL && SB_KEY); }
