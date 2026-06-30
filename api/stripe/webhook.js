@@ -1,7 +1,7 @@
 /* ============================================================
    Stripe webhook (#10) — keep the DB in sync with Stripe events.
    POST (raw body) from Stripe. Endpoint to register:
-     https://observant-prototype.vercel.app/api/stripe/webhook
+     https://www.observanthq.com/api/stripe/webhook
 
    Handles:
      - checkout.session.completed → the TEAM paid: mark the program
