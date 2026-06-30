@@ -63,6 +63,22 @@ repo scan is opt-in/advanced only). _Body sections below may still use the older
   PII/send mechanic, and the real backend (auth/DB/GitHub-App/Stripe — see `real-build-prerequisites`).
 
 **Decision changelog (the logic behind):**
+- **6/29 (EOD) — MVP = magic-link only; "Observant Send" parked.** For off-product, Observant does **not**
+  send email or hold user PII — the client sends the magic link themselves (the Mailchimp model: send-on-behalf
+  + compliance is the thing a sender owns, and we don't want to own it yet). A thin Resend/SES layer ("Observant
+  Send") is explicitly **parked, not built**. Why: smallest surface to ship, no deliverability/compliance/PII
+  liability on day one; the client already has the relationship and the right to email their own users.
+  → `mailchimp-compliance-investigation-2026-06-29`.
+- **6/29 (EOD) — Positioning conviction (now triple-sourced): sell the end-to-end self-evolving product, never
+  "research."** Siyu adds the third independent arrival to Frederik (6/26) and the Wyze/Gretchen read (6/26).
+  The honest risk now named: learning-from-users **"doesn't hurt"** — the pain is latent, so the real wall is
+  awareness/education, not whether the value is real. (Same "not painful" that closed Lassie, generalized.)
+- **6/29 (EOD) — Professionalization shift (meta).** Stripped decision-archaeology and especially the "we mirror
+  Novus's onboarding flow" framing from the onboarding doc, the linked docs, and the new clean `PRD-Observant.md`
+  (now the canonical, professional product spec — own architecture, final decisions only); codebase cleanup of
+  the 8 `Novus`-referencing `selfserve.*` comments is **queued**. This doc (`PRD-self-evolving-flow`) is now
+  flagged as internal build notes. Why: presenting clean, original architecture for a high-caliber recruit
+  (Zhifei Song, ex-LinkedIn ML eng manager, joining) — the artifacts mature as the company does.
 - **6/29 (PM) — REVERTED the build to the MentorMates demo** (original dashboard + the off-product vs in-product
   surface fork) and made one change on top: **in-product now goes forward into the faithful Novus snippet
   install** (was a "book a call" dead-end). Why: off-product/in-product is the cleaner *buyer* decision point —
