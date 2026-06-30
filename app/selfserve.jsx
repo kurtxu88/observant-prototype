@@ -838,9 +838,8 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
       {phase === "start" && (
         <>
-          <p className="ss-step-lead">Sign in with GitHub and pick one repo. Observant opens a <b>single pull request</b> that adds the web SDK — <b>we never scan your code</b>. Review it like any PR and merge — or paste the line yourself.</p>
+          <p className="ss-step-lead">Sign in with GitHub and pick one repo. Observant opens a <b>single pull request</b> that adds the web SDK — review it like any PR and merge, or paste the line yourself.</p>
           <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={() => setPhase("authorize")}><Icon name="grid" size={16} /> Sign in with GitHub</Btn></div>
-          <small className="ss-snippet-note">You choose the repo on GitHub's own screen. We ask only for permission to <b>open one pull request</b> — no codebase scan, nothing cloned or stored · hashed identity, no new PII.</small>
           <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
         </>
       )}
@@ -852,7 +851,7 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
           <div className="ss-repo-row"><Icon name="grid" size={15} /><code>{SS_CONNECT_REPO.owner}/{SS_CONNECT_REPO.name}</code><span className="ss-repo-branch">{SS_CONNECT_REPO.branch}</span></div>
           <ul className="ss-ghauth-perms">
             <li><Icon name="check" size={13} sw={2.6} /> <b>Open one pull request</b> <span>— the install PR you review and merge</span></li>
-            <li><Icon name="check" size={13} sw={2.6} /> <b>Scoped to this repo only</b> <span>— no codebase scan, nothing cloned or stored</span></li>
+            <li><Icon name="check" size={13} sw={2.6} /> <b>Scoped to this one repo</b> <span>— it only opens the install PR</span></li>
           </ul>
           <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Install &amp; authorize</Btn></div>
           <small className="ss-snippet-note">This is GitHub's own install screen — you choose the repo, and can revoke anytime.</small>

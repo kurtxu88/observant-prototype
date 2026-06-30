@@ -2334,14 +2334,16 @@
 .ss-route-head b { font-size: 1.02rem; }
 .ss-route-radio {
   flex-shrink: 0;
-  width: 1.05rem;
-  height: 1.05rem;
-  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 5px;
   border: 2px solid var(--border-strong);
+  background: #fff;
   position: relative;
+  transition: background .12s ease, border-color .12s ease;
 }
-.ss-route.on .ss-route-radio { border-color: var(--accent); }
-.ss-route.on .ss-route-radio::after { content: ""; position: absolute; inset: 2.5px; border-radius: 50%; background: var(--accent); }
+.ss-route.on .ss-route-radio { border-color: var(--accent); background: var(--accent); }
+.ss-route.on .ss-route-radio::after { content: ""; position: absolute; left: 0.36rem; top: 0.14rem; width: 0.32rem; height: 0.58rem; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .ss-route-tag {
   margin-left: auto;
   font-style: normal;
