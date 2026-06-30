@@ -3447,3 +3447,28 @@ details.ss-suggest[open] > .ss-suggest-summary::after { transform: rotate(90deg)
 .obs-chat-bubble { position: fixed; right: 1.25rem; bottom: 1.25rem; width: 54px; height: 54px; border-radius: 50%; border: none; background: var(--night); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 24px rgba(40,28,20,.22); z-index: 60; }
 @media (max-width: 1080px) { .obs-chat { width: 340px; } }
 @media (max-width: 640px) { .obs-chat { width: 100%; } }
+
+/* ── Set-up hub (modular feedback surfaces — onboarding + dashboard "Sources") ── */
+.ss-hub-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.9rem; margin-top: 0.7rem; }
+.ss-hub-card { display: flex; flex-direction: column; gap: 0.55rem; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--panel); padding: 1.1rem; transition: border-color .18s, box-shadow .18s; }
+.ss-hub-card.on { border-color: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent-soft); }
+.ss-hub-card-head { display: flex; align-items: center; gap: 0.6rem; }
+.ss-hub-card-head b { font-size: 1.02rem; }
+.ss-hub-card-head .ss-route-tag { margin-left: auto; }
+.ss-hub-card > p { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--text-secondary); }
+.ss-hub-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; margin-top: auto; padding-top: 0.55rem; }
+.ss-hub-status { display: inline-flex; align-items: center; gap: 0.32rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-muted); }
+.ss-hub-status.on { color: var(--success, var(--accent-hover)); }
+.ss-hub-foot { display: flex; align-items: center; gap: 1rem; margin-top: 1.2rem; flex-wrap: wrap; }
+.ss-hub-hint { font-size: 0.82rem; color: var(--text-muted); }
+.ss-hub-nudge { display: flex; align-items: center; gap: 0.45rem; margin-top: 1rem; font-size: 0.86rem; color: var(--text-secondary); background: var(--accent-tint); border-radius: 10px; padding: 0.65rem 0.85rem; }
+.ss-hub-nudge.done { background: var(--success-tint, var(--accent-tint)); color: var(--success, var(--accent-hover)); }
+
+/* ── A single surface's focused sub-flow ── */
+.ss-track { display: flex; flex-direction: column; gap: 0.9rem; }
+.ss-track-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.ss-track-steps { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em; color: var(--text-muted); }
+.ss-track-steps-ol { margin: 0; }
+.ss-track-done { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.ss-track-done p { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; font-weight: 600; color: var(--success, var(--accent-hover)); }
+@media (max-width: 720px) { .ss-hub-grid { grid-template-columns: 1fr; } }

@@ -8,6 +8,7 @@ const SS_SECTIONS = [
   { id: "learning", label: "Loop history", icon: "chat" },
   { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
+  { id: "sources", label: "Sources", icon: "globe" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
@@ -309,14 +310,13 @@ const SS_ONBOARD_FLOW = [
 // Maps a flow step id to its bar label. `install` only appears when in-product is chosen.
 const SS_STEP_LABELS = { product: "Product", context: "Context", surface: "Feedback surface", install: "Code snippet", program: "Feedback program", preview: "Preview" };
 
-// The stepper is consolidated into 4 phases; the screens map onto these.
+// The top stepper is now three phases. The per-surface steps (install / program /
+// preview) live INSIDE each surface's sub-flow on the Set-up hub, not here.
 const SS_PHASES = [
-  { id: "product", label: "Product", screens: ["product", "context"] },
-  { id: "feedback", label: "Feedback", screens: ["surface"] },
-  { id: "setup", label: "Set up", screens: ["install", "program"] },
-  { id: "preview", label: "Preview", screens: ["preview"] },
+  { id: "product", label: "Product" },
+  { id: "setup", label: "Set up" },
+  { id: "done", label: "Done" },
 ];
-function ssPhaseOf(screenId) { const p = SS_PHASES.find((ph) => ph.screens.includes(screenId)); return p ? p.id : "product"; }
 
 function OnboardingBar({ phase }) {
   const current = Math.max(0, SS_PHASES.findIndex((p) => p.id === phase));
@@ -511,47 +511,112 @@ function ObsSetupChat({ product, curId }) {
   );
 }
 
-function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct }) {
-  const product = SelfServeData.productName(state.workspace);
-  const setup = state.setup;
-  const [step, setStep] = useStateSS(0);
+// Per-surface "Active" status — the unit the Set-up hub tracks. In-product is
+// active once the snippet is live (setup.connected); off-product once the program
+// is set up and a magic link has been generated (setup.offproductActive).
+function ssSurfaceActive(setup) {
+  return {
+    inproduct: !!(setup && (setup.inproductActive || setup.connected)),
+    offproduct: !!(setup && setup.offproductActive),
+  };
+}
+
+// The two hub cards — each surface as an independent track with its own status +
+// action. Shared by onboarding (ActivationScreen) and the dashboard (SourcesView).
+const SS_HUB_CARDS = [
+  {
+    key: "offproduct", title: "Off-product feedback", tag: "Easy to set up", tagCls: "start",
+    desc: "A feedback partner program. Invite some or all of your users; those who opt in choose how they want to be reached — email or Telegram — and are compensated for their participating minutes.",
+  },
+  {
+    key: "inproduct", title: "In-product feedback", tag: "Code integration", tagCls: "pro",
+    desc: "Install a code snippet and Observant runs a few key feedback loops right inside your app — AI output evals, exit surveys, and CSAT. The most minimal viable loop for your product.",
+  },
+];
+
+function SetupHubCards({ setup, onPick }) {
+  const active = ssSurfaceActive(setup);
+  return (
+    <div className="ss-hub-grid">
+      {SS_HUB_CARDS.map((c) => {
+        const on = active[c.key];
+        return (
+          <article className={"ss-hub-card" + (on ? " on" : "")} key={c.key}>
+            <div className="ss-hub-card-head">
+              <b>{c.title}</b>
+              <em className={"ss-route-tag " + c.tagCls}>{c.tag}</em>
+            </div>
+            <p>{c.desc}</p>
+            <div className="ss-hub-card-foot">
+              <span className={"ss-hub-status" + (on ? " on" : "")}>
+                {on ? <><Icon name="check" size={13} sw={2.8} /> Active</> : <>○ Not set up</>}
+              </span>
+              <Btn variant={on ? "ghost" : "primary"} size="sm" onClick={() => onPick(c.key)}>
+                {on ? "Manage" : <>Set up <Icon name="arrow" size={15} /></>}
+              </Btn>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+// A light, neutral nudge toward the surface you haven't set up yet — never pushy.
+function HubNudge({ active }) {
+  if (active.inproduct && active.offproduct) {
+    return <p className="ss-hub-nudge done"><Icon name="check" size={13} sw={2.6} /> Both surfaces are live — Observant is listening everywhere your users are.</p>;
+  }
+  const live = active.offproduct ? "Off-product" : "In-product";
+  const other = active.offproduct ? "in-product loops" : "an off-product panel";
+  return <p className="ss-hub-nudge"><Icon name="spark" size={13} /> {live} feedback is live — add {other} too whenever you're ready. No rush.</p>;
+}
+
+// In-product sub-flow: re-hosts the existing SnippetSetup install flow, with its own
+// "← Back to setup" affordance. Marks the surface Active once the snippet is live.
+function InProductTrack({ product, setup, patchSetup, onBackToHub }) {
+  useEffectSS(() => {
+    if (setup.connected && !setup.inproductActive) {
+      patchSetup({ inproductActive: true, inproduct: true, surfaces: { ...setup.surfaces, product: true } });
+    }
+  }, [setup.connected]);
+  return (
+    <div className="ss-track">
+      <div className="ss-track-head">
+        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> Back to setup</button>
+        <span className="ss-track-steps">In-product · Connect → authorize → PR → live</span>
+      </div>
+      <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={1} />
+      {setup.connected && (
+        <div className="ss-track-done">
+          <p><Icon name="check" size={15} sw={2.4} /> In-product feedback is live in {product}.</p>
+          <Btn variant="primary" onClick={onBackToHub}>Back to setup <Icon name="arrow" size={15} /></Btn>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Off-product sub-flow: re-hosts the existing program (compensation + invitation)
+// and preview (review + magic link) screens as a focused two-step track. Marks the
+// surface Active once the magic link is generated.
+function OffProductTrack({ state, patchState, product, setup, patchSetup, onBackToHub }) {
+  const [step, setStep] = useStateSS(setup.offproductActive ? 1 : 0); // 0 program · 1 preview
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [inviteCopied, setInviteCopied] = useStateSS(false);
-  const [linkGenerated, setLinkGenerated] = useStateSS(false);
+  const [linkGenerated, setLinkGenerated] = useStateSS(!!setup.offproductActive);
   const [sendPreviewOpen, setSendPreviewOpen] = useStateSS(false);
   const [previewEmail, setPreviewEmail] = useStateSS(state.workspace.email || "");
   const [previewSentTo, setPreviewSentTo] = useStateSS("");
   const [previewSending, setPreviewSending] = useStateSS(false);
   const [previewErr, setPreviewErr] = useStateSS("");
 
-  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
-  const setAudience = (id) => patchSetup({ audienceMode: id });
-  const setRecruit = (id) => patchSetup({ recruitMode: id });
-  const setConnect = (id) => patchSetup({ connectMode: id });
-  // Surfaces are multi-select (pick one or both) — nothing pre-selected, the user picks.
-  const inproduct = !!setup.inproduct;
-  const offproduct = !!setup.offproduct;
-  const route = offproduct ? "offproduct" : "inproduct"; // for the invite/magic-link phrasing (the panel is off-product)
-  const toggleSurface = (key) => {
-    const cur = key === "inproduct" ? inproduct : offproduct;
-    const other = key === "inproduct" ? offproduct : inproduct;
-    if (cur && !other) return; // at least one stays on
-    patchSetup({ [key]: !cur }); setStep(0);
-  };
-  // Flow: surface → (in-product install, if chosen) → (off-product program + preview, if chosen).
-  // Both chosen → install first, then the panel.
-  const stepIds = ["surface"].concat(inproduct ? ["install"] : []).concat(offproduct ? ["program", "preview"] : []);
-  const curId = stepIds[Math.min(step, stepIds.length - 1)];
-  const curMeta = SS_ONBOARD_STEPS.find((s) => s.id === curId) || {};
-  const curPhase = ssPhaseOf(curId);
-  const stepNo = SS_PHASES.findIndex((p) => p.id === curPhase) + 1; // phase number (Product · Feedback · Set up · Preview)
-
   const surfaceSummary = SS_FAST_CHANNELS.map(ssSurfaceLabel).join(" · ");
   // The link is real wherever the app is served (localhost dev server and the
   // Vercel deploy both rewrite /join/:slug) — observant.link later just points here.
   const productSlug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const magicLink = window.location.host + "/join/" + productSlug;
-  const joinUrl = "/join/" + productSlug + "?route=" + route;
+  const joinUrl = "/join/" + productSlug + "?route=offproduct";
   const copyLink = () => {
     if (navigator.clipboard) navigator.clipboard.writeText(window.location.origin + "/join/" + productSlug).catch(() => {});
     setLinkCopied(true);
@@ -565,9 +630,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "",
     "We're inviting a small group of our most engaged users into our feedback partner program — a direct line to the team building " + product + ".",
     "",
-    route === "inproduct"
-      ? "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat — right inside " + product + ", while you're using it. You earn rewards for every minute you participate, tracked automatically."
-      : "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
+    "From time to time you'll have a quick one-on-one: a couple of messages, sometimes a short voice chat. You choose where it reaches you — " + channelPhrase + " — and you earn rewards for every minute you participate, tracked automatically.",
     "",
     "Long-time partners often get a little extra, too — event invites, early access, time with the team.",
     "",
@@ -578,13 +641,12 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     "— The " + product + " team",
   ].join("\n");
   const [inviteDraft, setInviteDraft] = useStateSS(inviteText);
-  // Surface-route changes rewrite the invitation, so the copy always matches the setup.
-  useEffectSS(() => { setInviteDraft(inviteText); }, [route, product]);
+  useEffectSS(() => { setInviteDraft(inviteText); }, [product]);
   async function sendInvitePreview() {
     if (!previewEmail.includes("@") || previewSending) return;
     setPreviewSending(true); setPreviewErr("");
     try {
-      const r = await ssPostJson("/api/selfserve/send-invite", { toEmail: previewEmail, product, body: inviteDraft, joinUrl: window.location.origin + "/join/" + productSlug + "?route=" + route });
+      const r = await ssPostJson("/api/selfserve/send-invite", { toEmail: previewEmail, product, body: inviteDraft, joinUrl: window.location.origin + joinUrl });
       if (r && r.ok) { setPreviewSentTo(previewEmail); setSendPreviewOpen(false); }
       else if (r && r.needKey) setPreviewErr("No email provider connected yet.");
       else setPreviewErr((r && r.error) || "Couldn't send — try again.");
@@ -596,9 +658,168 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 1500);
   };
+  const generateLink = () => {
+    setLinkGenerated(true);
+    patchSetup({ offproductActive: true, offproduct: true });
+  };
 
-  const next = () => setStep((s) => Math.min(s + 1, stepIds.length - 1));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  return (
+    <div className="ss-track">
+      <div className="ss-track-head">
+        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> Back to setup</button>
+        <ol className="ss-loop-steps ss-track-steps-ol">
+          {["Compensation & invite", "Preview & magic link"].map((s, i) => (
+            <li key={s} className={"ss-loop-step" + (i < step ? " done" : i === step ? " on" : "") + ((i === 0 || step > 0 || linkGenerated) ? " nav" : "")} onClick={() => { if (i === 0 || step > 0 || linkGenerated) setStep(i); }}>
+              <span className="ss-loop-dot">{i < step ? <Icon name="check" size={12} sw={3} /> : i + 1}</span>
+              <span className="ss-loop-label">{s}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {step === 0 && (
+        <section className="ss-panel">
+          <PanelTitle k="Off-product" title="Set up the feedback program" />
+          <p className="ss-step-lead">A <b>feedback program</b> is a small panel of your users who opt in to hear from you. You invite a group once; the ones who join become your <b>feedback partners</b>, and Observant runs the 1:1 conversations with them over time — so you always have people to learn from. Set two things here — how partners are <b>compensated</b> and the <b>invitation</b> they'll receive — and change either anytime.</p>
+          <div className="ss-program-block">
+            <h3><span className="ss-substep">1</span> Compensation</h3>
+            <p>People earn by the <b>minutes they participate</b> — every reply, voice chat, and call counts, tracked and audited automatically. You pay Observant; we pay your participants, and they redeem as they go.</p>
+
+            <div className="ss-comp-grid">
+              <article className="ss-comp-card on">
+                <em className="ss-comp-tag active">Active · managed by Observant</em>
+                <b>Cash</b>
+                <p>Set your rate — we handle payouts and redemption.</p>
+                <div className="ss-comp-rate">
+                  <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 2) })} /> / min</span>
+                  <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 2))}</b>
+                </div>
+                <small>Industry guideline: $2 per minute.</small>
+              </article>
+
+              <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
+                onClick={() => patchSetup({ perks: !setup.perks })}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); patchSetup({ perks: !setup.perks }); } }}>
+                <em className="ss-comp-tag rec">Recommended add-on</em>
+                <b>Additional perks {setup.perks ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
+                <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
+                <small>{setup.perks ? "✓ Included — mention this in your invitation" : "Tap to include"}</small>
+              </article>
+
+              <article className="ss-comp-card">
+                <em className="ss-comp-tag coming">Coming</em>
+                <b>Your product credits</b>
+                <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
+              </article>
+            </div>
+          </div>
+          <div className="ss-program-block">
+            <h3><span className="ss-substep">2</span> Your invitation</h3>
+            <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
+            <div className="ss-invite-copyblock">
+              <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
+              <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
+            </div>
+          </div>
+          <div className="ss-golive-actions">
+            <Btn variant="primary" size="lg" onClick={() => setStep(1)}>Continue to preview <Icon name="arrow" size={16} /></Btn>
+          </div>
+        </section>
+      )}
+
+      {step === 1 && (
+        <section className="ss-panel">
+          <PanelTitle k="Off-product" title="Preview" status="Last step" />
+          <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
+          <div className="ss-review">
+            <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
+            <ReviewRowSS k="Feedback surface" v={"Off-product — " + surfaceSummary} sub="Your users pick one at opt-in." />
+            <ReviewRowSS
+              k="Compensation"
+              v="Cash — managed by Observant"
+              sub={<>
+                <span className="ss-review-tier">${setup.rate || 2} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 2))} · redeem as you go</span>
+                <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
+              </>}
+            />
+            <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
+            <ReviewRowSS
+              k="Invitation to users"
+              v={previewSentTo
+                ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Preview sent to {previewSentTo} <button type="button" className="ss-doc-link ss-row-cta" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></span>
+                : <button type="button" className="ss-doc-link ss-row-cta" onClick={() => setSendPreviewOpen((v) => !v)}>Preview the invitation email →</button>}
+              sub="The text you wrote in the previous step — we'll email you a preview, exactly as your users receive it."
+            />
+          </div>
+          {sendPreviewOpen && !previewSentTo && (
+            <div className="ss-sendpreview">
+              <Field label="What's your email address?">
+                <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) sendInvitePreview(); }} />
+              </Field>
+              <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@") || previewSending} onClick={sendInvitePreview}>{previewSending ? "Sending…" : "Send me the preview"}</Btn>
+              {previewErr && <p style={{ color: "#b4291f", fontSize: ".82rem", marginTop: 6 }}>{previewErr}</p>}
+            </div>
+          )}
+
+          <div className="ss-program-block">
+            <h3>Your magic link</h3>
+            {!linkGenerated ? (
+              <>
+                <p>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, they choose their preferred way of being contacted — and you can preview the whole experience once you generate your link.</p>
+                <div className="ss-golive-actions">
+                  <Btn variant="primary" size="lg" onClick={generateLink}><Icon name="spark" size={16} /> Generate my magic link</Btn>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
+                <div className="ss-magiclink">
+                  <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
+                  <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
+                </div>
+                <div className="ss-track-done">
+                  <p><Icon name="check" size={15} sw={2.4} /> Off-product feedback is set up.</p>
+                  <Btn variant="primary" onClick={onBackToHub}>Back to setup <Icon name="arrow" size={15} /></Btn>
+                </div>
+              </>
+            )}
+          </div>
+
+          <details className="ss-program-block ss-suggest">
+            <summary className="ss-suggest-summary"><Icon name="spark" size={14} /> Wonder who to send it to?</summary>
+            <div className="ss-suggest-body">
+              <p>Here are a few ways to think about your first batch — who you invite to your feedback partner program:</p>
+              <div className="ss-advice-block">
+                {SS_AUDIENCE_OPTIONS.map((opt) => (
+                  <div className="ss-advice-item" key={opt.id}>
+                    <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
+                    <div><b>{opt.label}{opt.tag && <em className="ss-advice-tag">{opt.tag}</em>}</b><p>{opt.text}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </details>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// Onboarding host for the Set-up hub. After Product/Context, the user lands here and
+// sets up each surface as an independent track — now, or later from the dashboard.
+function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct }) {
+  const product = SelfServeData.productName(state.workspace);
+  const setup = state.setup;
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const [view, setView] = useStateSS("hub"); // "hub" | "inproduct" | "offproduct"
+  const active = ssSurfaceActive(setup);
+  const anyActive = active.inproduct || active.offproduct;
+  const phase = view === "hub" && anyActive ? "done" : "setup";
+  const head = view === "inproduct"
+    ? { t: "Set up in-product feedback", d: "Install the snippet — one PR, then it's live." }
+    : view === "offproduct"
+      ? { t: "Set up off-product feedback", d: "Your partner program — compensation, invitation, magic link." }
+      : { t: "Set up your feedback", d: "Start with one — add the other anytime." };
 
   return (
     <div className="ss-activation">
@@ -610,178 +831,71 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </div>
       </header>
 
-      <div className="ss-activation-bar"><OnboardingBar phase={curPhase} /></div>
-      <ObsSetupChat product={product} curId={curId} />
+      <div className="ss-activation-bar"><OnboardingBar phase={phase} /></div>
+      <ObsSetupChat product={product} curId={view === "inproduct" ? "install" : "surface"} />
 
       <div className="ss-activation-wrap">
         <aside className="ss-checklist">
           <span className="eyebrow">Getting started</span>
-          <h1>{curMeta.t || "Set up Observant."}</h1>
-          <p>{curMeta.d || ""} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
+          <h1>{head.t}</h1>
+          <p>{head.d} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
+          {view === "hub" && (
+            <ol className="ss-checks">
+              <li className={active.offproduct ? "done" : ""}><span>{active.offproduct ? <Icon name="check" size={13} sw={2.4} /> : "1"}</span><b>Off-product feedback</b></li>
+              <li className={active.inproduct ? "done" : ""}><span>{active.inproduct ? <Icon name="check" size={13} sw={2.4} /> : "2"}</span><b>In-product feedback</b></li>
+            </ol>
+          )}
+          {view !== "hub" && (
+            <button type="button" className="ss-linklike" style={{ marginTop: "1.2rem", display: "inline-flex", alignItems: "center", gap: ".35rem" }} onClick={() => setView("hub")}><Icon name="back" size={14} /> Back to setup</button>
+          )}
         </aside>
 
         <main className="ss-activation-main">
-          {curId === "surface" && (
+          {view === "hub" && (
             <section className="ss-panel">
-              <PanelTitle k={"Step " + stepNo} title="Choose your feedback surface" status="Pick one or both" />
-              <p className="ss-step-lead"><b>Where does feedback come from? Pick one or both.</b></p>
-              <div className="ss-route-grid">
-                <button type="button" className={"ss-route" + (offproduct ? " on" : "")} role="checkbox" aria-checked={offproduct} onClick={() => toggleSurface("offproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>Off-product feedback</b><em className="ss-route-tag start">Easy to set up</em></span>
-                  <p><b>Set up a feedback partner program.</b> Invite some or all of your users; those who opt in choose how they want to be reached — email or Telegram — and their identifier arrives with that choice. Feedback partners are compensated for their participating minutes.</p>
-                </button>
-                <button type="button" className={"ss-route" + (inproduct ? " on" : "")} role="checkbox" aria-checked={inproduct} onClick={() => toggleSurface("inproduct")}>
-                  <span className="ss-route-head"><span className="ss-route-radio" /><b>In-product feedback</b><em className="ss-route-tag pro">Code integration</em></span>
-                  <p>Install a code snippet and Observant will implement <b>a few key feedback loops</b> right inside your app: AI output evals, exit surveys, and CSAT. This is the most minimal viable feedback loop you'd want for your product.</p>
-                </button>
-              </div>
-              <p className="ss-fork-note">{inproduct && offproduct
-                ? <><Icon name="check" size={13} /> You'll set up the in-product snippet first, then the off-product panel.</>
-                : <><Icon name="users" size={13} /> Pick one or both — you can change this anytime.</>}</p>
-            </section>
-          )}
-
-          {curId === "install" && (
-            <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={stepNo} />
-          )}
-
-          {curId === "program" && (
-            <section className="ss-panel">
-              <PanelTitle k={"Step " + stepNo} title="Set up the feedback program" />
-              <p className="ss-step-lead">A <b>feedback program</b> is a small panel of your users who opt in to hear from you. You invite a group once; the ones who join become your <b>feedback partners</b>, and Observant runs the 1:1 conversations with them over time — so you always have people to learn from. Set two things here — how partners are <b>compensated</b> and the <b>invitation</b> they'll receive — and change either anytime.</p>
-              <div className="ss-program-block">
-                <h3><span className="ss-substep">1</span> Compensation</h3>
-                <p>People earn by the <b>minutes they participate</b> — every reply, voice chat, and call counts, tracked and audited automatically. You pay Observant; we pay your participants, and they redeem as they go.</p>
-
-                <div className="ss-comp-grid">
-                  <article className="ss-comp-card on">
-                    <em className="ss-comp-tag active">Active · managed by Observant</em>
-                    <b>Cash</b>
-                    <p>Set your rate — we handle payouts and redemption.</p>
-                    <div className="ss-comp-rate">
-                      <span className="ss-rate-input">$ <input className="input" type="number" min="0.25" step="0.25" value={setup.rate} onChange={(e) => patchSetup({ rate: Math.max(0.25, Number(e.target.value) || 2) })} /> / min</span>
-                      <b>30 minutes ≈ ${Math.round(30 * (setup.rate || 2))}</b>
-                    </div>
-                    <small>Industry guideline: $2 per minute.</small>
-                  </article>
-
-                  <article className={"ss-comp-card ss-comp-pick" + (setup.perks ? " on" : "")} role="button" tabIndex={0}
-                    onClick={() => patchSetup({ perks: !setup.perks })}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); patchSetup({ perks: !setup.perks }); } }}>
-                    <em className="ss-comp-tag rec">Recommended add-on</em>
-                    <b>Additional perks {setup.perks ? <Icon name="check" size={14} sw={2.6} /> : null}</b>
-                    <p>Most companies invite long-term active partners to extras — in-person events, conferences, time with the founding team. Up to you, and a great motivator — worth mentioning in your invitation.</p>
-                    <small>{setup.perks ? "✓ Included — mention this in your invitation" : "Tap to include"}</small>
-                  </article>
-
-                  <article className="ss-comp-card">
-                    <em className="ss-comp-tag coming">Coming</em>
-                    <b>Your product credits</b>
-                    <p>We're building a universal redemption flow so you can reward partners in your own product credits. Until then, cash is the default.</p>
-                  </article>
-                </div>
-              </div>
-              <div className="ss-program-block">
-                <h3><span className="ss-substep">2</span> Your invitation</h3>
-                <p><b>You send the invite yourself</b>, under your own brand — so your users are never confused about who's reaching out. People opt in as a <b>feedback partner</b>, and can opt out anytime, in one tap. Here's the invitation, ready to send — make it yours if you like.</p>
-                <div className="ss-invite-copyblock">
-                  <textarea className="ss-invite-edit" value={inviteDraft} rows={14} onChange={(e) => setInviteDraft(e.target.value)} />
-                  <button type="button" className="ss-magiclink-copy" onClick={copyInvite}>{inviteCopied ? "Copied ✓" : "Copy text"}</button>
-                </div>
+              <PanelTitle k="Set up" title="Set up your feedback" status={anyActive ? "1 active" : "Pick one"} />
+              <p className="ss-step-lead"><b>Start with one — add the other anytime.</b> Each feedback surface sets up on its own track. You can come back to add the other whenever you like, from <b>Sources</b> in your dashboard.</p>
+              <SetupHubCards setup={setup} onPick={setView} />
+              {anyActive && <HubNudge active={active} />}
+              <div className="ss-hub-foot">
+                <Btn variant="primary" size="lg" disabled={!anyActive} onClick={onLaunch}>Go to dashboard <Icon name="arrow" size={16} /></Btn>
+                {!anyActive
+                  ? <span className="ss-hub-hint">Set up at least one surface to continue.</span>
+                  : (onBackToProduct ? <button type="button" className="ss-linklike" onClick={onBackToProduct}>← Edit product</button> : null)}
               </div>
             </section>
           )}
-
-          {curId === "preview" && (
-            <section className="ss-panel">
-              <PanelTitle k={"Step " + stepNo} title="Preview" status="Last step" />
-              <p className="ss-step-lead">Everything you decided, in one place. When it looks right, generate your magic link.</p>
-              <div className="ss-review">
-                <ReviewRowSS k="Product" v={product} sub={state.workspace.productDescription} />
-                <ReviewRowSS k="Feedback surface" v={route === "inproduct" ? "In-product (Pro) — set up with our team" : "Off-product — " + surfaceSummary} sub={route === "inproduct" ? "Your users can still connect by email or Telegram alongside it." : "Your users pick one at opt-in."} />
-                <ReviewRowSS
-                  k="Compensation"
-                  v="Cash — managed by Observant"
-                  sub={<>
-                    <span className="ss-review-tier">${setup.rate || 2} per participated minute · 30 min ≈ ${Math.round(30 * (setup.rate || 2))} · redeem as you go</span>
-                    <span className="ss-review-tier">Plus any perks you invite long-time partners to — events, early access, founder time.</span>
-                  </>}
-                />
-                <ReviewRowSS k="Research questions" v={state.workspace.learningGoal || "None yet — that's fine"} sub="Participants never see these. Update them or feed in new questions anytime — Observant keeps weaving them into the 1:1s." />
-                <ReviewRowSS
-                  k="Invitation to users"
-                  v={previewSentTo
-                    ? <span className="ss-sent-note"><Icon name="check" size={14} sw={2.4} /> Preview sent to {previewSentTo} <button type="button" className="ss-doc-link ss-row-cta" onClick={() => { setPreviewSentTo(""); setSendPreviewOpen(true); }}>Send again</button></span>
-                    : <button type="button" className="ss-doc-link ss-row-cta" onClick={() => setSendPreviewOpen((v) => !v)}>Preview the invitation email →</button>}
-                  sub="The text you wrote in Step 1 — we'll email you a preview, exactly as your users receive it."
-                />
-              </div>
-              {sendPreviewOpen && !previewSentTo && (
-                <div className="ss-sendpreview">
-                  <Field label="What's your email address?">
-                    <input className="input" type="email" value={previewEmail} placeholder="you@company.com" onChange={(e) => setPreviewEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && previewEmail.includes("@")) sendInvitePreview(); }} />
-                  </Field>
-                  <Btn variant="primary" size="sm" disabled={!previewEmail.includes("@") || previewSending} onClick={sendInvitePreview}>{previewSending ? "Sending…" : "Send me the preview"}</Btn>
-                  {previewErr && <p style={{ color: "#b4291f", fontSize: ".82rem", marginTop: 6 }}>{previewErr}</p>}
-                </div>
-              )}
-
-              <div className="ss-program-block">
-                <h3>Your magic link</h3>
-                {!linkGenerated ? (
-                  <>
-                    <p>The magic link is an invitation to join your feedback program — it's where users read about the details and rewards, and decide if they want to opt in. Once they opt in, {route === "inproduct" ? "the conversations find them right inside " + product : "they choose their preferred way of being contacted"} — and you can preview the whole experience once you generate your link.</p>
-                    <div className="ss-golive-actions">
-                      <Btn variant="primary" size="lg" onClick={() => setLinkGenerated(true)}><Icon name="spark" size={16} /> Generate my magic link</Btn>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p>Live and ready — drop it into your invitation where the placeholder sits, and send. Replies start flowing as people opt in, and <b>you're only charged by the responses you gather</b>.</p>
-                    <div className="ss-magiclink">
-                      <a className="ss-magiclink-open" href={joinUrl} target="_blank" rel="noreferrer"><code>{magicLink}</code></a>
-                      <button type="button" className="ss-magiclink-copy" onClick={copyLink}>{linkCopied ? "Copied ✓" : "Copy link"}</button>
-                    </div>
-                    <div className="ss-golive-actions">
-                      <Btn variant="ghost" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <details className="ss-program-block ss-suggest">
-                <summary className="ss-suggest-summary"><Icon name="spark" size={14} /> Wonder who to send it to?</summary>
-                <div className="ss-suggest-body">
-                  <p>Here are a few ways to think about your first batch — who you invite to your feedback partner program:</p>
-                  <div className="ss-advice-block">
-                    {SS_AUDIENCE_OPTIONS.map((opt) => (
-                      <div className="ss-advice-item" key={opt.id}>
-                        <span className="ss-advice-ic"><Icon name="users" size={15} /></span>
-                        <div><b>{opt.label}{opt.tag && <em className="ss-advice-tag">{opt.tag}</em>}</b><p>{opt.text}</p></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </details>
-            </section>
-          )}
-
-          <div className="ss-onboard-nav">
-            {step > 0
-              ? <Btn variant="ghost" onClick={back}><Icon name="back" size={16} /> Back</Btn>
-              : (onBackToProduct ? <Btn variant="ghost" onClick={onBackToProduct}><Icon name="back" size={16} /> Back</Btn> : <span />)}
-            <span className="count">{"Step " + stepNo + " of " + SS_PHASES.length}</span>
-            {(() => {
-              const isLast = step >= stepIds.length - 1;
-              if (curId === "surface" && !inproduct && !offproduct) return <Btn variant="primary" disabled>Continue <Icon name="arrow" size={16} /></Btn>; // must pick at least one
-              if (curId === "install" && !setup.connected) return <span />; // finish the install first
-              if (!isLast) return <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>;
-              if (curId === "install") return <Btn variant="primary" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>;
-              return <span />; // preview is last for off-product — its in-panel "Open your dashboard" handles launch
-            })()}
-          </div>
+          {view === "inproduct" && <InProductTrack product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setView("hub")} />}
+          {view === "offproduct" && <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setView("hub")} />}
         </main>
       </div>
+    </div>
+  );
+}
+
+// Dashboard host for the SAME hub — the "come back later" mechanism. A surface skipped
+// in onboarding shows "Set up →" here, and setting it up launches the identical sub-flow.
+function SourcesView({ state, patchState }) {
+  const product = SelfServeData.productName(state.workspace);
+  const setup = state.setup;
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const [view, setView] = useStateSS("hub");
+  const active = ssSurfaceActive(setup);
+  const anyActive = active.inproduct || active.offproduct;
+  const count = (active.inproduct ? 1 : 0) + (active.offproduct ? 1 : 0);
+
+  return (
+    <div className="ss-page-stack">
+      {view === "hub" && (
+        <section className="ss-panel">
+          <PanelTitle k="Sources" title="Your feedback sources" status={anyActive ? count + " active" : "None yet"} />
+          <p className="ss-step-lead">Each feedback surface is its own track. Set up the one you skipped, or manage one that's already live — anytime.</p>
+          <SetupHubCards setup={setup} onPick={setView} />
+          {anyActive && <HubNudge active={active} />}
+        </section>
+      )}
+      {view === "inproduct" && <InProductTrack product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setView("hub")} />}
+      {view === "offproduct" && <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setView("hub")} />}
     </div>
   );
 }
@@ -1069,6 +1183,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "sources" && <SourcesView state={state} patchState={patchState} />}
           {section === "compose" && <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>}
           {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}

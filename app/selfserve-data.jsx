@@ -913,7 +913,7 @@ function ssNormalizeSection(section) {
   if (section === "loops" || section === "install") return "learning";
   if (section === "conversations") return "people";
   if (section === "learned") return "insights";
-  if (["home", "learning", "people", "insights", "context", "compose", "settings"].includes(section)) return section;
+  if (["home", "learning", "people", "insights", "context", "compose", "settings", "sources"].includes(section)) return section;
   return "home";
 }
 
