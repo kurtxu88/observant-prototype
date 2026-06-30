@@ -694,8 +694,18 @@ function ObsSetupChat({ product, context, curId }) {
     setMsgs((m) => m.concat([{ from: "them", typing: true }]));
     fetch("/api/selfserve/assistant", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, product, context: context || "", history }),
+      body: JSON.stringify({ question, product, context: context || "", history, mode: "setup" }),
     }).then((r) => r.json()).then((d) => swapTyping((d && d.reply) || answer(question))).catch(() => swapTyping(answer(question)));
+  };
+  // After the role is picked, offer 1–2 setup-relevant nudges as quick replies.
+  const replyWithChips = (text, chips) => {
+    setMsgs((m) => m.concat([{ from: "them", typing: true }]));
+    setTimeout(() => setMsgs((m) => {
+      const copy = m.slice();
+      for (let i = copy.length - 1; i >= 0; i--) { if (copy[i].typing) { copy[i] = { from: "them", text: text, chips: chips }; return copy; } }
+      copy.push({ from: "them", text: text, chips: chips });
+      return copy;
+    }), 850);
   };
   const send = (text) => {
     const t = (text || input).trim();
@@ -703,7 +713,7 @@ function ObsSetupChat({ product, context, curId }) {
     setInput("");
     const history = msgs.filter((m) => !m.typing && m.text).map((m) => ({ role: m.from === "me" ? "user" : "assistant", content: m.text }));
     setMsgs((m) => m.concat([{ from: "me", text: t }]));
-    if (["Founder", "PM", "Engineer", "Designer", "Other"].includes(t)) { replyWithTyping("Got it — thanks. That helps me tailor what I suggest as you set up."); return; }
+    if (["Founder", "PM", "Engineer", "Designer", "Other"].includes(t)) { replyWithChips("Got it — thanks. That helps me tailor what I suggest as you set up. Want a hand picking what to ask first, or which tools to connect?", ["What should I ask my users first?", "Should I connect Slack or PostHog?"]); return; }
     respondTo(t, history);
   };
 

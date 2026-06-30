@@ -12,7 +12,7 @@
    a 200-ish JSON body, never throws to the client. Without a key
    it returns a graceful stub so the UI still works.
    ============================================================ */
-const { RESEARCH_SYSTEM } = require("./_research-brain");
+const { RESEARCH_SYSTEM, SETUP_SYSTEM } = require("./_research-brain");
 
 const MAX_BODY_BYTES = 30000;
 const DEFAULT_MODEL = "claude-sonnet-4-6";
@@ -37,8 +37,10 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(noKeyStub());
     }
 
-    // System = the research brain + one line orienting it to this team's product.
-    let system = RESEARCH_SYSTEM;
+    // System = the brain (setup advisor when mode === "setup", otherwise the
+    // feedback brain) + one line orienting it to this team's product.
+    const mode = limit(payload.mode, 20);
+    let system = mode === "setup" ? SETUP_SYSTEM : RESEARCH_SYSTEM;
     const teamLine =
       (product ? "THE TEAM'S PRODUCT: " + product + "\n" : "") +
       (context ? "WHAT THE TEAM HAS TOLD US (use it to answer sharper; never parrot it back): " + context + "\n" : "");
