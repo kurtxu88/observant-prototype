@@ -970,6 +970,42 @@
   line-height: 1.45;
   margin-top: 0.28rem;
 }
+.ss-empty-state .ss-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.6rem;
+  border-radius: 9px;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.ss-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.88rem;
+  background: none;
+}
+.ss-empty-cta:hover { color: var(--accent-hover); }
+
+/* empty dashboard — Home welcome + single next-action */
+.ss-hero-empty { display: block; }
+.ss-empty-home-lead {
+  color: var(--text-secondary);
+  font-size: 0.94rem;
+  line-height: 1.5;
+  margin: 0.2rem 0 1rem;
+}
+.ss-empty-home-quiet {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
 .ss-panel-title-with-action {
   margin-bottom: 0.8rem;
 }

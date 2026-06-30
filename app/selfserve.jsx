@@ -1591,7 +1591,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             <button key={item.id} type="button" className={section === item.id ? "on" : ""} onClick={() => navigate({ section: item.id })}>
               <Icon name={item.icon} size={17} />
               <span>{item.label}</span>
-              {item.id === "people" && <em>{state.people.length}</em>}
+              {item.id === "people" && state.people.length > 0 && <em>{state.people.length}</em>}
             </button>
           ))}
         </nav>
@@ -1652,6 +1652,48 @@ function HomeView({ state, patchState, navigate }) {
   const activeConversationId = ssFirstActiveConversationId(state);
   const activePerson = ssPersonForConversation(state, state.conversations.find((item) => item.id === activeConversationId));
   const custom = ssWorkspaceIsCustom(state);
+
+  // Clean, empty dashboard for a real new client — no fake Key Metrics. One
+  // setup-aware next-action instead, so the first thing they see is the next move.
+  const hasData = state.conversations.length || state.people.length || state.insights.length || state.loops.length;
+  if (!hasData) {
+    const surfaceActive = ssSurfaceActive(state.setup);
+    const anySourceActive = surfaceActive.inproduct || surfaceActive.offproduct;
+    return (
+      <div className="ss-page-stack">
+        <section className="ss-hero-status ss-hero-empty">
+          <div>
+            <span className="eyebrow no-rule">Always on</span>
+            <h2>Welcome, {product}.</h2>
+            <p>{anySourceActive
+              ? "Your feedback source is live. Bring your users in and their first 1:1s will land right here."
+              : "Let's set up where your users give feedback — one source is enough to begin."}</p>
+          </div>
+        </section>
+
+        <section className="ss-panel ss-empty-home">
+          <PanelTitle k="Next" title={anySourceActive ? "Bring your users in" : "Get your first feedback"} status={anySourceActive ? "Source live" : "Start here"} />
+          {anySourceActive ? (
+            <>
+              <p className="ss-empty-home-lead">Your source is set up. Invite your users so Observant can open its first conversations — or send yourself a test to see exactly what they'll get.</p>
+              <div className="ss-panel-actions">
+                <Btn variant="primary" onClick={() => navigate({ section: "sources" })}><Icon name="users" size={15} /> Invite your users <Icon name="arrow" size={15} /></Btn>
+                <Btn variant="ghost" onClick={() => navigate({ section: "sources" })}><Icon name="spark" size={15} /> Send yourself a test</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="ss-empty-home-lead">Pick where Observant talks to your users — inside your product, or over email and Telegram. It takes a minute.</p>
+              <div className="ss-panel-actions">
+                <Btn variant="primary" onClick={() => navigate({ section: "sources" })}><Icon name="relay" size={15} /> Set up a feedback source <Icon name="arrow" size={15} /></Btn>
+              </div>
+            </>
+          )}
+          <p className="ss-empty-home-quiet">No feedback yet — it'll appear here as users reply.</p>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="ss-page-stack">
@@ -2082,12 +2124,12 @@ function LearningView({ state, patchState, navigate }) {
         <div><span className="eyebrow no-rule">Loop history</span><h2 style={{ margin: "2px 0 0" }}>Loops you've sent</h2></div>
         <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
       </div>
-      <QuestionHistory state={state} />
+      <QuestionHistory state={state} navigate={navigate} />
     </div>
   );
 }
 
-function QuestionHistory({ state }) {
+function QuestionHistory({ state, navigate }) {
   return (
     <section className="ss-panel">
       <PanelTitle k="History" title="Questions your team has asked" status={state.loops.length + " asked"} />
@@ -2104,12 +2146,19 @@ function QuestionHistory({ state }) {
             );
           })}
         </div>
-      ) : <EmptyState title="No questions yet" text="Ask your panel anything — every question your team asks lands here." />}
+      ) : (
+        <EmptyState
+          icon="chat"
+          title="No conversations yet"
+          text="Once users opt in and reply, every 1:1 shows up here. Send a loop to start the first one."
+          cta={navigate ? { label: "Send a new loop", onClick: () => navigate({ section: "compose" }) } : null}
+        />
+      )}
     </section>
   );
 }
 
-function PeopleView({ state, patchState }) {
+function PeopleView({ state, patchState, navigate }) {
   const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
   const person = ssPersonForConversation(state, selected);
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
@@ -2120,8 +2169,13 @@ function PeopleView({ state, patchState }) {
   if (!selected || !person) {
     return (
       <section className="ss-panel">
-        <PanelTitle k="Partners" title="Your feedback partners" status="No lines" />
-        <p className="mut">No lines are open yet.</p>
+        <PanelTitle k="Partners" title="Your feedback partners" status="None yet" />
+        <EmptyState
+          icon="users"
+          title="No feedback partners yet"
+          text="Invite your users to your program and the people who opt in will show up here, each on their own 1:1 line."
+          cta={navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null}
+        />
       </section>
     );
   }
@@ -2390,7 +2444,14 @@ function InsightsView({ state, patchState, navigate }) {
             );
           })}
         </div>
-      ) : <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." />}
+      ) : (
+        <EmptyState
+          icon="spark"
+          title="No signals yet"
+          text="Observant surfaces patterns the moment feedback comes in. Get a source live and the first signals will appear here."
+          cta={navigate ? { label: "Set up a feedback source", onClick: () => navigate({ section: "sources" }) } : null}
+        />
+      )}
     </div>
   );
 }
@@ -2678,11 +2739,13 @@ function Checklist({ readiness, launched }) {
   );
 }
 
-function EmptyState({ title, text }) {
+function EmptyState({ icon, title, text, cta }) {
   return (
     <div className="ss-empty-state">
+      {icon && <div className="ss-empty-icon"><Icon name={icon} size={20} /></div>}
       <b>{title}</b>
       <span>{text}</span>
+      {cta && <button type="button" className="ss-empty-cta" onClick={cta.onClick}>{cta.label} <Icon name="arrow" size={14} /></button>}
     </div>
   );
 }

@@ -670,43 +670,14 @@ function ssHydrateSimulationLoop(simulation) {
   };
 }
 
+// A real onboarded client starts with a CLEAN, EMPTY dashboard — no seeded
+// conversations / insights / partners / loops. Feedback only ever appears once
+// real users opt in and reply (or the client sends their first loop). The Northwind
+// fixture lives ONLY in ssCreateSampleState (the demo toggle); real users are never
+// routed into it. ssBaseState already provides the empty arrays + sensible defaults.
 function ssCreateCustomState(input) {
   const workspace = ssCreateWorkspace(input, SS_CUSTOM_WORKSPACE_FALLBACK);
-  const base = ssBaseState(workspace, "custom");
-  const runId = "initial-" + ssSlug(workspace.companyName);
-  const config = ssInitialCustomConfig(workspace);
-  const simulation = ssFallbackSimulation(workspace, config, runId);
-  const loop = ssHydrateSimulationLoop(simulation);
-  const loopRun = {
-    ...ssCreateLoopRun(runId, loop, config),
-    status: "running",
-    stageIndex: SS_SIMULATION_STAGES.length - 1,
-    fallback: true,
-    generatedAt: simulation.generatedAt,
-    completedAt: simulation.generatedAt,
-    timeline: simulation.timeline || SS_SIMULATION_STAGES,
-  };
-
-  return {
-    ...base,
-    selectedLoopId: loop.id,
-    selectedConversationId: loop.conversationId,
-    people: simulation.users,
-    groups: simulation.groups,
-    conversations: simulation.conversations,
-    events: simulation.events,
-    insights: simulation.insights,
-    loops: [loop],
-    loopRuns: [loopRun],
-    simulationRuns: [{ ...simulation, loop }],
-    nextQuestions: simulation.nextQuestions,
-    generatedAt: simulation.generatedAt,
-    activity: [
-      "Feedback partners are ready for " + workspace.companyName + ".",
-      "Question created: " + loop.name + ".",
-      ...base.activity,
-    ],
-  };
+  return ssBaseState(workspace, "custom");
 }
 
 function ssCreateInitialState(input, mode) {
