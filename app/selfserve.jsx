@@ -835,41 +835,21 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const active = ssSurfaceActive(setup);
   const anyActive = active.inproduct || active.offproduct;
   const phase = view === "hub" && anyActive ? "done" : "setup";
-  const head = view === "inproduct"
-    ? { t: "Set up in-product feedback", d: "Install the snippet — one PR, then it's live." }
-    : view === "offproduct"
-      ? { t: "Set up off-product feedback", d: "Your partner program — compensation, invitation, magic link." }
-      : { t: "Set up your feedback", d: "Start with one — add the other anytime." };
 
   return (
     <div className="ss-activation">
       <header className="ss-activation-top">
-        <Wordmark size="1.45rem" />
+        <Wordmark size="1.3rem" />
+        <nav className="ss-activation-nav"><OnboardingBar phase={phase} /></nav>
         <div className="ss-top-right">
           <span>{product}</span>
           <button type="button" onClick={resetWorkspace}>Start over</button>
         </div>
       </header>
 
-      <div className="ss-activation-bar"><OnboardingBar phase={phase} /></div>
       <ObsSetupChat product={product} curId={view === "inproduct" ? "install" : "surface"} />
 
       <div className="ss-activation-wrap">
-        <aside className="ss-checklist">
-          <span className="eyebrow">Getting started</span>
-          <h1>{head.t}</h1>
-          <p>{head.d} Observant starts talking to your users one-on-one — following up in the moment and surfacing what matters, while you ship.</p>
-          {view === "hub" && (
-            <ol className="ss-checks">
-              <li className={active.offproduct ? "done" : ""}><span>{active.offproduct ? <Icon name="check" size={13} sw={2.4} /> : "1"}</span><b>Off-product feedback</b></li>
-              <li className={active.inproduct ? "done" : ""}><span>{active.inproduct ? <Icon name="check" size={13} sw={2.4} /> : "2"}</span><b>In-product feedback</b></li>
-            </ol>
-          )}
-          {view !== "hub" && (
-            <button type="button" className="ss-linklike" style={{ marginTop: "1.2rem", display: "inline-flex", alignItems: "center", gap: ".35rem" }} onClick={() => setView("hub")}><Icon name="back" size={14} /> Back to setup</button>
-          )}
-        </aside>
-
         <main className="ss-activation-main">
           {view === "hub" && (
             <section className="ss-panel">
