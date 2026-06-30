@@ -447,14 +447,15 @@ const SS_CONNECT_OPTIONS = [
   { id: "inproduct", icon: "globe", title: "Connect inside your product", text: "Observant loads with a hashed user ID you pass it, so it always knows who it's talking to — without ever holding your real user data.", tag: "One-time setup" },
 ];
 
-// Docked "{product} setup" chat — narrates the connect/install, answers questions, queues the role ask.
+// Right-side docked setup assistant (à la Novus): a full-height rail that introduces
+// itself, asks the qualifying role question, streams the conversation, narrates install.
 function ObsSetupChat({ product, curId }) {
   const [open, setOpen] = useStateSS(true);
   const [input, setInput] = useStateSS("");
   const [noted, setNoted] = useStateSS({});
   const [msgs, setMsgs] = useStateSS([
-    { from: "them", text: "Welcome! I'll get " + product + " connected to Observant. We open one PR that adds the SDK — read-only on the repo you pick, just enough to place it. Nothing is scanned or stored. Ask me anything as we go." },
-    { from: "them", text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
+    { from: "them", text: "Hi — I'm the Observant setup assistant. I'll get " + product + " connected and stay here while you do it. We open one PR that adds the SDK — read-only on the repo you pick, just enough to place it. Nothing is scanned or stored. Ask me anything as we go." },
+    { from: "them", emph: true, text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
   ]);
   const bodyRef = useRefSS(null);
   useEffectSS(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, open]);
@@ -481,21 +482,26 @@ function ObsSetupChat({ product, curId }) {
   };
 
   if (!open) {
-    return <button type="button" className="obs-chat-bubble" onClick={() => setOpen(true)} aria-label={"Open " + product + " setup chat"}><Icon name="chat" size={20} /></button>;
+    return <button type="button" className="obs-chat-bubble" onClick={() => setOpen(true)} aria-label={"Open " + product + " setup assistant"}><Icon name="chat" size={20} /></button>;
   }
   return (
-    <aside className="obs-chat" aria-label={product + " setup chat"}>
+    <aside className="obs-chat" aria-label={product + " setup assistant"}>
       <header className="obs-chat-head">
-        <div><b>{product} setup</b><span>run by Observant</span></div>
-        <button type="button" className="obs-chat-min" onClick={() => setOpen(false)} aria-label="Minimize">–</button>
+        <span className="obs-chat-mark"><Icon name="spark" size={16} /></span>
+        <div className="obs-chat-id"><b>{product} Setup</b><span>Observant assistant</span></div>
+        <button type="button" className="obs-chat-min" onClick={() => setOpen(false)} aria-label="Minimize assistant"><Icon name="x" size={15} /></button>
       </header>
       <div className="obs-chat-body" ref={bodyRef}>
-        {msgs.map((m, i) => (
-          <div key={i} className={"obs-chat-msg " + m.from}>
-            <p>{m.text}</p>
-            {m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
-          </div>
-        ))}
+        {msgs.map((m, i) => {
+          const lead = m.from === "them" && (i === 0 || msgs[i - 1].from !== "them");
+          return (
+            <div key={i} className={"obs-chat-msg " + m.from + (m.emph ? " emph" : "")}>
+              {lead && <span className="obs-chat-sender">Observant</span>}
+              <p>{m.text}</p>
+              {m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
+            </div>
+          );
+        })}
       </div>
       <div className="obs-chat-input">
         <input value={input} placeholder="Ask anything about setup…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />

@@ -77,7 +77,7 @@ function JoinApp() {
 
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
       {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { persistJoin(picked, contact, cad); setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
-      {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
+      {phase === "joined" && <JoinWelcome product={product} slug={slug} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
 
       <footer className="jn-foot">
         <p>Run by <b>Observant</b> on behalf of the {product} team. Opt out anytime, in one tap.</p>
@@ -255,7 +255,7 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
   );
 }
 
-function JoinWelcome({ product, channel, contactEmail, cadence }) {
+function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
   const [introSkipped, setIntroSkipped] = useStateJN(false);
@@ -276,7 +276,7 @@ function JoinWelcome({ product, channel, contactEmail, cadence }) {
             <li><b>You earn for it.</b> The intro counts like any other time — your minutes and rewards are tracked from your very first reply.</li>
           </ul>
           <div className="jn-intro-actions">
-            <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product)}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
+            <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product) + (slug ? "&slug=" + encodeURIComponent(slug) : "") + (contactEmail ? "&contact=" + encodeURIComponent(contactEmail) : "")}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
             <button type="button" className="jn-skip" onClick={() => setIntroSkipped(true)}>Skip for now</button>
           </div>
         </section>

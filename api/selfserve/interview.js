@@ -6,6 +6,7 @@
    ============================================================ */
 const fs = require("fs");
 const path = require("path");
+const db = require("../_db");
 
 const MAX_BODY_BYTES = 30000;
 const DEFAULT_MODEL = "claude-sonnet-4-6";
@@ -181,7 +182,7 @@ async function translate(payload) {
   const product = limit(payload.product, 100) || "the product";
   const wishlist = limit(payload.wishlist, 500);
   const context = limit(payload.context, 2000);
-  const memory = limit(payload.memory, 1200);
+  const memory = await resolveMemory(payload);
   const system = readPrompt("C1-question-translator.md");
   const user =
     "PRODUCT: " + product + "\n" +
@@ -209,7 +210,14 @@ async function synthesize(payload) {
     "Capture, in their own framing and only what's actually supported: who they are / their role, how they use " + product + " day to day, the context around it, and what they care about or struggle with. " +
     "3–5 short factual lines (or a tight paragraph). No preamble, no fluff, no invention — output the profile text only.";
   const text = await callClaude(system, [{ role: "user", content: "Conversation:\n" + transcript + "\n\nWrite the memory profile." }], 400);
-  return limit(text, 1200);
+  const memory = limit(text, 1200);
+  // Persist it on the partner row (keyed by program + contact) so future
+  // questions are tailored. Best-effort — no DB / no match → silently skip.
+  try {
+    const partner = await resolvePartner(payload);
+    if (partner && partner.id) await db.update("partners", "id=eq." + partner.id, { memory });
+  } catch (_e) { /* memory persistence never blocks the synthesis */ }
+  return memory;
 }
 
 /* ---------- C2 + C3: next interviewer turn + stop decision ---------- */
@@ -218,7 +226,7 @@ async function nextTurn(payload) {
   const channel = ["email", "telegram"].includes(payload.channel) ? payload.channel : "email";
   const plan = payload.plan || {};
   const wishlist = limit(payload.wishlist, 500);
-  const memory = limit(payload.memory, 1200);
+  const memory = await resolveMemory(payload);
   const context = limit(payload.context, 2000);
   let temp = Number(payload.exploration);
   if (!(temp >= 0 && temp <= 1)) temp = 0.5; // continuous 0..1 "temperature"
@@ -323,6 +331,50 @@ async function callClaude(system, messages, maxTokens, model) {
   const data = await response.json();
   const block = (data.content || []).find((c) => c.type === "text");
   return block ? block.text : "";
+}
+
+/* ---------- per-person memory (partners.memory) ----------
+   Resolve a partner by program (slug or product name) + contact (email), so the
+   intro-synthesized memory can be persisted and read back for tailored follow-ups.
+   Everything here is best-effort: no DB, no contact, or no match → null/"". */
+function slugify(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+async function resolvePartner(payload) {
+  if (!db.dbConfigured()) return null;
+  const contact = limit(payload.contact, 320);
+  if (!contact) return null;
+  const slug = slugify(payload.slug || payload.product);
+  const product = limit(payload.product, 100);
+  try {
+    let programs = [];
+    if (slug) programs = await db.select("programs", "slug=eq." + encodeURIComponent(slug) + "&select=id&limit=1");
+    if ((!programs || !programs.length) && product) {
+      programs = await db.select("programs", "product_name=eq." + encodeURIComponent(product) + "&select=id&limit=1");
+    }
+    if (!programs || !programs.length) return null;
+    const partners = await db.select(
+      "partners",
+      "program_id=eq." + programs[0].id + "&contact=eq." + encodeURIComponent(contact) + "&select=id,memory&limit=1"
+    );
+    return (partners && partners.length) ? partners[0] : null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+// The memory to feed the prompt: prefer one passed in the payload; otherwise load
+// the stored profile from the partner row (by program + contact).
+async function resolveMemory(payload) {
+  const passed = limit(payload.memory, 1200);
+  if (passed) return passed;
+  const partner = await resolvePartner(payload);
+  if (partner && partner.memory != null) {
+    const m = typeof partner.memory === "string" ? partner.memory : JSON.stringify(partner.memory);
+    return limit(m, 1200);
+  }
+  return "";
 }
 
 /* ---------- helpers ---------- */

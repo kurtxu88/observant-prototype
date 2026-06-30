@@ -58,6 +58,10 @@ function icDecodeState(s) {
 function IntroCall() {
   const params = new URLSearchParams(window.location.search);
   const product = (params.get("product") || "the product").trim();
+  // Carried from the join link so the synthesized memory can be persisted
+  // server-side against this exact partner (program + contact).
+  const contact = (params.get("contact") || "").trim();
+  const slug = (params.get("slug") || "").trim();
   const deep = (() => { const o = icDecodeState(params.get("d")); return (o && o.mode === "deep") ? o : null; })();
   const plan = deep
     ? { essence: deep.essence || ("A deeper conversation for the " + product + " team."), questions: (deep.threads && deep.threads.length ? deep.threads : icIntroQuestions(product)), subject: "" }
@@ -185,7 +189,9 @@ function IntroCall() {
 
   async function finishIntro(allMessages) {
     try {
-      const r = await icPost({ action: "synthesize", product, messages: allMessages });
+      // Persist server-side (by program + contact) AND keep the localStorage copy
+      // as a fallback so the demo still works without a contact / DB.
+      const r = await icPost({ action: "synthesize", product, contact, slug, messages: allMessages });
       if (r && r.memory) {
         let store = {}; try { store = JSON.parse(localStorage.getItem("observant.memory.v1") || "{}"); } catch (e) {}
         store[product] = { memory: r.memory, at: Date.now() };
