@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observant — in-product SDK demo</title>
+<style>
+  :root { --accent:#b4532a; --ink:#3a352d; --muted:#8a857c; --cream:#fbf8f1; --line:#ece4d6; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; line-height:1.5; }
+  .wrap { max-width:720px; margin:0 auto; padding:48px 22px 120px; }
+  .kicker { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0 0 6px; }
+  h1 { font-size:1.8rem; margin:0 0 8px; }
+  .lede { color:var(--muted); margin:0 0 30px; max-width:54ch; }
+  .card { background:#fffdf8; border:1px solid var(--line); border-radius:16px; padding:22px; margin:0 0 20px;
+    box-shadow:0 4px 18px rgba(60,45,30,.05); }
+  .card h2 { font-size:1.05rem; margin:0 0 4px; }
+  .card p { color:var(--muted); font-size:.92rem; margin:0 0 14px; }
+  .ai { background:#f6f1e7; border:1px dashed #ddd0bb; border-radius:12px; padding:14px 16px; font-size:.95rem;
+    display:flex; align-items:flex-start; gap:8px; }
+  .ai .badge { font-size:.7rem; font-weight:700; color:var(--accent); background:#fbeee4; border-radius:6px;
+    padding:2px 7px; white-space:nowrap; margin-top:2px; }
+  .btn { border:none; border-radius:9px; padding:10px 16px; font:inherit; font-size:.9rem; font-weight:600;
+    cursor:pointer; background:var(--accent); color:#fff; }
+  .btn.ghost { background:transparent; color:var(--accent); border:1px solid #e6d6c6; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; }
+  code { background:#f1ece2; border-radius:5px; padding:1px 6px; font-size:.85em; }
+  .hint { font-size:.82rem; color:#a59e8f; margin-top:26px; }
+  .install { background:#2d2922; color:#f3ece0; border-radius:12px; padding:14px 16px; font-size:.82rem;
+    overflow-x:auto; }
+  .install code { background:transparent; color:#f3ece0; padding:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">Observant is live</p>
+  <h1>In-product feedback SDK — demo</h1>
+  <p class="lede">This page loads the real <code>/snippet.js</code> exactly the way a customer's app would.
+    All four surfaces below are live: they post to the ingest endpoint and persist (or soft-succeed when no DB is set).</p>
+
+  <div class="card">
+    <h2>1 · Unsolicited feedback</h2>
+    <p>The floating <strong>Feedback</strong> button (bottom-right) is always available. Click it, type a note, send.</p>
+    <button class="btn ghost" onclick="window.Observant.feedback()">Open the feedback popover</button>
+  </div>
+
+  <div class="card">
+    <h2>2 · AI / output eval</h2>
+    <p>A 👍 / 👎 + optional note is attached to this fake AI output via <code>data-observant-eval</code>.</p>
+    <div class="ai" data-observant-eval="demo-summary-1">
+      <span class="badge">AI</span>
+      <span>Based on your last 30 days, churn risk is concentrated in trial users who never connected a repo.
+        Three of them asked about pricing in support — worth a nudge.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Exit survey</h2>
+    <p>Fire this on a cancel / downgrade / leave action. Here it's wired to a button.</p>
+    <button class="btn" onclick="window.Observant.exitSurvey({ reason:'downgrade' })">Trigger exit survey</button>
+  </div>
+
+  <div class="card">
+    <h2>4 · CSAT</h2>
+    <p>A rare 1–5 check-in. Normally auto-fires on a throttle (≤ once / 30 days); here you can summon it.</p>
+    <button class="btn" onclick="window.Observant.csat()">Trigger CSAT</button>
+  </div>
+
+  <p class="hint">Open the Network tab and watch the <code>POST /api/selfserve/in-product</code> calls as you interact.
+    Each carries <code>{ type, value, note, url, slug }</code>.</p>
+
+  <p class="hint">The one line a customer adds to their app:</p>
+  <div class="install"><code>&lt;script async src="https://www.observanthq.com/snippet.js" data-observant&gt;&lt;/script&gt;</code></div>
+</div>
+
+<!-- Load the real SDK. data-api points at THIS origin so the demo posts to the
+     local/deployed ingest endpoint; data-slug names this demo "program". -->
+<script
+  async
+  src="/snippet.js"
+  data-observant
+  data-slug="snippet-demo"
+  data-api=""
+  data-auto-csat="off"></script>
+</body>
+</html>
