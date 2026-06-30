@@ -545,11 +545,11 @@ function ssSurfaceActive(setup) {
 // action. Shared by onboarding (ActivationScreen) and the dashboard (SourcesView).
 const SS_HUB_CARDS = [
   {
-    key: "offproduct", title: "Off-product feedback", tag: "Easy to set up", tagCls: "start",
-    desc: "A feedback partner program. Invite some or all of your users; those who opt in choose how they want to be reached — email or Telegram — and are compensated for their participating minutes.",
+    key: "offproduct", title: "Off-product feedback",
+    desc: <>Users choose whether they want to be contacted via <b>Email</b> or <b>Telegram</b>. Invite some or all of your users; those who opt in are compensated for their participating minutes.</>,
   },
   {
-    key: "inproduct", title: "In-product feedback", tag: "Code integration", tagCls: "pro",
+    key: "inproduct", title: "In-product feedback",
     desc: "Install a code snippet and Observant runs a few key feedback loops right inside your app — AI output evals, exit surveys, and CSAT. The most minimal viable loop for your product.",
   },
 ];
@@ -564,7 +564,6 @@ function SetupHubCards({ setup, onPick }) {
           <article className={"ss-hub-card" + (on ? " on" : "")} key={c.key}>
             <div className="ss-hub-card-head">
               <b>{c.title}</b>
-              <em className={"ss-route-tag " + c.tagCls}>{c.tag}</em>
             </div>
             <p>{c.desc}</p>
             <div className="ss-hub-card-foot">
