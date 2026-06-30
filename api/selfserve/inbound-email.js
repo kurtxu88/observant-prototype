@@ -32,6 +32,11 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
 
   try {
+    // Optional shared secret for the Cloudflare Email Worker path (set INBOUND_SECRET in both places).
+    const inboundSecret = String(process.env.INBOUND_SECRET || "").trim();
+    if (inboundSecret && req.headers["x-inbound-secret"] !== inboundSecret) {
+      return res.status(401).json({ ok: false, error: "bad inbound secret" });
+    }
     const raw = await readRaw(req);
     if (!verifySignature(req, raw)) return res.status(401).json({ ok: false, error: "bad signature" });
     const payload = parseJson(raw);
