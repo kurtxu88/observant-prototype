@@ -1,11 +1,11 @@
 /* ============================================================
-   Observant — research assistant endpoint
+   Observant — feedback assistant endpoint
    ------------------------------------------------------------
    POST { question, product, context, history }
-   The Observant assistant answers user-research questions like a
-   Codified-trained expert. The methodology lives in the research
-   brain (require'd below) — this handler just frames the team's
-   product/context and runs the Claude turn.
+   The Observant assistant helps teams make sense of user feedback
+   and turn it into agent-ready build actions. The framing lives in
+   the feedback brain (require'd below) — this handler just frames
+   the team's product/context and runs the Claude turn.
 
    Same bare-serverless shape as interview.js: raw fetch to
    Anthropic (no SDK), ANTHROPIC_API_KEY from env, always returns
@@ -103,7 +103,7 @@ function noKeyStub() {
     ok: true,
     stub: true,
     reply:
-      "[ANTHROPIC_API_KEY not set] — add it to the Vercel project env (Settings → Environment Variables) and redeploy, then the research assistant answers here, grounded in the Codified methodology.",
+      "[ANTHROPIC_API_KEY not set] — add it to the Vercel project env (Settings → Environment Variables) and redeploy, then the feedback assistant answers here, helping you turn user feedback into what to build next.",
   };
 }
 

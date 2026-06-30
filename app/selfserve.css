@@ -3368,6 +3368,15 @@
 .ss-pr-caveat b { font-size: .8rem; }
 .ss-pr-caveat p { font-size: .82rem; color: var(--text-secondary); margin-top: .2rem; }
 
+/* real install PR — calm failure + retry, and the live link to the opened PR */
+.ss-pr-fail { padding: .9rem 1rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.ss-pr-fail-msg { display: flex; align-items: flex-start; gap: .5rem; font-size: .9rem; color: var(--text-secondary); margin-bottom: .8rem; line-height: 1.45; }
+.ss-pr-fail-msg svg { color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+.ss-pr-link { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .7rem; margin: 0 0 .8rem; }
+.ss-pr-link a { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .7rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--canvas); font-size: .85rem; font-weight: 600; color: var(--accent); }
+.ss-pr-link a:hover { border-color: var(--accent-soft); background: var(--accent-tint); color: var(--accent-hover); }
+.ss-pr-link span { font-size: .8rem; color: var(--text-muted); }
+
 /* live / connected state + triggers */
 .ss-connect-done { padding: 1.4rem 1.6rem 1.6rem; }
 .ss-connect-livehead { display: flex; gap: .7rem; align-items: flex-start; margin-bottom: 1.1rem; }

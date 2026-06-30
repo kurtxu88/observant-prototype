@@ -263,6 +263,26 @@ const SS_VIEW = (() => {
   return "";
 })();
 
+// GitHub App post-install return. The callback bounces the browser back to
+// /setup?gh=installed&installation_id=<id>. Read it ONCE on load, then strip the
+// params (replaceState) so a refresh doesn't re-trigger the "open PR" step.
+const SS_GH_RETURN = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("gh") !== "installed") return { installed: false, installationId: "" };
+    const installationId = params.get("installation_id") || params.get("installationId") || "";
+    params.delete("gh");
+    params.delete("installation_id");
+    params.delete("installationId");
+    params.delete("setup_action");
+    const qs = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+    return { installed: true, installationId };
+  } catch (_e) {
+    return { installed: false, installationId: "" };
+  }
+})();
+
 // --- demo login gate: lets you log out and walk someone through setup again ---
 const SS_AUTH_KEY = "observant.auth";
 function ssIsAuthed() { try { return !!localStorage.getItem(SS_AUTH_KEY); } catch (e) { return false; } }
@@ -351,6 +371,15 @@ function SelfServeApp() {
     try { if (window.ObservantAuth) await window.ObservantAuth.signOut(); } catch (_e) {}
     window.location.href = "/setup";
   };
+
+  // GitHub App just got installed → stash the installation id on setup so the
+  // in-product track can open the real PR (and survive a reload).
+  useEffectSS(() => {
+    if (!SS_GH_RETURN.installed || !SS_GH_RETURN.installationId) return;
+    setState((current) => current
+      ? { ...current, setup: { ...current.setup, githubInstallationId: SS_GH_RETURN.installationId } }
+      : current);
+  }, []);
 
   useEffectSS(() => {
     if (state) ssSaveState(state);
@@ -624,7 +653,7 @@ function ObsSetupChat({ product, context, curId }) {
   const [input, setInput] = useStateSS("");
   const [noted, setNoted] = useStateSS({});
   const [msgs, setMsgs] = useStateSS([
-    { from: "them", text: "Hi — I'm your Observant assistant for " + product + ". I'll help you get set up, and I can think through the research with you — which users to hear from, what to ask, how to read what comes back. Ask me anything." },
+    { from: "them", text: "Hi — I'm your Observant assistant for " + product + ". I'll help you get set up, and once feedback starts coming in I can help you make sense of it — what to ask, whose feedback to trust, and how to turn it into what to build next. Ask me anything." },
     { from: "them", emph: true, text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
   ]);
   const bodyRef = useRefSS(null);
@@ -716,7 +745,7 @@ function ObsSetupChat({ product, context, curId }) {
 function ProductAssistant({ product, state, open, setOpen }) {
   const [input, setInput] = useStateSS("");
   const [msgs, setMsgs] = useStateSS([
-    { from: "them", text: "Product AI assistant — I have context from your product memory, your feedback partners, and every 1:1 loop Observant has run for " + product + ". Ask me anything about what your users are saying." },
+    { from: "them", text: "Product AI assistant — I have context from every feedback loop Observant runs for " + product + ". Ask me what your users are saying, whose feedback to trust, or how to turn it into what to build next." },
     { from: "them", suggest: true, chips: ["Show me recent feedback", "Which users should I hear from?", "Summarize what users are saying", "What signals need attention?"] },
   ]);
   const bodyRef = useRefSS(null);
@@ -1137,7 +1166,8 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
-  const [view, setView] = useStateSS("hub"); // "hub" | "inproduct" | "offproduct"
+  // Returning from the GitHub App install lands straight in the in-product track.
+  const [view, setView] = useStateSS(SS_GH_RETURN.installed ? "inproduct" : "hub"); // "hub" | "inproduct" | "offproduct"
   const active = ssSurfaceActive(setup);
   const anyActive = active.inproduct || active.offproduct;
   const phase = view === "hub" && anyActive ? "done" : "setup";
@@ -1184,7 +1214,7 @@ function SourcesView({ state, patchState }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
-  const [view, setView] = useStateSS("hub");
+  const [view, setView] = useStateSS(SS_GH_RETURN.installed ? "inproduct" : "hub");
   const active = ssSurfaceActive(setup);
   const anyActive = active.inproduct || active.offproduct;
   const count = (active.inproduct ? 1 : 0) + (active.offproduct ? 1 : 0);
@@ -1248,18 +1278,67 @@ function ssInstallPR(product) {
   };
 }
 
+// Calm, human messages for the few ways opening the install PR can fall short.
+const SS_PR_FAIL_MSG = {
+  NOT_INSTALLED: "We didn't see the GitHub App on a repo yet — install it and grant access to one repo, then try again.",
+  NO_REPO: "Couldn't open the PR yet — make sure you granted Observant access to a repo on GitHub.",
+  NO_TOKEN: "Couldn't reach GitHub on your behalf just now — try again in a moment.",
+  NO_BASE: "Couldn't read that repo's default branch — pick a repo with code in it, then try again.",
+  NO_GH: "GitHub isn't fully configured on this server yet — paste the snippet yourself for now.",
+};
+
 function SnippetSetup({ product, setup, patchSetup, step }) {
   const [copied, setCopied] = useStateSS(false);
-  // No-scan install: start (Sign in w/ GitHub) → authorize (pick one repo, open-PR permission only) →
-  //   opening (we add the SDK) → pr (the install PR you review + merge) → live.  Fallback: paste → listening → live.
-  const [phase, setPhase] = useStateSS(setup.connected ? "live" : "start");
+  // Real GitHub flow: start (Sign in w/ GitHub) → authorize (the explainer) → leave for
+  //   github.com/apps/observanthq install → return to /setup?gh=installed → opening (POST
+  //   /api/github/install-pr) → live (links to the real PR).  Fallback: paste → listening → live.
+  const ghReturning = SS_GH_RETURN.installed && !setup.connected;
+  const [phase, setPhase] = useStateSS(setup.connected ? "live" : (ghReturning ? "opening" : "start"));
   const [testSent, setTestSent] = useStateSS(false);
+  const [prUrl, setPrUrl] = useStateSS(setup.installPrUrl || "");
+  const [prErr, setPrErr] = useStateSS("");
+  const prFiredRef = useRefSS(false);
   const connected = phase === "live" || !!setup.connected;
   const snippet = '<script src="https://cdn.observant.dev/o.js" data-key="obs_live_8fa2"></script>';
-  const pr = ssInstallPR(product);
   const copy = () => { try { if (navigator.clipboard) navigator.clipboard.writeText(snippet); } catch (e) {} setCopied(true); setTimeout(() => setCopied(false), 1500); };
-  const grant = () => { setPhase("opening"); setTimeout(() => setPhase("pr"), 1500); };
-  const merge = () => { setPhase("live"); patchSetup({ connected: true }); };
+  // Step 1 — hand off to GitHub's own install screen (server 302s to the App).
+  const connectGithub = () => { window.location.href = "/api/github/install"; };
+
+  // Step 2 — once installed, open the ONE real PR via the backend.
+  const runInstallPr = async () => {
+    const installationId = setup.githubInstallationId || SS_GH_RETURN.installationId || "";
+    setPrErr("");
+    try {
+      const resp = await fetch("/api/github/install-pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ installationId }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (data && data.ok) {
+        setPrUrl(data.prUrl || "");
+        patchSetup({ connected: true, inproductActive: true, inproduct: true, installPrUrl: data.prUrl || "", githubInstallationId: installationId });
+        setPhase("live");
+      } else {
+        setPrErr((data && data.code) || "FAILED");
+        setPhase("prfail");
+      }
+    } catch (e) {
+      setPrErr("NETWORK");
+      setPhase("prfail");
+    }
+  };
+
+  // The "opening" spinner is the single driver — fire the call exactly once each
+  // time we enter it (guard the ref; reset on leave so retry can re-fire).
+  useEffectSS(() => {
+    if (phase === "opening") {
+      if (!prFiredRef.current) { prFiredRef.current = true; runInstallPr(); }
+    } else {
+      prFiredRef.current = false;
+    }
+  }, [phase]);
+
   const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
   const liveMoments = [
     { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
@@ -1288,34 +1367,23 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
             <li><Icon name="check" size={13} sw={2.6} /> <b>Open one pull request</b> <span>— the install PR you review and merge</span></li>
             <li><Icon name="check" size={13} sw={2.6} /> <b>Scoped to this one repo</b> <span>— it only opens the install PR</span></li>
           </ul>
-          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={grant}><Icon name="check" size={16} /> Install &amp; authorize</Btn></div>
+          <div className="ss-golive-actions"><Btn variant="primary" size="lg" onClick={connectGithub}><Icon name="check" size={16} /> Install &amp; authorize on GitHub</Btn></div>
           <small className="ss-snippet-note">This is GitHub's own install screen — you choose the repo, and can revoke anytime.</small>
         </div>
       )}
 
       {phase === "opening" && (
-        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> Adding the Observant web SDK to {product} — opening your install PR…</div>
+        <div className="ss-snippet-listen"><span className="ss-snippet-spin" /> GitHub connected — opening your install PR on {product}…</div>
       )}
 
-      {phase === "pr" && (
-        <>
-          <p className="ss-step-lead">Observant opened one PR. Review the change and merge to go live.</p>
-          <div className="ss-pr">
-            <div className="ss-pr-head"><Icon name="grid" size={14} /><b>{pr.title}</b><span className="ss-pr-branch">{pr.branch} → {SS_CONNECT_REPO.branch}</span></div>
-            <p className="ss-pr-body">{pr.body}</p>
-            {pr.files.map((f) => (
-              <div className="ss-pr-file" key={f.path}>
-                <span className="ss-pr-path">{f.path}</span>
-                {f.add.map((line, i) => <div className="ss-pr-add" key={i}><span>+</span><code>{line}</code></div>)}
-              </div>
-            ))}
-            <div className="ss-pr-caveat"><b>Heads up — what it did not wire, and why</b><p>{pr.caveat}</p></div>
-          </div>
+      {phase === "prfail" && (
+        <div className="ss-pr-fail">
+          <p className="ss-pr-fail-msg"><Icon name="x" size={15} sw={2.4} /> {SS_PR_FAIL_MSG[prErr] || "Couldn't open the PR yet — make sure you granted Observant access to a repo, then try again."}</p>
           <div className="ss-golive-actions">
-            <Btn variant="ghost" size="lg" onClick={() => {}}>Review on GitHub <Icon name="arrow" size={15} /></Btn>
-            <Btn variant="primary" size="lg" onClick={merge}><Icon name="check" size={16} /> Merge PR — go live</Btn>
+            <Btn variant="primary" size="lg" onClick={() => setPhase("opening")}><Icon name="arrow" size={16} /> Try again</Btn>
+            <button type="button" className="ss-fork-skip" onClick={() => setPhase("paste")}>Rather paste the snippet yourself? →</button>
           </div>
-        </>
+        </div>
       )}
 
       {phase === "paste" && (
@@ -1334,6 +1402,9 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
       {connected && (
         <>
           <div className="ss-snippet-live"><span className="ss-snippet-dot" /> <b>Live in {product}.</b> Observant is now running your key feedback loops:</div>
+          {prUrl && (
+            <div className="ss-pr-link"><a href={prUrl} target="_blank" rel="noreferrer"><Icon name="grid" size={14} /> View the install PR <Icon name="arrow" size={14} /></a><span>Merge it on GitHub to ship the snippet.</span></div>
+          )}
           <div className="ss-moments">
             {liveMoments.map((m) => (
               <div className="ss-moment" key={m.k}><Icon name="spark" size={14} /><div><b>{m.k}</b><span>{m.d}</span></div></div>
