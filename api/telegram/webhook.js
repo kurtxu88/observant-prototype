@@ -20,7 +20,7 @@
    Always returns 200 quickly (Telegram retries on non-2xx).
    ============================================================ */
 const db = require("../_db");
-const { sendMessage } = require("./send");
+const { sendMessage } = require("./_send");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
