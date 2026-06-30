@@ -15,7 +15,7 @@
    Optional env var on the Worker: INBOUND_SECRET (set the SAME value in
    Vercel) — adds a shared-secret header so only this Worker can post.
    ============================================================ */
-const ENDPOINT = "https://observant-prototype.vercel.app/api/selfserve/inbound-email";
+const ENDPOINT = "https://www.observanthq.com/api/selfserve/inbound-email";
 
 export default {
   async email(message, env, ctx) {

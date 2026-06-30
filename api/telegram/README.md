@@ -31,7 +31,7 @@ ask at most one follow-up, then stop).
 3. **Point Telegram at the webhook** — run once (no dashboard for this):
 
    ```sh
-   curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://observant-prototype.vercel.app/api/telegram/webhook"
+   curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://www.observanthq.com/api/telegram/webhook"
    ```
 
    Expect `{"ok":true,"result":true,"description":"Webhook was set"}`.

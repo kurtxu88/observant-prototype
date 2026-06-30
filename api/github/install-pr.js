@@ -31,7 +31,7 @@ const BRANCH = "observant/add-snippet";
 const PR_TITLE = "Add Observant feedback snippet";
 
 // The one line we add. Override per-request via body.snippet.
-const DEFAULT_SNIPPET = '<script async src="https://observant-prototype.vercel.app/snippet.js" data-observant></script>';
+const DEFAULT_SNIPPET = '<script async src="https://www.observanthq.com/snippet.js" data-observant></script>';
 
 // Where we'll try to append the snippet, in priority order. First match wins.
 const ENTRY_CANDIDATES = [

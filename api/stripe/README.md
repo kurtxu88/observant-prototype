@@ -45,7 +45,7 @@ Dashboard + Vercel:
    Required for `connect`/`payout` (the partner payout side).
 3. **API key** — copy the **Secret key** (`sk_test_…` / `sk_live_…`) →
    set `STRIPE_SECRET_KEY` in Vercel.
-4. **Webhook endpoint** — add `https://observant-prototype.vercel.app/api/stripe/webhook`,
+4. **Webhook endpoint** — add `https://www.observanthq.com/api/stripe/webhook`,
    subscribe to **`checkout.session.completed`** and **`account.updated`**, copy
    its **signing secret** (`whsec_…`) → set `STRIPE_WEBHOOK_SECRET` in Vercel.
 5. **(Subscription plans only)** create a Product + recurring **Price** in Stripe,

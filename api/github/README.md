@@ -30,10 +30,10 @@ build stays green until the App exists.
 GitHub → **Settings → Developer settings → GitHub Apps → New GitHub App**
 
 - **Name:** Observant
-- **Homepage URL:** `https://observant-prototype.vercel.app`
-- **Callback URL:** `https://observant-prototype.vercel.app/api/github/callback`
+- **Homepage URL:** `https://www.observanthq.com`
+- **Callback URL:** `https://www.observanthq.com/api/github/callback`
   - check **Request user authorization (OAuth) during installation** is OFF (we use the install redirect, not OAuth)
-- **Setup URL (after install):** `https://observant-prototype.vercel.app/api/github/callback`
+- **Setup URL (after install):** `https://www.observanthq.com/api/github/callback`
   - check **Redirect on update** ON
 - **Webhook:** can be left **Active OFF** for now (no webhook handler in this build). If you turn it on, set a secret and put it in `GITHUB_APP_WEBHOOK_SECRET`.
 - **Repository permissions:**
@@ -78,7 +78,7 @@ In the Supabase SQL editor, run `db/migrations/github.sql` (creates
 ## Notes
 
 - The snippet line defaults to
-  `<script async src="https://observant-prototype.vercel.app/snippet.js" data-observant></script>`
+  `<script async src="https://www.observanthq.com/snippet.js" data-observant></script>`
   — pass `snippet` in the POST body to override.
 - install-pr appends to an obvious entry file if present
   (`index.html`, `app/layout.tsx`, `README.md`, …); otherwise it creates
