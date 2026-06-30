@@ -3472,3 +3472,15 @@ details.ss-suggest[open] > .ss-suggest-summary::after { transform: rotate(90deg)
 .ss-track-done { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .ss-track-done p { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0; font-weight: 600; color: var(--success, var(--accent-hover)); }
 @media (max-width: 720px) { .ss-hub-grid { grid-template-columns: 1fr; } }
+
+/* Setup assistant sits BESIDE the onboarding (never covers it) — inset the content while it's open */
+body.obs-chat-open .ss-activation { padding-right: 384px; transition: padding-right .22s ease; }
+@media (max-width: 1080px) { body.obs-chat-open .ss-activation { padding-right: 340px; } }
+@media (max-width: 640px)  { body.obs-chat-open .ss-activation { padding-right: 0; } }
+
+/* Live "typing…" indicator */
+.obs-chat-typing { display: inline-flex; align-items: center; gap: 4px; padding: 5px 2px; margin: 0; }
+.obs-chat-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); display: inline-block; animation: obsTyping 1.2s infinite ease-in-out; }
+.obs-chat-typing i:nth-child(2) { animation-delay: .15s; }
+.obs-chat-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes obsTyping { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }

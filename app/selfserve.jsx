@@ -458,13 +458,32 @@ function ObsSetupChat({ product, curId }) {
     { from: "them", emph: true, text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
   ]);
   const bodyRef = useRefSS(null);
+  // Inset the onboarding layout while the assistant is open, so it sits BESIDE the content (never over it).
+  useEffectSS(() => {
+    if (typeof document === "undefined") return undefined;
+    document.body.classList.toggle("obs-chat-open", open);
+    return () => document.body.classList.remove("obs-chat-open");
+  }, [open]);
   useEffectSS(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, open]);
   useEffectSS(() => {
     if (curId === "install" && !noted.install) {
       setNoted((n) => ({ ...n, install: true }));
-      setMsgs((m) => m.concat([{ from: "them", text: "Prepping your install PR now — this'll take a moment. It'll appear on the left, ready for you to review and merge." }]));
+      replyWithTyping("Prepping your install PR now — this'll take a moment. It'll appear on the left, ready for you to review and merge.");
     }
   }, [curId]);
+
+  // Show a live "typing…" bubble, then swap it for the reply — feels like a real assistant, not an instant canned line.
+  const replyWithTyping = (text) => {
+    setMsgs((m) => m.concat([{ from: "them", typing: true }]));
+    setTimeout(() => {
+      setMsgs((m) => {
+        const copy = m.slice();
+        for (let i = copy.length - 1; i >= 0; i--) { if (copy[i].typing) { copy[i] = { from: "them", text: text }; return copy; } }
+        copy.push({ from: "them", text: text });
+        return copy;
+      });
+    }, 850);
+  };
 
   const answer = (q) => {
     const s = q.toLowerCase();
@@ -478,7 +497,8 @@ function ObsSetupChat({ product, curId }) {
     const t = (text || input).trim();
     if (!t) return;
     setInput("");
-    setMsgs((m) => m.concat([{ from: "me", text: t }, { from: "them", text: answer(t) }]));
+    setMsgs((m) => m.concat([{ from: "me", text: t }]));
+    replyWithTyping(answer(t));
   };
 
   if (!open) {
@@ -497,8 +517,8 @@ function ObsSetupChat({ product, curId }) {
           return (
             <div key={i} className={"obs-chat-msg " + m.from + (m.emph ? " emph" : "")}>
               {lead && <span className="obs-chat-sender">Observant</span>}
-              <p>{m.text}</p>
-              {m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
+              {m.typing ? <p className="obs-chat-typing"><i></i><i></i><i></i></p> : <p>{m.text}</p>}
+              {!m.typing && m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
             </div>
           );
         })}
