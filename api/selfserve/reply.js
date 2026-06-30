@@ -6,6 +6,8 @@
    Thread state rides in the link (base64) — fine for a demo;
    the real build moves this to a DB/KV.
    ============================================================ */
+const db = require("../_db");
+
 module.exports = async function handler(req, res) {
   setJson(res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -47,8 +49,9 @@ module.exports = async function handler(req, res) {
     }
 
     // PASS → award the PRE-DETERMINED minutes (what the loop is worth), not time spent.
-    const minutes = Math.max(1, Number(state.estMin) || estMinutes(userText, answeredCount));
+    const minutes = Math.max(1, Number(state.estMin) || estLoopMin(parsed.questions));   // PRE-DETERMINED reward for this loop (never time-on-page)
     const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
+    await recordEarnedMinutes(state, minutes, qa);   // #3 — persist the earn (audit = quality verdict)
 
     // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
     if (priorEmails >= 2) {
@@ -132,5 +135,27 @@ function htmlEmail(body, answerUrl) {
 }
 function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 function decodeState(s) { try { return JSON.parse(Buffer.from(String(s || ""), "base64url").toString("utf8")); } catch (e) { return null; } }
+// The reward for a loop, derived from the loop's shape (question count), not the response — a fallback
+// for when state.estMin (set upfront at loop generation) is missing. Never time-on-page.
+function estLoopMin(questions) { const n = (Array.isArray(questions) ? questions.length : 0) || 1; return Math.max(2, Math.round(n * 1.5)); }
+
+// #3 — on a passing reply, append the PRE-DETERMINED reward to the minutes ledger, with the
+// quality verdict as the audit record. Resolves the partner from the program slug + email.
+async function recordEarnedMinutes(state, minutes, qa) {
+  try {
+    if (!db.dbConfigured()) return;
+    const slug = String(state.product || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!slug || !state.toEmail) return;
+    const progs = await db.select("programs", "slug=eq." + encodeURIComponent(slug) + "&select=id,rate_per_min&limit=1");
+    const program = Array.isArray(progs) && progs[0];
+    if (!program) return;
+    const parts = await db.select("partners", "program_id=eq." + program.id + "&channel=eq.email&contact=eq." + encodeURIComponent(state.toEmail) + "&select=id&limit=1");
+    const partner = Array.isArray(parts) && parts[0];
+    if (!partner) return;
+    const rate = Number(program.rate_per_min) || 2;
+    await db.insert("minutes_ledger", { partner_id: partner.id, kind: "earned", minutes: minutes, amount: Math.round(minutes * rate * 100) / 100, quality_verdict: qa || null, note: "email reply" });
+  } catch (e) { console.error("[ledger] record failed:", e && e.message); }
+}
+
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }
 async function readJson(req) { if (req.body) return typeof req.body === "string" ? JSON.parse(req.body) : req.body; let b = ""; for await (const c of req) { b += c; if (b.length > 60000) throw new Error("too large"); } return b ? JSON.parse(b) : {}; }

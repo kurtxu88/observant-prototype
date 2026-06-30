@@ -124,9 +124,10 @@ function estMinForLoop(mode, lightPlan) {
   return Math.max(2, Math.round(n * 1.5));
 }
 
-/* ---------- Reward quality gate (ported from uxr-claw quality-assessor) ----------
-   Whether a response earns the reward is an AI judgment of engagement + on-topic + effort,
-   NOT time spent. Returns pass | partial | fail + a short reason. */
+/* ---------- Reward quality gate ----------
+   The reward (estMin) is PRE-DETERMINED per loop and shown upfront. This only decides whether a
+   response EARNS it — an AI judgment of COMPREHENSIVENESS + EFFORT, never time spent.
+   Returns pass | partial | fail + a short reason. */
 async function assessQuality(payload) {
   const product = limit(payload.product, 100) || "the product";
   const questions = (Array.isArray(payload.questions) ? payload.questions : []).map((q) => limit(q, 240)).filter(Boolean);
@@ -135,17 +136,17 @@ async function assessQuality(payload) {
     ? questions.map((q, i) => "Q: " + q + "\nA: " + (answers[i] || "(no answer)")).join("\n\n")
     : answers.join("\n");
   const system =
-    "You evaluate the QUALITY of a user's feedback responses to decide if they earn the reward. Judge three things, each pass or fail:\n" +
-    "1. ENGAGEMENT — did they actually engage, or give one-word/empty/dismissive answers?\n" +
-    "2. ON-TOPIC — are the answers about " + product + " and the questions asked (not gibberish or off-topic)?\n" +
-    "3. EFFORT — is there genuine, specific content (a real example, detail, or reason), not just a vague gesture?\n" +
-    "Overall: 'pass' if all three pass; 'partial' if it's close but thin/incomplete and worth one nudge to improve; 'fail' if it's empty, gibberish, off-topic, or clearly low-effort. " +
-    "Be fair, not harsh — a short but genuine and specific answer passes. Reward effort and honesty, not length.\n" +
-    'Return JSON only: {"engagement":"pass|fail","on_topic":"pass|fail","effort":"pass|fail","overall":"pass|partial|fail","summary":"one short line"}';
-  const text = await callClaude(system, [{ role: "user", content: "Responses:\n" + transcript + "\n\nEvaluate." }], 300, FAST_MODEL);
+    "You score a user's feedback responses to decide if they EARN the pre-set reward for this loop. " +
+    "Score two dimensions, each pass or fail:\n" +
+    "1. COMPREHENSIVENESS — did they address what was asked across the questions, about " + product + ", with relevant substance (not one-word, empty, off-topic, or dodging)?\n" +
+    "2. EFFORT — is there genuine, specific content — a real example, detail, number, or reason — not just a vague gesture?\n" +
+    "Overall: 'pass' if BOTH pass; 'partial' if close but thin/incomplete and worth one nudge; 'fail' if empty, gibberish, off-topic, or clearly low-effort. " +
+    "Be fair, not harsh — a short but genuine, specific answer passes. Reward substance and honesty, not length. The reward is fixed per loop; you only decide pass / partial / fail.\n" +
+    'Return JSON only: {"comprehensiveness":"pass|fail","effort":"pass|fail","overall":"pass|partial|fail","summary":"one short line"}';
+  const text = await callClaude(system, [{ role: "user", content: "Responses:\n" + transcript + "\n\nScore." }], 300, FAST_MODEL);
   const r = parseJson(text, { overall: "pass", summary: "" });
   const overall = ["pass", "partial", "fail"].includes(r.overall) ? r.overall : "pass";
-  return { engagement: r.engagement || "pass", on_topic: r.on_topic || "pass", effort: r.effort || "pass", overall, summary: limit(r.summary, 300) };
+  return { comprehensiveness: r.comprehensiveness || "pass", effort: r.effort || "pass", overall, summary: limit(r.summary, 300) };
 }
 
 /* ---------- C0: the depth gate (deep vs light), dimension-based ---------- */
@@ -351,7 +352,7 @@ function parseJson(text, fallback) {
 
 function noKeyStub(action, payload) {
   if (action === "quality") {
-    return { ok: true, stub: true, engagement: "pass", on_topic: "pass", effort: "pass", overall: "pass", summary: "[no key] auto-pass." };
+    return { ok: true, stub: true, comprehensiveness: "pass", effort: "pass", overall: "pass", summary: "[no key] auto-pass." };
   }
   if (action === "describe") {
     return { ok: true, stub: true, description: "" };
