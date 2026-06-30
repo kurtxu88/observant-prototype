@@ -94,22 +94,60 @@
   </div>
 </section>
 
+<!-- ============================ WHAT IT EXPOSES ============================ -->
+<section class="section">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">One door</span>
+      <h2 class="h2">Your users' feedback and the research engine — in the same MCP.</h2>
+      <p class="lead">Connect once. Observant gives your editor agent two things: the raw feedback your users have already given you, and the engine that runs new studies and synthesizes it. No dashboard to open, no export to wrangle.</p>
+    </div>
+
+    <div class="tool-cols reveal d1">
+      <div class="tool-col">
+        <div class="tc-head"><span class="tc-tag">Observant data · live</span><h3>Pull your feedback</h3></div>
+        <p class="tc-sub">What your users actually said — read it where you build.</p>
+        <ul class="tool-list">
+          <li><code>observant_recent_feedback</code><span>In-product snippet feedback — thumbs, exit reasons, short notes, CSAT.</span></li>
+          <li><code>observant_conversations</code><span>Off-product 1:1 threads (email/Telegram) with every turn, per named user.</span></li>
+          <li><code>observant_insights</code><span>Synthesized Signals — Issues, Insights, Opportunities, grounded in quotes.</span></li>
+        </ul>
+      </div>
+      <div class="tool-col">
+        <div class="tc-head"><span class="tc-tag bridge">Codified engine · bridged</span><h3>Run the research</h3></div>
+        <p class="tc-sub">Orchestrate new studies over that same feedback, from the editor.</p>
+        <ul class="tool-list">
+          <li><code>codified_run_study</code><span>Kick off a round — churn, drop-off, PMF, launch feedback. Observant recruits + runs the 1:1s.</span></li>
+          <li><code>codified_query_insights</code><span>Search synthesized insights by feature or topic across studies.</span></li>
+          <li><code>codified_search_transcripts</code><span>Full-text search every interview transcript for what users said.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============================ INSTALL + INTEGRATIONS ============================ -->
 <section class="section band-tint">
   <div class="wrap">
     <div class="section-head center reveal">
-      <span class="eyebrow no-rule">Install</span>
-      <h2 class="h2">Add Observant in one prompt.</h2>
-      <p class="lead">Paste it into Claude Code, Cursor, or your terminal — your agent wires up the MCP server for you. No dashboard, no setup call.</p>
+      <span class="eyebrow no-rule">Connect</span>
+      <h2 class="h2">One command to wire it into your editor.</h2>
+      <p class="lead">Add the MCP server over HTTP — Claude Code, Cursor, or Claude Desktop. No dashboard, no setup call.</p>
     </div>
 
-    <div class="install reveal d1" style="text-align:center">
+    <div class="install reveal d1">
       <div class="install-box">
         <span class="prompt">$</span>
-        <span class="cmd">claude mcp add observant</span>
-        <button class="copy" data-copy="claude mcp add observant" type="button">Copy</button>
+        <span class="cmd">claude mcp add --transport http observant https://www.observanthq.com/api/mcp</span>
+        <button class="copy" data-copy="claude mcp add --transport http observant https://www.observanthq.com/api/mcp" type="button">Copy</button>
       </div>
-      <a href="https://api.usercodified.com/docs" class="btn btn-ghost btn-arrow" style="margin-top:1.4rem">Read the docs
+      <p class="install-aside">Cursor &amp; Claude Desktop: point an HTTP MCP server at the same URL. Want studies too? Add the engine alongside it:</p>
+      <div class="install-box subtle">
+        <span class="prompt">$</span>
+        <span class="cmd">claude mcp add codified -- npx -y @usercodified/mcp</span>
+        <button class="copy" data-copy="claude mcp add codified -- npx -y @usercodified/mcp" type="button">Copy</button>
+      </div>
+      <a href="https://api.usercodified.com/docs" class="btn btn-ghost btn-arrow" style="margin-top:1.6rem">Read the docs
         <span class="btn-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
       </a>
     </div>
