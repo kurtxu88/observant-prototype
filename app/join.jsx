@@ -48,10 +48,22 @@ function JoinApp() {
   const [channel, setChannel] = useStateJN("");
   const [contactEmail, setContactEmail] = useStateJN("");
   const [cadence, setCadence] = useStateJN("occasional");
+  const slug = product.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  // Records the opt-in server-side (#2). Fire-and-forget — the endpoint no-ops
+  // gracefully until the DB is wired, so it never blocks the join.
+  const persistJoin = (ch, contact, cad) => {
+    try {
+      fetch("/api/selfserve/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, productName: product, rate, channel: ch, contact: contact || "", cadence: cad || "occasional" }),
+      }).catch(() => {});
+    } catch (_e) { /* never block the opt-in */ }
+  };
   // In-product programs have no contact-preference step — the conversation
   // lives inside the product. Off-product is where the user picks a channel.
   const onJoin = route === "inproduct"
-    ? () => { setChannel("inproduct"); setPhase("joined"); }
+    ? () => { persistJoin("inproduct", "", "occasional"); setChannel("inproduct"); setPhase("joined"); }
     : () => setPhase("choose");
 
   return (
@@ -64,7 +76,7 @@ function JoinApp() {
       <JoinProgress phase={phase} route={route} />
 
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { persistJoin(picked, contact, cad); setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
 
       <footer className="jn-foot">
