@@ -1089,6 +1089,50 @@ function OffProductTrack({ state, patchState, product, setup, patchSetup, onBack
 
 // Onboarding host for the Set-up hub. After Product/Context, the user lands here and
 // sets up each surface as an independent track — now, or later from the dashboard.
+// Compact SaaS account control for the onboarding top bar. Collapses the old loose
+// right cluster (email · workspace · Start over · Sign out) into one avatar button that
+// opens a dropdown. Closes on outside-click / Esc. Degrades gracefully w/o authEmail.
+function AccountMenu({ authEmail, product, resetWorkspace, onSignOut }) {
+  const [open, setOpen] = useStateSS(false);
+  const ref = useRefSS(null);
+
+  useEffectSS(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  // No signed-in user: nothing to attach a session to — just expose Start over.
+  if (!authEmail) {
+    return <div className="ss-acct"><button type="button" className="ss-acct-plain" onClick={resetWorkspace}>Start over</button></div>;
+  }
+
+  const initial = authEmail.trim().charAt(0).toUpperCase() || "?";
+  const act = (fn) => { setOpen(false); fn && fn(); };
+
+  return (
+    <div className="ss-acct" ref={ref}>
+      <button type="button" className="ss-acct-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className="ss-acct-ava">{initial}</span>
+        <svg className={"ss-acct-chev" + (open ? " is-open" : "")} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
+      {open && (
+        <div className="ss-acct-menu" role="menu">
+          <div className="ss-acct-head">
+            <span className="ss-acct-email" title={authEmail}>{authEmail}</span>
+            {product && <span className="ss-acct-ws">{product}</span>}
+          </div>
+          <button type="button" className="ss-acct-item" role="menuitem" onClick={() => act(resetWorkspace)}>Start over</button>
+          <button type="button" className="ss-acct-item" role="menuitem" onClick={() => act(onSignOut)}>Sign out</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackToProduct, authEmail, onSignOut }) {
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
@@ -1104,10 +1148,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         <Wordmark size="1.3rem" />
         <nav className="ss-activation-nav"><OnboardingBar phase={phase} /></nav>
         <div className="ss-top-right">
-          {authEmail && <span className="ss-auth-who" title={authEmail}>{authEmail}</span>}
-          <span>{product}</span>
-          <button type="button" onClick={resetWorkspace}>Start over</button>
-          {authEmail && <button type="button" onClick={onSignOut}>Sign out</button>}
+          <AccountMenu authEmail={authEmail} product={product} resetWorkspace={resetWorkspace} onSignOut={onSignOut} />
         </div>
       </header>
 
