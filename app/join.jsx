@@ -8,9 +8,8 @@ const { useState: useStateJN } = React;
 
 // ── Telegram bot ──────────────────────────────────────────────────────────
 // The bot a partner opens to start their 1:1 over Telegram.
-// ⚠️ XUAN: set this to the real bot username from @BotFather (without the @).
-// Placeholder until then — see api/telegram/README.md.
-const OBSERVANT_BOT = "OBSERVANT_BOT";
+// The Telegram bot username from @BotFather (without the @).
+const OBSERVANT_BOT = "ObservantFeedbackBot";
 
 // Build the t.me deep link. The `start` payload carries the program so the
 // webhook (api/telegram/webhook.js) can link the chat to the right program.
