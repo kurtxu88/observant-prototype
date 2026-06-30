@@ -3486,6 +3486,16 @@ body.obs-chat-open .ss-activation { padding-right: 384px; transition: padding-ri
 @media (max-width: 1080px) { body.obs-chat-open .ss-activation { padding-right: 340px; } }
 @media (max-width: 640px)  { body.obs-chat-open .ss-activation { padding-right: 0; } }
 
+/* Dashboard "Ask about your product" rail — its OWN inset (NOT the onboarding's body.obs-chat-open):
+   reserve room on the shell so the docked rail sits beside the dashboard, never over it. */
+.ss-shell { transition: padding-right .22s ease; }
+.ss-shell.ss-assistant-open { padding-right: 384px; }
+@media (max-width: 1080px) { .ss-shell.ss-assistant-open { padding-right: 340px; } }
+@media (max-width: 640px)  { .ss-shell.ss-assistant-open { padding-right: 0; } }
+
+/* "Suggested" group label above the starter chips in the assistant empty state */
+.obs-chat-suggest-label { display: block; font-size: .66rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .15rem; }
+
 /* Live "typing…" indicator */
 .obs-chat-typing { display: inline-flex; align-items: center; gap: 4px; padding: 5px 2px; margin: 0; }
 .obs-chat-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); display: inline-block; animation: obsTyping 1.2s infinite ease-in-out; }

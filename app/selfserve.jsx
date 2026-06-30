@@ -449,12 +449,12 @@ const SS_CONNECT_OPTIONS = [
 
 // Right-side docked setup assistant (à la Novus): a full-height rail that introduces
 // itself, asks the qualifying role question, streams the conversation, narrates install.
-function ObsSetupChat({ product, curId }) {
+function ObsSetupChat({ product, context, curId }) {
   const [open, setOpen] = useStateSS(true);
   const [input, setInput] = useStateSS("");
   const [noted, setNoted] = useStateSS({});
   const [msgs, setMsgs] = useStateSS([
-    { from: "them", text: "Hi — I'm the Observant setup assistant. I'll get " + product + " connected and stay here while you do it. We open one PR that adds the SDK — read-only on the repo you pick, just enough to place it. Nothing is scanned or stored. Ask me anything as we go." },
+    { from: "them", text: "Hi — I'm your Observant assistant for " + product + ". I'll help you get set up, and I can think through the research with you — which users to hear from, what to ask, how to read what comes back. Ask me anything." },
     { from: "them", emph: true, text: "First — what's your role on the team?", chips: ["Founder", "PM", "Engineer", "Designer", "Other"] },
   ]);
   const bodyRef = useRefSS(null);
@@ -472,33 +472,40 @@ function ObsSetupChat({ product, curId }) {
     }
   }, [curId]);
 
-  // Show a live "typing…" bubble, then swap it for the reply — feels like a real assistant, not an instant canned line.
-  const replyWithTyping = (text) => {
-    setMsgs((m) => m.concat([{ from: "them", typing: true }]));
-    setTimeout(() => {
-      setMsgs((m) => {
-        const copy = m.slice();
-        for (let i = copy.length - 1; i >= 0; i--) { if (copy[i].typing) { copy[i] = { from: "them", text: text }; return copy; } }
-        copy.push({ from: "them", text: text });
-        return copy;
-      });
-    }, 850);
-  };
+  // Swap the live "typing…" bubble for the actual reply.
+  const swapTyping = (text) => setMsgs((m) => {
+    const copy = m.slice();
+    for (let i = copy.length - 1; i >= 0; i--) { if (copy[i].typing) { copy[i] = { from: "them", text: text }; return copy; } }
+    copy.push({ from: "them", text: text });
+    return copy;
+  });
+  // Static typing→text (used for the install-step note).
+  const replyWithTyping = (text) => { setMsgs((m) => m.concat([{ from: "them", typing: true }])); setTimeout(() => swapTyping(text), 850); };
 
+  // Canned fallback if the research endpoint is unreachable.
   const answer = (q) => {
     const s = q.toLowerCase();
-    if (/access|permission|secur|scan|read|why.*(github|access)/.test(s)) return "We only open one install PR on the repo you pick — we don't clone or scan your codebase. The grant is scoped to that single repo, just enough to add the snippet. Prefer to grant nothing? You can paste the line yourself.";
-    if (/role|founder|pm|engineer|designer/.test(s)) return "Got it — thanks. That helps us tune what we ask your users later.";
+    if (/access|permission|secur|scan|read|why.*(github|access)/.test(s)) return "We open one install PR on the repo you pick — scoped to that single repo, just enough to add the snippet. Prefer to grant nothing? You can paste the line yourself.";
     if (/snippet|sdk|install|\bpr\b|pull request|code/.test(s)) return "It's a single line that loads the Observant SDK. We add it via a PR you review and merge — or paste it yourself. Once it's live, the feedback loops start.";
-    if (/program|partner|off.?product|panel|invite/.test(s)) return "The feedback program is your opt-in panel — you invite users, the ones who join become partners, and we run the 1:1s. You set it up in a couple of steps here.";
-    return "Good question — noted for the team. Anything blocking you from finishing setup?";
+    if (/program|partner|off.?product|panel|invite/.test(s)) return "The feedback program is your opt-in panel — you invite users, the ones who join become partners, and Observant runs the 1:1s.";
+    return "Good question — let me think about that with you. What are you hoping to learn from your users?";
+  };
+  // Real answers come from the Codified-trained research brain (api/selfserve/assistant); fall back to a canned line if it's unreachable.
+  const respondTo = (question, history) => {
+    setMsgs((m) => m.concat([{ from: "them", typing: true }]));
+    fetch("/api/selfserve/assistant", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, product, context: context || "", history }),
+    }).then((r) => r.json()).then((d) => swapTyping((d && d.reply) || answer(question))).catch(() => swapTyping(answer(question)));
   };
   const send = (text) => {
     const t = (text || input).trim();
     if (!t) return;
     setInput("");
+    const history = msgs.filter((m) => !m.typing && m.text).map((m) => ({ role: m.from === "me" ? "user" : "assistant", content: m.text }));
     setMsgs((m) => m.concat([{ from: "me", text: t }]));
-    replyWithTyping(answer(t));
+    if (["Founder", "PM", "Engineer", "Designer", "Other"].includes(t)) { replyWithTyping("Got it — thanks. That helps me tailor what I suggest as you set up."); return; }
+    respondTo(t, history);
   };
 
   if (!open) {
@@ -525,6 +532,92 @@ function ObsSetupChat({ product, curId }) {
       </div>
       <div className="obs-chat-input">
         <input value={input} placeholder="Ask anything about setup…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
+        <button type="button" onClick={() => send()} aria-label="Send"><Icon name="arrow" size={16} /></button>
+      </div>
+    </aside>
+  );
+}
+
+// Dashboard right-rail "Ask about your product" assistant. Same warm patterns as
+// ObsSetupChat (sender-labeled flowing replies, live "typing…" indicator, outlined
+// chips, minimize-to-bubble) but scoped to the dashboard: it answers about feedback,
+// partners, minutes, signals and loops with canned demo answers (no API). Its open/
+// closed state is lifted to ProductShell so the shell can inset its content beside it.
+function ProductAssistant({ product, state, open, setOpen }) {
+  const [input, setInput] = useStateSS("");
+  const [msgs, setMsgs] = useStateSS([
+    { from: "them", text: "Product AI assistant — I have context from your product memory, your feedback partners, and every 1:1 loop Observant has run for " + product + ". Ask me anything about what your users are saying." },
+    { from: "them", suggest: true, chips: ["Show me recent feedback", "Which users should I hear from?", "Summarize what users are saying", "What signals need attention?"] },
+  ]);
+  const bodyRef = useRefSS(null);
+  useEffectSS(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; }, [msgs, open]);
+
+  // Swap the live "typing…" bubble for the reply.
+  const swapTyping = (text) => setMsgs((m) => {
+    const copy = m.slice();
+    for (let i = copy.length - 1; i >= 0; i--) { if (copy[i].typing) { copy[i] = { from: "them", text: text }; return copy; } }
+    copy.push({ from: "them", text: text });
+    return copy;
+  });
+  // Real answers from the Codified-trained research brain; fall back to a canned line if unreachable.
+  const respondTo = (question, history) => {
+    const ctx = (state && state.workspace && state.workspace.productDescription) || "";
+    setMsgs((m) => m.concat([{ from: "them", typing: true }]));
+    fetch("/api/selfserve/assistant", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, product, context: ctx, history }),
+    }).then((r) => r.json()).then((d) => swapTyping((d && d.reply) || answer(question))).catch(() => swapTyping(answer(question)));
+  };
+
+  const answer = (q) => {
+    const s = q.toLowerCase();
+    const partners = (state && state.people ? state.people.length : 0);
+    const convos = (state && state.conversations ? state.conversations.length : 0);
+    const insights = (state && state.insights ? state.insights.length : 0);
+    if (/recent feedback|recent activity|what.?s new|latest/.test(s)) return "In the last few days " + convos + " of your 1:1 lines added new replies. The strongest thread is onboarding friction — users hit the setup step before they understand the value. A couple also flagged pricing clarity. Want me to open those conversations?";
+    if (/which user|who should|hear from|right user|talk to/.test(s)) return "Three of your " + partners + " feedback partners are worth a direct line right now: the two who churned signals are creeping on, plus one power user who keeps hitting the same edge in a core flow. Observant already has open loops with them — I can draft the next question.";
+    if (/summar|saying|theme|trend|pattern/.test(s)) return "Across the loops, users keep returning to three themes: setup takes longer than they expect, the value of the core flow isn't obvious until they're deep in it, and they want clearer pricing. " + insights + " insights are drafted from these patterns — the onboarding one is the most cited.";
+    if (/signal|attention|need attention|watch|risk|churn/.test(s)) return "Two signals need attention: a small cluster of partners went quiet after their first session (early drop-off), and a recurring confusion in the core flow that's showing up across personas. Neither is urgent yet, but both are trending — I'd open a loop on the drop-off first.";
+    if (/minute|compensat|cost|spend|budget|pay/.test(s)) return "Your partners are compensated for the minutes they spend in 1:1s — it's bottom-up and opt-in, so spend tracks real engagement, not a fixed panel fee. Recent loops have been short and high-signal. I can pull the exact minutes per loop if you want.";
+    if (/loop|question|ask|send/.test(s)) return "A loop is a question Observant carries to the right users on their continuous 1:1 line — it follows up on its own and brings the answers back as they land. You've run a few; the next good one is probably on that onboarding friction. Want me to draft it?";
+    if (/persona|segment|who are/.test(s)) return "Observant is tracking your personas off the real conversations — power users, new arrivals, and the at-risk cluster. The at-risk group is the one giving the clearest signal right now. I can break any of them down.";
+    return "Good question. I'd ground that in your loops and product memory — the clearest signal right now is onboarding friction and a couple of at-risk partners. Want me to pull the relevant conversations or draft a loop to learn more?";
+  };
+
+  const send = (text) => {
+    const t = (text || input).trim();
+    if (!t) return;
+    setInput("");
+    const history = msgs.filter((m) => !m.typing && m.text).map((m) => ({ role: m.from === "me" ? "user" : "assistant", content: m.text }));
+    setMsgs((m) => m.concat([{ from: "me", text: t }]));
+    respondTo(t, history);
+  };
+
+  if (!open) {
+    return <button type="button" className="obs-chat-bubble" onClick={() => setOpen(true)} aria-label={"Open " + product + " product assistant"}><Icon name="chat" size={20} /></button>;
+  }
+  return (
+    <aside className="obs-chat" aria-label={"Ask about " + product}>
+      <header className="obs-chat-head">
+        <span className="obs-chat-mark"><Icon name="spark" size={16} /></span>
+        <div className="obs-chat-id"><b>Ask about {product}</b><span>Observant assistant</span></div>
+        <button type="button" className="obs-chat-min" onClick={() => setOpen(false)} aria-label="Minimize assistant"><Icon name="x" size={15} /></button>
+      </header>
+      <div className="obs-chat-body" ref={bodyRef}>
+        {msgs.map((m, i) => {
+          const lead = m.from === "them" && (i === 0 || msgs[i - 1].from !== "them");
+          return (
+            <div key={i} className={"obs-chat-msg " + m.from + (m.emph ? " emph" : "")}>
+              {lead && <span className="obs-chat-sender">Observant</span>}
+              {m.suggest && <span className="obs-chat-suggest-label">Suggested</span>}
+              {m.typing ? <p className="obs-chat-typing"><i></i><i></i><i></i></p> : (m.text ? <p>{m.text}</p> : null)}
+              {!m.typing && m.chips && <div className="obs-chat-chips">{m.chips.map((c) => <button key={c} type="button" onClick={() => send(c)}>{c}</button>)}</div>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="obs-chat-input">
+        <input value={input} placeholder="Ask about your product…" onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
         <button type="button" onClick={() => send()} aria-label="Send"><Icon name="arrow" size={16} /></button>
       </div>
     </aside>
@@ -846,7 +939,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         </div>
       </header>
 
-      <ObsSetupChat product={product} curId={view === "inproduct" ? "install" : "surface"} />
+      <ObsSetupChat product={product} context={(state.workspace && state.workspace.productDescription) || ""} curId={view === "inproduct" ? "install" : "surface"} />
 
       <div className="ss-activation-wrap">
         <main className="ss-activation-main">
@@ -1094,6 +1187,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
   const [navStack, setNavStack] = useStateSS([]);
+  const [assistantOpen, setAssistantOpen] = useStateSS(true);
 
   const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
     // remember where we are so any in-app jump is reversible
@@ -1127,7 +1221,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   };
 
   return (
-    <div className="ss-shell">
+    <div className={"ss-shell" + (assistantOpen ? " ss-assistant-open" : "")}>
       <aside className="ss-sidebar">
         <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "home" })} aria-label="Go to Home">
           <Wordmark size="1.45rem" />
@@ -1188,6 +1282,8 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
       </div>
+
+      <ProductAssistant product={product} state={state} open={assistantOpen} setOpen={setAssistantOpen} />
     </div>
   );
 }
