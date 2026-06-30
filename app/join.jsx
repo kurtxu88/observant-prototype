@@ -6,6 +6,30 @@
    ============================================================ */
 const { useState: useStateJN } = React;
 
+// ── Telegram bot ──────────────────────────────────────────────────────────
+// The bot a partner opens to start their 1:1 over Telegram.
+// ⚠️ XUAN: set this to the real bot username from @BotFather (without the @).
+// Placeholder until then — see api/telegram/README.md.
+const OBSERVANT_BOT = "OBSERVANT_BOT";
+
+// Build the t.me deep link. The `start` payload carries the program so the
+// webhook (api/telegram/webhook.js) can link the chat to the right program.
+// Telegram caps the start param at 64 chars and allows only [A-Za-z0-9_-]:
+// we try a compact base64url(JSON) (keeps product name + rate) and fall back
+// to the bare slug when that would overflow. Both decode server-side.
+function tgStartPayload(product, rate) {
+  const slug = String(product || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  try {
+    const json = JSON.stringify({ slug, productName: product, rate: Number(rate) || 2 });
+    const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    if (b64.length <= 64 && /^[A-Za-z0-9_-]+$/.test(b64)) return b64;
+  } catch (_e) { /* fall through to bare slug */ }
+  return slug;
+}
+function tgDeepLink(product, rate) {
+  return "https://t.me/" + OBSERVANT_BOT + "?start=" + encodeURIComponent(tgStartPayload(product, rate));
+}
+
 function jnContext() {
   const params = new URLSearchParams(window.location.search);
   let product = (params.get("product") || "").trim();
@@ -76,7 +100,7 @@ function JoinApp() {
       <JoinProgress phase={phase} route={route} />
 
       {phase === "invite" && <JoinInvite product={product} rate={rate} channels={channels} route={route} onJoin={onJoin} />}
-      {phase === "choose" && <JoinChoose product={product} channels={channels} onConnect={(picked, contact, cad) => { persistJoin(picked, contact, cad); setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
+      {phase === "choose" && <JoinChoose product={product} channels={channels} tgLink={tgDeepLink(product, rate)} onConnect={(picked, contact, cad) => { persistJoin(picked, contact, cad); setChannel(picked); setContactEmail(contact || ""); setCadence(cad || "occasional"); setPhase("joined"); }} />}
       {phase === "joined" && <JoinWelcome product={product} slug={slug} channel={channel} contactEmail={contactEmail} cadence={cadence} />}
 
       <footer className="jn-foot">
@@ -107,7 +131,7 @@ const JN_CADENCE = [
   { id: "rare", t: "Only now and then" },
 ];
 
-function JoinChoose({ product, channels, onConnect }) {
+function JoinChoose({ product, channels, tgLink, onConnect }) {
   const single = channels.length === 1;
   const [picked, setPicked] = useStateJN(single ? channels[0] : "");
   const [email, setEmail] = useStateJN("");
@@ -174,8 +198,14 @@ function JoinChoose({ product, channels, onConnect }) {
         </div>
       ) : (
         <div className="jn-next">
-          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1.</p>
-          <Btn variant="primary" size="lg" onClick={() => onConnect("telegram", "", cadence)}>Connect Telegram</Btn>
+          <p className="jn-choice-hint">Opens Telegram and starts your private 1:1 with the Observant bot.</p>
+          <a
+            className="btn btn-primary btn-lg"
+            href={tgLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onConnect("telegram", "", cadence)}
+          >Connect Telegram</a>
         </div>
       )}
       <p className="jn-choice-note">That's all we know you by — no other personal data changes hands.</p>

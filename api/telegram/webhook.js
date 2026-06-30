@@ -1,22 +1,28 @@
 /* ============================================================
    Observant — Telegram inbound webhook (#5).
-   Telegram POSTs every update here (set via the Bot API setWebhook).
+   The SAME 1:1 loop the email path runs (api/selfserve/inbound-email.js),
+   but over Telegram. Telegram POSTs every update here (set once via the
+   Bot API setWebhook — see ./README.md).
 
    Two paths:
    1. /start <payload>  — the deep link from the "Connect Telegram"
-      button (app/join.jsx). The payload is base64url(JSON) carrying
-      the program slug (+ product name + optional partner token).
-      We lazily upsert the program + the partner (channel='telegram',
-      contact=String(chat_id)) and send a welcome.
-   2. a normal text message — find the partner by chat_id, find/open
-      their conversation, run the C2/C3 interview `turn` (by POSTing to
-      this same deployment's /api/selfserve/interview), persist the
-      inbound + outbound `messages`, and reply via ./send.
+      button (app/join.jsx). The payload is base64url(JSON) carrying the
+      program slug (+ product name + rate), or a bare slug. We lazily
+      upsert the program + the partner (channel='telegram',
+      contact=String(chat_id), best-effort handle=@username), open a
+      conversation, persist + send a welcome question. This is how a
+      Telegram partner connects.
+   2. a normal text message — resolve the partner by chat_id, load their
+      open conversation + recent messages (DB), run the reply through the
+      quality gate + interview `turn` (POST /api/selfserve/interview,
+      exactly like inbound-email.js), award the PRE-DETERMINED minutes on
+      PASS to minutes_ledger, persist the in/out messages, and send the
+      next question. Honors the same HARD CAP (initial batch + ≤1 follow-up).
 
    Graceful no-op contract:
    - No TELEGRAM_BOT_TOKEN  → sendMessage() is a no-op; we still 200.
-   - No DB                  → we skip persistence and run a stateless
-     single-turn reply so a token-only demo still talks back.
+   - No DB                  → we skip persistence/rewards and run a
+     stateless single-turn reply so a token-only demo still talks back.
    Always returns 200 quickly (Telegram retries on non-2xx).
    ============================================================ */
 const db = require("../_db");
@@ -55,7 +61,7 @@ async function handleStart(req, chatId, text, msg) {
   const raw = text.replace(/^\/start(@\w+)?\s*/i, "").trim();   // strip "/start" and any @botname
   const link = decodePayload(raw);
   const slug = String(link.slug || "").trim().toLowerCase();
-  const productName = String(link.productName || "").trim() || (slug || "the product");
+  const productName = String(link.productName || "").trim() || titleize(slug) || "the product";
 
   if (!slug) {
     await sendMessage(chatId, "Welcome to Observant. Open your invite link from the team to connect — it carries the code that links this chat to their feedback line.");
@@ -63,6 +69,7 @@ async function handleStart(req, chatId, text, msg) {
   }
 
   const firstName = (msg && msg.from && msg.from.first_name) ? String(msg.from.first_name).trim() : "";
+  const handle = (msg && msg.from && msg.from.username) ? "@" + String(msg.from.username).trim() : "";
   const welcome =
     (firstName ? "Hi " + firstName + " — " : "Hi — ") +
     "you're connected to the " + productName + " feedback line on Observant. " +
@@ -81,7 +88,7 @@ async function handleStart(req, chatId, text, msg) {
       { slug, product_name: productName, rate_per_min: Number(link.rate) > 0 ? Number(link.rate) : 2 },
       "slug"
     );
-    await db.upsert(
+    const partner = await db.upsert(
       "partners",
       {
         program_id: program.id,
@@ -93,19 +100,36 @@ async function handleStart(req, chatId, text, msg) {
       },
       "program_id,channel,contact"
     );
+    // Best-effort: record the @username for display. The `handle` column is
+    // optional (db/migrations/telegram.sql) — if it isn't there, just skip.
+    if (handle && partner && partner.id) {
+      try { await db.update("partners", "id=eq." + partner.id, { handle }); }
+      catch (e) { /* no handle column → ignore */ }
+    }
+    // Open the relationship thread and PERSIST the welcome as the first
+    // 'observant' question, so the hard cap (below) counts it as the
+    // initial batch — exactly like send-email.js persists the opener.
+    if (partner && partner.id) {
+      const open = await db.select("conversations", "partner_id=eq." + partner.id + "&status=eq.open&select=id&order=last_active_at.desc&limit=1");
+      let conv = (Array.isArray(open) && open[0]) ? open[0] : null;
+      if (!conv) conv = await db.insert("conversations", { partner_id: partner.id, subject: "Your line to the " + productName + " team", mode: "intro", status: "open" });
+      await persistMsg(conv.id, "observant", welcome, 0);
+    }
   } catch (err) {
     console.error("[telegram/webhook] start persist failed:", err && err.message);
   }
   await sendMessage(chatId, welcome);
 }
 
-/* ---------- normal message : run an interview turn ---------- */
+/* ---------- normal message : run a quality-gated interview turn ----------
+   Mirrors api/selfserve/inbound-email.js: quality gate → award PRE-DETERMINED
+   minutes on PASS → persist → next question, with the same hard cap. */
 async function handleMessage(req, chatId, text, msg) {
   const base = "https://" + req.headers.host;
 
   // No DB → stateless single-turn reply so a token-only demo still responds.
   if (!db.dbConfigured()) {
-    const turn = await callInterview(base, {
+    const turn = await callSelf(base, {
       action: "turn", channel: "telegram", product: "the product",
       messages: [{ role: "user", content: text }],
     });
@@ -122,73 +146,119 @@ async function handleMessage(req, chatId, text, msg) {
     return;
   }
 
-  // 2. Product/program context.
+  // 2. Product / program context (+ the pre-set reward rate).
   const programs = await db.select("programs", "id=eq." + partner.program_id + "&select=*&limit=1");
-  const program = Array.isArray(programs) ? programs[0] : null;
-  const product = (program && program.product_name) || "the product";
+  const program = (Array.isArray(programs) && programs[0]) || { product_name: "the product", rate_per_min: 2 };
+  const product = program.product_name || "the product";
+  const rate = Number(program.rate_per_min) || 2;
 
   // 3. Find the open conversation or open a fresh one.
-  const open = await db.select("conversations", "partner_id=eq." + partner.id + "&status=eq.open&select=*&order=last_active_at.desc&limit=1");
-  let conversation = Array.isArray(open) ? open[0] : null;
+  const openConvs = await db.select("conversations", "partner_id=eq." + partner.id + "&status=eq.open&select=*&order=last_active_at.desc&limit=1");
+  let conversation = (Array.isArray(openConvs) && openConvs[0]) ? openConvs[0] : null;
   if (!conversation) {
-    conversation = await db.insert("conversations", {
-      partner_id: partner.id,
-      subject: "Ongoing thread with " + product,
-      mode: "light",
-      status: "open",
-    });
+    conversation = await db.insert("conversations", { partner_id: partner.id, subject: "Your line to the " + product + " team", mode: "light", status: "open" });
   }
 
   // 4. Load the thread so far (oldest → newest), map to interview roles.
-  const prior = await db.select("messages", "conversation_id=eq." + conversation.id + "&select=sender,body&order=created_at.asc&limit=30");
-  const history = (Array.isArray(prior) ? prior : []).map((m) => ({
-    role: m.sender === "partner" ? "user" : "assistant",
+  const prior = await db.select("messages", "conversation_id=eq." + conversation.id + "&select=sender,body,minutes,created_at&order=created_at.asc&limit=20");
+  const hist = (Array.isArray(prior) ? prior : []).map((m) => ({
+    role: m.sender === "observant" ? "assistant" : "user",
     content: String(m.body || ""),
   }));
+  // The last question we asked → what this reply is answering (for the quality gate).
+  const lastObservant = [...hist].reverse().find((m) => m.role === "assistant");
+  const parsed = parseNumbered(lastObservant ? lastObservant.content : "");
+  const priorAsks = hist.filter((m) => m.role === "assistant").length;   // # of questions we've sent (initial + any follow-up)
+  const messages = hist.concat([{ role: "user", content: text }]).slice(-8);
 
-  // 5. Persist the inbound turn now (so it's recorded even if the AI call fails).
-  await db.insert("messages", { conversation_id: conversation.id, sender: "partner", body: text });
+  // 5. Quality gate (same assessor inbound-email.js uses): does this EARN the reward?
+  const qa = await callSelf(base, { action: "quality", product, questions: parsed.questions, answers: [text] });
+  const verdict = (qa && ["pass", "partial", "fail"].includes(qa.overall)) ? qa.overall : "pass";
+  const earned = verdict === "pass";
+  const minutes = earned ? Math.max(1, estLoopMin(parsed.questions)) : 0;   // PRE-DETERMINED reward (never time-on-page)
 
-  // 6. Run the C2/C3 interview turn against this deployment.
-  const messages = history.concat([{ role: "user", content: text }]);
-  const turn = await callInterview(base, {
-    action: "turn",
-    channel: "telegram",
-    product,
-    plan: { essence: conversation.subject || "", subject: conversation.subject || "" },
+  // Always log the inbound turn (with the earned minutes baked in).
+  await persistMsg(conversation.id, "partner", text, minutes);
+
+  if (!earned) {
+    // No reward yet — leave the conversation open; the partner can add more.
+    await db.update("conversations", "id=eq." + conversation.id, { last_active_at: new Date().toISOString() }).catch(() => {});
+    return;
+  }
+
+  // PASS → append the PRE-DETERMINED minutes to the ledger (audit = quality verdict).
+  await db.insert("minutes_ledger", {
+    partner_id: partner.id,
+    conversation_id: conversation.id,
+    kind: "earned",
+    minutes,
+    amount: Math.round(minutes * rate * 100) / 100,
+    quality_verdict: qa || null,
+    note: "inbound telegram reply",
+  });
+
+  // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop.
+  if (priorAsks >= 2) {
+    await setConvStatus(conversation.id, "paused");
+    return;
+  }
+
+  // The one allowed follow-up — tell the engine so it only asks if genuinely worth it.
+  const turn = await callSelf(base, {
+    action: "turn", product, channel: "telegram", final: priorAsks >= 1,
+    plan: { essence: conversation.subject || product, subject: conversation.subject || product },
     messages,
   });
-  const reply = (turn && turn.message) || "";
+  const next = (turn && turn.message) || "";
   const decision = (turn && turn.decision) || "CONTINUE";
 
-  // 7. Persist + send the AI reply (only when there's actually a message).
-  if (reply.trim()) {
-    await db.insert("messages", {
-      conversation_id: conversation.id,
-      sender: "observant",
-      body: reply,
-      meta: { decision, reason: (turn && turn.reason) || "" },
-    });
-    await sendMessage(chatId, reply);
+  if (decision === "SUFFICIENT" || decision === "PAUSE" || !next.trim()) {
+    if (next.trim()) { await persistMsg(conversation.id, "observant", next, 0); await sendMessage(chatId, next); }
+    await setConvStatus(conversation.id, decision === "SUFFICIENT" ? "sufficient" : "paused");
+    return;
   }
 
-  // 8. Advance conversation state.
-  const status = (decision === "SUFFICIENT") ? "sufficient" : (decision === "PAUSE" ? "paused" : "open");
-  try {
-    await db.update("conversations", "id=eq." + conversation.id, { status, last_active_at: new Date().toISOString() });
-  } catch (err) {
-    console.error("[telegram/webhook] conversation update failed:", err && err.message);
-  }
+  // continue: persist the follow-up and send it (partner replies again → back to this webhook).
+  await persistMsg(conversation.id, "observant", next, 0);
+  await sendMessage(chatId, next);
 }
 
 /* ---------- helpers ---------- */
-async function callInterview(base, body) {
+async function callSelf(base, body) {
   const r = await fetch(base + "/api/selfserve/interview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   return r.json();
+}
+
+async function persistMsg(convId, sender, body, minutes) {
+  try {
+    if (!db.dbConfigured() || !convId || !String(body || "").trim()) return;
+    await db.insert("messages", { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 });
+    await db.update("conversations", "id=eq." + convId, { last_active_at: new Date().toISOString() });
+  } catch (e) { console.error("[telegram/webhook] persistMsg:", e && e.message); }
+}
+async function setConvStatus(convId, status) {
+  try {
+    if (!db.dbConfigured() || !convId) return;
+    await db.update("conversations", "id=eq." + convId, { status, last_active_at: new Date().toISOString() });
+  } catch (e) { console.error("[telegram/webhook] setConvStatus:", e && e.message); }
+}
+
+/* ---- shared with inbound-email.js / reply.js (inlined to stay bare-serverless) ---- */
+function stripMd(s) { return String(s || "").replace(/\*\*/g, "").replace(/__/g, "").replace(/^#+\s*/gm, "").trim(); }
+function parseNumbered(text) {
+  const str = String(text || ""); const lines = str.split("\n"); const questions = []; let first = -1, last = -1;
+  lines.forEach((raw, i) => { const m = raw.trim().match(/^(\d+)[.)]\s+(.*)/); if (m) { questions.push(stripMd(m[2])); if (first < 0) first = i; last = i; } });
+  if (!questions.length) return { intro: stripMd(str), questions: [], outro: "" };
+  return { intro: stripMd(lines.slice(0, first).join("\n")), questions, outro: stripMd(lines.slice(last + 1).join("\n")) };
+}
+// PRE-DETERMINED reward for a loop, from its shape (question count), never time-on-page.
+function estLoopMin(questions) { const n = (Array.isArray(questions) ? questions.length : 0) || 1; return Math.max(2, Math.round(n * 1.5)); }
+function titleize(slug) {
+  return String(slug || "").split("-").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
 // Deep-link payload: base64url(JSON) → { slug, productName, rate, token }.
