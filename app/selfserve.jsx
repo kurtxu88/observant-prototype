@@ -747,6 +747,69 @@ function ObsSetupChat({ product, context, curId }) {
   );
 }
 
+// Compact, bounded brief of the dashboard's REAL feedback data (partners, recent
+// conversations, top insights) so the assistant answers grounded in what's actually
+// on screen — it has access, so it must never tell the user to "paste it in here".
+// Everything is guarded (sample vs real vs empty); when there's truly nothing yet it
+// says so honestly. Capped so the prompt stays small.
+function ssAssistantContext(state, product) {
+  const CAP = 1500;
+  const desc = (state && state.workspace && state.workspace.productDescription || "").trim();
+  const people = (state && Array.isArray(state.people)) ? state.people : [];
+  const convos = (state && Array.isArray(state.conversations)) ? state.conversations : [];
+  const insights = (state && Array.isArray(state.insights)) ? state.insights : [];
+
+  // Genuinely no data yet → say so, so the model can be honest instead of evasive.
+  if (!people.length && !convos.length && !insights.length) {
+    return "RECENT FEEDBACK ON " + (product || "THIS PRODUCT") + ": no feedback collected yet"
+      + (desc ? " — product is: " + desc : "") + ". You have access to the dashboard; there's simply nothing in it so far.";
+  }
+
+  const nameById = {};
+  people.forEach((p) => { if (p && p.id) nameById[p.id] = p.name || p.id; });
+
+  const parts = ["RECENT FEEDBACK ON " + (product || "THIS PRODUCT")
+    + " (live from this dashboard — you DO have access; never ask the user to paste anything):"];
+  if (desc) parts.push("Product: " + desc);
+
+  if (people.length) {
+    const notable = people.slice(0, 4).map((p) => {
+      const tag = [p.segment, p.surface].filter(Boolean).join(" · ");
+      return (p.name || "A partner") + (tag ? " (" + tag + ")" : "");
+    }).join("; ");
+    parts.push("Partners: " + people.length + " feedback partner" + (people.length === 1 ? "" : "s")
+      + (notable ? " — incl. " + notable : "") + ".");
+  }
+
+  if (convos.length) {
+    const lines = convos.slice(0, 5).map((c) => {
+      const who = nameById[(c && c.userId)] || (c && c.userId) || "A user";
+      const msgs = (c && Array.isArray(c.messages)) ? c.messages : [];
+      let lastUser = "";
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        const mm = msgs[i];
+        if (mm && mm.t === "user" && mm.text) { lastUser = mm.text.trim(); break; }
+      }
+      const topic = (c && c.title || "").trim();
+      return "- " + who + (topic ? " — " + topic : "") + (lastUser ? ": “" + lastUser + "”" : "");
+    });
+    parts.push("Recent conversations (" + convos.length + " total):\n" + lines.join("\n"));
+  }
+
+  if (insights.length) {
+    const lines = insights.slice(0, 4).map((it) => {
+      const metric = (it && it.metric) ? " [" + it.metric + "]" : "";
+      const gist = (it && (it.detail || it.next) || "").trim();
+      return "- " + ((it && it.title || "Theme").trim()) + metric + (gist ? " — " + gist : "");
+    });
+    parts.push("Top themes / insights:\n" + lines.join("\n"));
+  }
+
+  let out = parts.join("\n");
+  if (out.length > CAP) out = out.slice(0, CAP - 1).replace(/\s+\S*$/, "") + "…";
+  return out;
+}
+
 // Dashboard right-rail "Ask about your product" assistant. Same warm patterns as
 // ObsSetupChat (sender-labeled flowing replies, live "typing…" indicator, outlined
 // chips, minimize-to-bubble) but scoped to the dashboard: it answers about feedback,
@@ -770,7 +833,7 @@ function ProductAssistant({ product, state, open, setOpen }) {
   });
   // Real answers from the Codified-trained research brain; fall back to a canned line if unreachable.
   const respondTo = (question, history) => {
-    const ctx = (state && state.workspace && state.workspace.productDescription) || "";
+    const ctx = ssAssistantContext(state, product);
     setMsgs((m) => m.concat([{ from: "them", typing: true }]));
     fetch("/api/selfserve/assistant", {
       method: "POST", headers: { "Content-Type": "application/json" },
