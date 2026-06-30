@@ -6,6 +6,8 @@
    fallback. Sent via Resend. Needs RESEND_API_KEY (+ optional RESEND_FROM /
    RESEND_REPLY_TO).
    ============================================================ */
+const db = require("../_db");
+
 module.exports = async function handler(req, res) {
   setJson(res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -42,8 +44,12 @@ module.exports = async function handler(req, res) {
     if (mode === "deep") {
       subject = threadSubject;
       const essence = (deepPlan && deepPlan.essence) || plan.essence || question;
+      // Persist the conversation so a later EMAIL reply can be reconstructed (best-effort;
+      // only when we're actually sending). The conversation id rides in the async-fallback link.
+      const haveKey = !!process.env.RESEND_API_KEY;
+      const conversationId = haveKey ? await persistOutbound({ product, toEmail, subject: threadSubject, mode: "deep", body: lightMessageFromPlan(product, plan) }) : null;
       // async fallback: the light set, opened on the hosted form
-      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: threadSubject, estMin, accruedMinutes: 0, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
+      const lightState = { product, question, exploration: exp, channel, wishlist, memory, context, toEmail, subject: threadSubject, estMin, accruedMinutes: 0, conversationId, messages: [{ role: "assistant", content: lightMessageFromPlan(product, plan) }] };
       const answerUrl = base + "/app/Answer.html?d=" + encodeState(lightState);
       const introUrl = base + "/app/IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeState({ product, mode: "deep", essence: essence, threads: (deepPlan && deepPlan.threads) || [] });
       const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
@@ -64,6 +70,8 @@ module.exports = async function handler(req, res) {
     emailText = body + lightFooterText(manageUrl);
     html = lightInlineHtml(body, manageUrl);
     if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true, mode, subject, body: emailText, to: toEmail });
+    // Persist the conversation so the partner's email REPLY can continue the loop (best-effort).
+    await persistOutbound({ product, toEmail, subject: threadSubject, mode: "light", body });
     const r = await resendSend(toEmail, subject, html, emailText);
     if (!r.ok) return res.status(200).json({ ok: false, error: r.error, mode, subject, body, to: toEmail });
     return res.status(200).json({ ok: true, id: r.id, mode, subject, body, to: toEmail });
@@ -96,6 +104,29 @@ async function resendSend(toEmail, subject, html, text) {
 async function callSelf(base, body) {
   const r = await fetch(base + "/api/selfserve/interview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
+}
+
+// Persist the outbound loop so an email reply can be reconstructed later. Resolves/creates the
+// program + partner (by program slug + channel='email' + contact=email), reuses the partner's
+// open conversation if one exists (one ongoing thread per person) else opens one, and logs the
+// outbound question as an 'observant' message. Returns the conversation id, or null on no-DB/error.
+// Best-effort — never throws, so a backend hiccup can't block the send.
+async function persistOutbound({ product, toEmail, subject, mode, body }) {
+  try {
+    if (!db.dbConfigured() || !toEmail) return null;
+    const slug = String(product || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!slug) return null;
+    const program = await db.upsert("programs", { slug, product_name: product, rate_per_min: 2 }, "slug");
+    // Don't clobber consent_at here (that's join.js's opt-in) — omit it so merge preserves it.
+    const partner = await db.upsert("partners", { program_id: program.id, channel: "email", contact: toEmail, status: "active" }, "program_id,channel,contact");
+    let conv = null;
+    const open = await db.select("conversations", "partner_id=eq." + partner.id + "&status=eq.open&select=id&order=last_active_at.desc&limit=1");
+    if (Array.isArray(open) && open[0]) conv = open[0];
+    else conv = await db.insert("conversations", { partner_id: partner.id, subject: subject || null, mode: mode === "deep" ? "deep" : "light", status: "open" });
+    await db.insert("messages", { conversation_id: conv.id, sender: "observant", body: String(body || "").slice(0, 8000), minutes: 0 });
+    await db.update("conversations", "id=eq." + conv.id, { last_active_at: new Date().toISOString() });
+    return conv.id;
+  } catch (e) { console.error("[send-email] persist failed:", e && e.message); return null; }
 }
 
 // C2 sometimes echoes a literal "Subject: ..." line into the body — the email

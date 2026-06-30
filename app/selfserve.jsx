@@ -528,9 +528,9 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
   const setAudience = (id) => patchSetup({ audienceMode: id });
   const setRecruit = (id) => patchSetup({ recruitMode: id });
   const setConnect = (id) => patchSetup({ connectMode: id });
-  // Surfaces are multi-select (pick one or both). Off-product is the easy default.
+  // Surfaces are multi-select (pick one or both) — nothing pre-selected, the user picks.
   const inproduct = !!setup.inproduct;
-  const offproduct = setup.offproduct !== false;
+  const offproduct = !!setup.offproduct;
   const route = offproduct ? "offproduct" : "inproduct"; // for the invite/magic-link phrasing (the panel is off-product)
   const toggleSurface = (key) => {
     const cur = key === "inproduct" ? inproduct : offproduct;
@@ -773,6 +773,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
             <span className="count">{"Step " + stepNo + " of " + SS_PHASES.length}</span>
             {(() => {
               const isLast = step >= stepIds.length - 1;
+              if (curId === "surface" && !inproduct && !offproduct) return <Btn variant="primary" disabled>Continue <Icon name="arrow" size={16} /></Btn>; // must pick at least one
               if (curId === "install" && !setup.connected) return <span />; // finish the install first
               if (!isLast) return <Btn variant="primary" onClick={next}>Continue <Icon name="arrow" size={16} /></Btn>;
               if (curId === "install") return <Btn variant="primary" onClick={onLaunch}>Open your dashboard <Icon name="arrow" size={16} /></Btn>;

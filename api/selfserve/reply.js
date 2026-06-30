@@ -52,9 +52,11 @@ module.exports = async function handler(req, res) {
     const minutes = Math.max(1, Number(state.estMin) || estLoopMin(parsed.questions));   // PRE-DETERMINED reward for this loop (never time-on-page)
     const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
     await recordEarnedMinutes(state, minutes, qa);   // #3 — persist the earn (audit = quality verdict)
+    await persistMsg(state.conversationId, "partner", userText, minutes);   // log the inbound reply (mirrors the ledger earn)
 
     // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
     if (priorEmails >= 2) {
+      await setConvStatus(state.conversationId, "paused");
       return res.status(200).json({ ok: true, done: true, decision: "PAUSE", verdict, minutes, totalMinutes, capped: true });
     }
 
@@ -68,6 +70,8 @@ module.exports = async function handler(req, res) {
     const decision = (turn && turn.decision) || "CONTINUE";
 
     if (decision === "SUFFICIENT" || decision === "PAUSE" || !next.trim()) {
+      await persistMsg(state.conversationId, "observant", next, 0);
+      await setConvStatus(state.conversationId, decision === "SUFFICIENT" ? "sufficient" : "paused");
       return res.status(200).json({ ok: true, done: true, decision, verdict, message: next, minutes, totalMinutes });
     }
 
@@ -95,6 +99,8 @@ module.exports = async function handler(req, res) {
       });
       sent = r.ok;
     }
+    // newState (and thus the next link) carries conversationId via the Object.assign above.
+    await persistMsg(state.conversationId, "observant", next, 0);
     return res.status(200).json({ ok: true, done: false, sent, decision, verdict, minutes, totalMinutes });
   } catch (error) {
     return res.status(200).json({ ok: false, error: String(error && error.message || error) });
@@ -153,8 +159,24 @@ async function recordEarnedMinutes(state, minutes, qa) {
     const partner = Array.isArray(parts) && parts[0];
     if (!partner) return;
     const rate = Number(program.rate_per_min) || 2;
-    await db.insert("minutes_ledger", { partner_id: partner.id, kind: "earned", minutes: minutes, amount: Math.round(minutes * rate * 100) / 100, quality_verdict: qa || null, note: "email reply" });
+    await db.insert("minutes_ledger", { partner_id: partner.id, conversation_id: state.conversationId || null, kind: "earned", minutes: minutes, amount: Math.round(minutes * rate * 100) / 100, quality_verdict: qa || null, note: "email reply" });
   } catch (e) { console.error("[ledger] record failed:", e && e.message); }
+}
+
+// Append a turn to the persisted conversation (so an email reply can later reconstruct it).
+// Best-effort: no-ops without a DB or a conversation id (e.g. older base64-only links).
+async function persistMsg(convId, sender, body, minutes) {
+  try {
+    if (!db.dbConfigured() || !convId || !String(body || "").trim()) return;
+    await db.insert("messages", { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 });
+    await db.update("conversations", "id=eq." + convId, { last_active_at: new Date().toISOString() });
+  } catch (e) { console.error("[reply] persistMsg failed:", e && e.message); }
+}
+async function setConvStatus(convId, status) {
+  try {
+    if (!db.dbConfigured() || !convId) return;
+    await db.update("conversations", "id=eq." + convId, { status, last_active_at: new Date().toISOString() });
+  } catch (e) { console.error("[reply] setConvStatus failed:", e && e.message); }
 }
 
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }
