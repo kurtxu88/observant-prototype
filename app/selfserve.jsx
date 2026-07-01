@@ -302,9 +302,10 @@ function SsAuthGate({ redirectTo }) {
   );
 }
 
-// Deep links: /setup always lands on onboarding (clears a launched workspace,
-// keeps an in-progress one); /portal always lands on the dashboard (sample
-// workspace auto-created if none exists yet).
+// Deep links: /setup keeps a signed-in user's launched CUSTOM workspace (their
+// real dashboard) and resumes an in-progress one, but never shows the Northwind
+// SAMPLE — that belongs only to /portal, which always lands on the sample
+// dashboard (auto-created if none exists yet).
 const SS_VIEW = (() => {
   const path = window.location.pathname.toLowerCase();
   if (path.endsWith("/setup")) return "setup";
@@ -372,7 +373,11 @@ function SelfServeApp() {
   const [state, setState] = useStateSS(() => {
     if (SS_VIEW === "setup") {
       const saved = ssLoadState();
-      if (saved && saved.launched) { ssRemoveState(); return null; }
+      // A launched SAMPLE workspace belongs only to the /portal demo — a signed-in
+      // user must never be dropped into Northwind on /setup. Clear it → onboarding.
+      if (saved && saved.launched && saved.workspaceMode !== "custom") { ssRemoveState(); return null; }
+      // A launched CUSTOM workspace is the user's real dashboard — keep it; an
+      // in-progress (not-yet-launched) workspace resumes onboarding where they left off.
       return saved;
     }
     let saved = ssLoadState();

@@ -12,8 +12,9 @@ const { useState: useStateLG, useEffect: useEffectLG } = React;
 function loginNext() {
   const params = new URLSearchParams(window.location.search);
   const next = params.get("next");
-  // Only allow same-origin relative paths.
-  if (next && /^\/[a-z0-9/_-]*$/i.test(next)) return next;
+  // Only allow same-origin relative paths — and never the /portal sample demo,
+  // so a real sign-in always lands in the user's own workspace, not Northwind.
+  if (next && /^\/[a-z0-9/_-]*$/i.test(next) && !/^\/portal(\/|$)/i.test(next)) return next;
   return "/setup";
 }
 
