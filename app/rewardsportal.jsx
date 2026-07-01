@@ -1,11 +1,21 @@
 /* ============================================================
    OBSERVANT — Partner rewards portal (#9)
-   The user-facing side of a feedback program: sign in (Google or
-   magic link), then see your participating minutes, your $ balance,
-   a ledger of how it added up, and request a payout.
+   The END-USER (feedback partner) side of a program. A partner
+   enrolls → gets a magic-link email → the link signs them in and
+   lands them HERE. This is their own warm little portal — NOT the
+   team/builder dashboard, no workspace nav, no onboarding.
 
-   Client-facing voice (not pitch): describes what Observant does for
-   the partner — track minutes, claim rewards. Auth via window.ObservantAuth.
+   Signed in, they see:
+     • their participating minutes + earned rewards ($)
+     • which program(s) they're in — channel, cadence, status
+     • a history of every loop they contributed + minutes each
+     • a Claim button to cash out what they've earned
+
+   Signed out, they get the same magic-link / Google sign-in the
+   enrollment email points at, so landing here always works.
+
+   Client-facing voice (not pitch). Auth via window.ObservantAuth;
+   data via /api/selfserve/partner-portal.
    ============================================================ */
 const { useState: useStateRP, useEffect: useEffectRP } = React;
 
@@ -21,6 +31,9 @@ function fmtDate(s) {
   try { return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
   catch (_e) { return ""; }
 }
+function titleCase(s) {
+  return String(s || "").replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+}
 
 function RewardsPortal() {
   const [phase, setPhase] = useStateRP("loading"); // loading | signedout | signedin
@@ -35,31 +48,31 @@ function RewardsPortal() {
     (async () => {
       const u = await ObservantAuth.getUser();
       if (cancelled) return;
-      if (u) { setUser(u); setPhase("signedin"); loadBalance(); }
+      if (u) { setUser(u); setPhase("signedin"); loadPortal(); }
       else { setPhase("signedout"); }
     })();
-    // React to sign-in/out happening in this tab.
+    // React to sign-in/out happening in this tab (magic link completing).
     let unsub = () => {};
     ObservantAuth.onAuth((u) => {
       if (cancelled) return;
-      if (u) { setUser(u); setPhase("signedin"); loadBalance(); }
+      if (u) { setUser(u); setPhase("signedin"); loadPortal(); }
       else { setUser(null); setData(null); setPhase("signedout"); }
     }).then((fn) => { unsub = fn; });
     return () => { cancelled = true; unsub(); };
   }, []);
 
-  async function loadBalance() {
+  async function loadPortal() {
     setErr("");
     try {
       const token = await ObservantAuth.getAccessToken();
-      const res = await fetch("/api/selfserve/partner-balance", {
+      const res = await fetch("/api/selfserve/partner-portal", {
         headers: token ? { Authorization: "Bearer " + token } : {},
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "could not load balance");
+      if (!res.ok) throw new Error(json.error || "could not load your rewards");
       setData(json);
     } catch (e) {
-      setErr(e.message || "could not load your balance");
+      setErr(e.message || "could not load your rewards");
     }
   }
 
@@ -67,13 +80,13 @@ function RewardsPortal() {
     return <div className="rp-shell"><div className="rp-card"><p className="rp-muted">Loading…</p></div></div>;
   }
   if (phase === "signedout") {
-    return <SignIn intro="Sign in to see your participating minutes add up and claim your rewards whenever you like." />;
+    return <SignIn />;
   }
-  return <RewardsHome user={user} data={data} err={err} onReload={loadBalance} />;
+  return <PartnerHome user={user} data={data} err={err} onReload={loadPortal} />;
 }
 
-/* ---------- sign-in card (shared shape with builder login) ---------- */
-function SignIn({ intro }) {
+/* ---------- signed-out: partner sign-in (magic link / Google) ---------- */
+function SignIn() {
   const [email, setEmail] = useStateRP("");
   const [sent, setSent] = useStateRP(false);
   const [busy, setBusy] = useStateRP(false);
@@ -97,9 +110,12 @@ function SignIn({ intro }) {
   return (
     <div className="rp-shell">
       <div className="rp-card">
-        <div className="rp-brand"><Wordmark size="1.4rem" /></div>
+        <div className="rp-brand"><Wordmark size="1.35rem" /></div>
         <h1 className="rp-title">Your rewards</h1>
-        <p className="rp-muted">{intro}</p>
+        <p className="rp-muted">
+          Sign in to see your participating minutes add up and claim your rewards whenever you like.
+          Use the same email you were invited with.
+        </p>
 
         {sent ? (
           <div className="rp-sent">
@@ -130,38 +146,77 @@ function SignIn({ intro }) {
   );
 }
 
-/* ---------- signed-in: balance + ledger + payout ---------- */
-function RewardsHome({ user, data, err, onReload }) {
-  const [payoutAsked, setPayoutAsked] = useStateRP(false);
-  const minutes = data ? data.minutes : 0;
-  const balance = data ? data.balance : 0;
+/* ---------- signed-in: the partner's own portal ---------- */
+function PartnerHome({ user, data, err, onReload }) {
+  const [claimState, setClaimState] = useStateRP("idle"); // idle | busy | done | error
+  const [claimMsg, setClaimMsg] = useStateRP("");
+  const [claimedAmt, setClaimedAmt] = useStateRP(0);
+
+  const totals = (data && data.totals) || { netMinutes: 0, earnedMinutes: 0, balance: 0, claimed: 0 };
   const rate = data ? data.rate : 2;
-  const ledger = (data && data.ledger) || [];
+  const programs = (data && data.programs) || [];
+  const history = (data && data.history) || [];
   const linked = !data || data.linked !== false;
+  const balance = Number(totals.balance || 0);
+
+  // Brand the portal to the partner's product when we know it.
+  const product = programs.length && programs[0].product ? programs[0].product : "";
+  const partnerLabel = product ? product + " feedback partner" : "Feedback partner";
+
+  async function claim() {
+    if (balance <= 0 || claimState === "busy" || claimState === "done") return;
+    setClaimState("busy"); setClaimMsg("");
+    try {
+      const token = await ObservantAuth.getAccessToken();
+      const res = await fetch("/api/selfserve/partner-portal", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, token ? { Authorization: "Bearer " + token } : {}),
+        body: JSON.stringify({ action: "redeem" }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.ok === false) throw new Error(json.error || "could not request your payout");
+      setClaimedAmt(Number(json.claimed || balance));
+      setClaimState("done");
+      // Refresh so the balance + history reflect the redemption.
+      onReload();
+    } catch (e) {
+      setClaimState("error");
+      setClaimMsg(e.message || "could not request your payout");
+    }
+  }
 
   return (
     <div className="rp-shell">
       <div className="rp-card rp-wide">
         <header className="rp-top">
-          <Wordmark size="1.25rem" />
+          <div className="rp-topl">
+            <Wordmark size="1.15rem" />
+            <span className="rp-tag">{partnerLabel}</span>
+          </div>
           <button type="button" className="rp-signout" onClick={() => ObservantAuth.signOut()}>Sign out</button>
         </header>
 
+        <h1 className="rp-title">Your rewards</h1>
         <p className="rp-hi">Signed in as <b>{user && user.email}</b></p>
 
         {err && <p className="rp-err">{err} <button type="button" className="rp-link" onClick={onReload}>Retry</button></p>}
 
         {!linked && !err && (
-          <p className="rp-muted rp-pad">We don't see participating minutes tied to this email yet. Once you start replying to a team's questions, your minutes show up here. Make sure you sign in with the same email you joined with.</p>
+          <p className="rp-muted rp-pad">
+            We don't see participating minutes tied to this email yet. Once you start replying to a
+            team's questions, your minutes show up here — just make sure you sign in with the same
+            email you were invited with.
+          </p>
         )}
 
+        {/* balance */}
         <div className="rp-balance">
-          <div className="rp-bal-box">
+          <div className="rp-bal-box rp-bal-hero">
             <div className="rp-bal-n">{fmtUSD(balance)}</div>
-            <div className="rp-bal-l">available balance</div>
+            <div className="rp-bal-l">ready to claim</div>
           </div>
           <div className="rp-bal-box">
-            <div className="rp-bal-n">{Math.round(minutes)}</div>
+            <div className="rp-bal-n">{Math.round(totals.netMinutes)}</div>
             <div className="rp-bal-l">participating minutes</div>
           </div>
           <div className="rp-bal-box">
@@ -170,34 +225,65 @@ function RewardsHome({ user, data, err, onReload }) {
           </div>
         </div>
 
+        {/* claim / redeem */}
         <div className="rp-payout">
-          {payoutAsked ? (
+          {claimState === "done" ? (
             <div className="rp-sent">
-              <Icon name="check" size={16} sw={2.4} /> Payout requested. We'll email you when it's on the way.
+              <Icon name="check" size={16} sw={2.4} /> Payout requested — {fmtUSD(claimedAmt)} on its way. We'll email you when it's sent.
             </div>
           ) : (
-            <Btn variant="primary" size="lg" disabled={balance <= 0} onClick={() => setPayoutAsked(true)}>
-              Request payout {balance > 0 ? "· " + fmtUSD(balance) : ""}
+            <Btn variant="primary" size="lg" disabled={balance <= 0 || claimState === "busy"} onClick={claim}>
+              {claimState === "busy" ? "Requesting…" : (balance > 0 ? "Claim " + fmtUSD(balance) : "Nothing to claim yet")}
             </Btn>
           )}
-          <p className="rp-muted rp-fine">Your balance works like a gift card — claim small amounts often, or save it up.</p>
+          {claimState === "error" && <p className="rp-err">{claimMsg} <button type="button" className="rp-link" onClick={claim}>Try again</button></p>}
+          <p className="rp-muted rp-fine">
+            Your rewards work like a gift card — claim small amounts often, or let them add up.
+            {totals.claimed > 0 ? " You've claimed " + fmtUSD(totals.claimed) + " so far." : ""}
+          </p>
         </div>
 
+        {/* program status */}
+        {programs.length > 0 && (
+          <section className="rp-progs">
+            <h3 className="rp-h3">Your program{programs.length > 1 ? "s" : ""}</h3>
+            <ul className="rp-prog-rows">
+              {programs.map((p, i) => (
+                <li key={i} className="rp-prog">
+                  <div className="rp-prog-l">
+                    <div className="rp-prog-name">{p.product || "Feedback program"}</div>
+                    <div className="rp-prog-meta">
+                      {channelLabel(p.channel)} · {cadenceLabel(p.cadence)} · {fmtUSD(p.rate)}/min
+                    </div>
+                  </div>
+                  <span className={"rp-status rp-status-" + (p.status || "active")}>{titleCase(statusLabel(p.status))}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* history of loops / replies */}
         <section className="rp-ledger">
-          <h3 className="rp-h3">Your activity</h3>
-          {ledger.length === 0 ? (
-            <p className="rp-muted">No activity yet. Every minute you participate — email replies, voice chats — shows up here, tracked automatically.</p>
+          <h3 className="rp-h3">Your history</h3>
+          {history.length === 0 ? (
+            <p className="rp-muted">
+              Nothing here yet. Every loop you take part in — an email reply, a quick chat — shows up
+              here with the minutes it earned, tracked automatically.
+            </p>
           ) : (
             <ul className="rp-rows">
-              {ledger.map((l, i) => (
+              {history.map((l, i) => (
                 <li key={i} className="rp-row">
                   <div className="rp-row-l">
-                    <div className="rp-row-k">{ledgerLabel(l.kind)}</div>
-                    {l.note && <div className="rp-row-note">{l.note}</div>}
-                    <div className="rp-row-date">{fmtDate(l.created_at)}</div>
+                    <div className="rp-row-k">{historyLabel(l)}</div>
+                    {l.product && <div className="rp-row-note">{l.product}</div>}
+                    <div className="rp-row-date">{fmtDate(l.date)}</div>
                   </div>
-                  <div className={"rp-row-amt" + (Number(l.minutes) < 0 ? " neg" : "")}>
-                    {Number(l.minutes) >= 0 ? "+" : ""}{fmtMin(Math.abs(l.minutes))}
+                  <div className={"rp-row-amt" + (l.kind === "redeemed" ? " neg" : "")}>
+                    {l.kind === "redeemed"
+                      ? "Claimed"
+                      : (Number(l.minutes) >= 0 ? "+" : "") + fmtMin(Math.abs(l.minutes))}
                     {l.amount != null && <span className="rp-row-usd">{fmtUSD(Math.abs(l.amount))}</span>}
                   </div>
                 </li>
@@ -206,16 +292,31 @@ function RewardsHome({ user, data, err, onReload }) {
           )}
         </section>
 
-        <footer className="rp-foot">Rewards tracked and audited automatically by Observant. Opt out anytime.</footer>
+        <footer className="rp-foot">Your minutes and rewards are tracked and audited automatically by Observant. Opt out anytime.</footer>
       </div>
     </div>
   );
 }
 
-function ledgerLabel(kind) {
-  if (kind === "earned") return "Participated";
-  if (kind === "redeemed") return "Redeemed";
-  return "Adjustment";
+function historyLabel(l) {
+  if (l.kind === "redeemed") return "Payout requested";
+  if (l.kind === "adjustment") return "Adjustment";
+  return "Participated in a loop";
+}
+function channelLabel(c) {
+  if (c === "telegram") return "Telegram";
+  if (c === "inproduct") return "In-product";
+  return "Email";
+}
+function cadenceLabel(c) {
+  if (c === "open") return "Happy to hear often";
+  if (c === "rare") return "Only now and then";
+  return "Every so often";
+}
+function statusLabel(s) {
+  if (s === "paused") return "paused";
+  if (s === "opted_out") return "opted out";
+  return "active";
 }
 
 function GoogleMark() {
@@ -236,28 +337,41 @@ function GoogleMark() {
   .rp-shell{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:6vh 1.2rem;background:var(--bg,#faf8f5);}
   .rp-card{width:100%;max-width:440px;background:var(--surface,#fff);border:1px solid var(--border,#e7e2da);border-radius:18px;padding:2.2rem 2rem;box-shadow:0 10px 40px rgba(0,0,0,.05);}
   .rp-card.rp-wide{max-width:620px;}
-  .rp-brand,.rp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;}
-  .rp-title{font-size:1.6rem;margin:.2rem 0 .5rem;}
+  .rp-brand{display:flex;align-items:center;margin-bottom:1.4rem;}
+  .rp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+  .rp-topl{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+  .rp-tag{font-size:.72rem;font-weight:600;letter-spacing:.02em;color:var(--text-muted,#857d70);background:var(--bg,#faf8f5);border:1px solid var(--border,#e7e2da);border-radius:999px;padding:.2rem .6rem;}
+  .rp-title{font-size:1.6rem;margin:.2rem 0 .4rem;}
   .rp-muted{color:var(--text-muted,#857d70);font-size:.92rem;line-height:1.5;}
   .rp-pad{margin:.6rem 0 0;}
-  .rp-fine{font-size:.8rem;margin-top:.6rem;}
+  .rp-fine{font-size:.8rem;margin-top:.7rem;}
   .rp-signin{display:flex;flex-direction:column;gap:.7rem;margin-top:1.3rem;}
   .rp-google{display:flex;align-items:center;justify-content:center;gap:.6rem;}
   .rp-or{display:flex;align-items:center;text-align:center;color:var(--text-muted,#999);font-size:.8rem;margin:.2rem 0;}
   .rp-or::before,.rp-or::after{content:"";flex:1;height:1px;background:var(--border,#e7e2da);}
   .rp-or span{padding:0 .8rem;}
-  .rp-sent{display:flex;align-items:center;gap:.5rem;color:var(--success,#2e7d4f);font-size:.9rem;font-weight:600;margin-top:1.2rem;line-height:1.4;}
+  .rp-sent{display:flex;align-items:center;gap:.5rem;color:var(--success,#2e7d4f);font-size:.9rem;font-weight:600;margin-top:.2rem;line-height:1.4;}
   .rp-err{color:#b54034;font-size:.86rem;margin-top:.9rem;}
   .rp-link{background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;padding:0;}
-  .rp-hi{font-size:.88rem;color:var(--text-muted,#857d70);margin:.2rem 0 1.3rem;}
-  .rp-signout{background:none;border:none;color:var(--text-muted,#857d70);font-size:.84rem;cursor:pointer;text-decoration:underline;}
-  .rp-balance{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:.4rem 0 1.4rem;}
+  .rp-hi{font-size:.88rem;color:var(--text-muted,#857d70);margin:.1rem 0 1.3rem;}
+  .rp-signout{background:none;border:none;color:var(--text-muted,#857d70);font-size:.84rem;cursor:pointer;text-decoration:underline;white-space:nowrap;}
+  .rp-balance{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin:.4rem 0 1.3rem;}
   .rp-bal-box{background:var(--bg,#faf8f5);border:1px solid var(--border,#e7e2da);border-radius:13px;padding:1.1rem .9rem;text-align:center;}
+  .rp-bal-hero{background:var(--accent-soft,#fbeee6);border-color:var(--accent,#e6c3ad);}
   .rp-bal-n{font-size:1.5rem;font-weight:700;letter-spacing:-.01em;}
   .rp-bal-l{font-size:.74rem;color:var(--text-muted,#857d70);margin-top:.25rem;}
-  .rp-payout{margin:.4rem 0 1.6rem;}
+  .rp-payout{margin:.2rem 0 1.6rem;}
   .rp-payout .btn{width:100%;}
   .rp-h3{font-size:1rem;margin:0 0 .8rem;}
+  .rp-progs{margin-bottom:1.6rem;}
+  .rp-prog-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;}
+  .rp-prog{display:flex;align-items:center;justify-content:space-between;gap:.8rem;background:var(--bg,#faf8f5);border:1px solid var(--border,#e7e2da);border-radius:12px;padding:.8rem 1rem;}
+  .rp-prog-name{font-weight:600;font-size:.92rem;}
+  .rp-prog-meta{font-size:.78rem;color:var(--text-muted,#857d70);margin-top:.2rem;}
+  .rp-status{font-size:.72rem;font-weight:600;padding:.2rem .55rem;border-radius:999px;white-space:nowrap;}
+  .rp-status-active{color:#2e7d4f;background:rgba(46,125,79,.1);}
+  .rp-status-paused{color:#8a6d1f;background:rgba(180,140,40,.12);}
+  .rp-status-opted_out{color:#857d70;background:rgba(133,125,112,.12);}
   .rp-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
   .rp-row{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;border-top:1px solid var(--border,#eee);}
   .rp-row-k{font-weight:600;font-size:.9rem;}

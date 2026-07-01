@@ -321,13 +321,17 @@ function SsAuthGate({ redirectTo }) {
 
   const google = async () => {
     setBusy(true); setNote("");
-    const { error } = await window.ObservantAuth.signInWithGoogle(redirectTo);
+    const A = await ssEnsureAuth();
+    if (!A) { setNote("Sign-in is still loading — try again in a moment."); setBusy(false); return; }
+    const { error } = await A.signInWithGoogle(redirectTo);
     if (error) { setNote(error.message); setBusy(false); }
   };
   const magic = async () => {
     if (!emailValid || busy) return;
     setBusy(true); setNote("");
-    const { error } = await window.ObservantAuth.signInWithEmail(email, redirectTo);
+    const A = await ssEnsureAuth();
+    if (!A) { setNote("Sign-in is still loading — try again in a moment."); setBusy(false); return; }
+    const { error } = await A.signInWithEmail(email, redirectTo);
     setBusy(false);
     if (error) { setNote(error.message); return; }
     setSent(true);
@@ -484,7 +488,7 @@ function SelfServeApp() {
     (async () => {
       const A = await ssEnsureAuth();
       if (cancelled) return;
-      if (!A) { setGate("pass"); return; }          // scripts unavailable → no gate
+      if (!A) { setGate("signin"); return; }          // scripts unavailable → no gate
       await A.init();
       if (cancelled) return;
       if (!A.isConfigured()) { setGate("pass"); return; } // configured:false → no gate
