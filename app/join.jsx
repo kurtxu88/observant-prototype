@@ -65,6 +65,79 @@ function jnContext() {
   };
 }
 
+// ── Supabase auth, loaded on demand ───────────────────────────────────────
+// The standalone Join.html ships neither supabase-js nor /app/auth.js, so we
+// inject them the first time we need to send a real sign-in link (mirrors
+// selfserve.jsx's ssEnsureAuth). Everything degrades quietly when Supabase
+// isn't configured — the join never blocks on it.
+function jnLoadScript(src) {
+  return new Promise((resolve, reject) => {
+    const found = Array.from(document.scripts).find((s) => s.src && s.src.indexOf(src) !== -1);
+    if (found) {
+      if (found.dataset.jnLoaded === "1") return resolve();
+      found.addEventListener("load", () => resolve());
+      found.addEventListener("error", reject);
+      return;
+    }
+    const tag = document.createElement("script");
+    tag.src = src;
+    tag.onload = () => { tag.dataset.jnLoaded = "1"; resolve(); };
+    tag.onerror = reject;
+    document.head.appendChild(tag);
+  });
+}
+
+let _jnAuthLoad = null;
+function jnEnsureAuth() {
+  if (_jnAuthLoad) return _jnAuthLoad;
+  _jnAuthLoad = (async () => {
+    if (window.ObservantAuth) return window.ObservantAuth;
+    try {
+      if (!window.supabase || !window.supabase.createClient) {
+        await jnLoadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
+      }
+      if (!window.ObservantAuth) await jnLoadScript("/app/auth.js");
+    } catch (_e) {
+      return null; // can't load → degrade to honest fallback copy
+    }
+    return window.ObservantAuth || null;
+  })();
+  return _jnAuthLoad;
+}
+
+// Fire a real Supabase magic link to the partner's email so the sign-in link
+// we promise actually exists — it lands them in /rewards. Fire-and-forget and
+// fully guarded: resolves true ONLY when a link was really triggered; false on
+// no email, unconfigured Supabase, or any error (the caller then degrades the
+// copy so we never falsely claim an email was sent).
+async function jnSendMagicLink(email) {
+  const clean = String(email || "").trim();
+  if (!clean.includes("@")) return false;
+  try {
+    const A = await jnEnsureAuth();
+    if (!A) return false;
+    const redirectTo = window.location.origin + "/rewards";
+    const { error } = await A.signInWithEmail(clean, redirectTo);
+    return !error;
+  } catch (_e) {
+    return false;
+  }
+}
+
+// Minimal styles for the consolidated "you're in" confirmation — Join.html
+// only loads app.css + selfserve.css, so anything new gets injected here.
+(function jnInjectStyles() {
+  if (document.getElementById("jn-join-styles")) return;
+  const el = document.createElement("style");
+  el.id = "jn-join-styles";
+  el.textContent = [
+    ".jn-intro-offer { margin-top: 18px; padding: 16px 18px; border: 1px solid var(--border, #e7e3da); border-radius: 12px; background: var(--surface-2, #faf8f4); }",
+    ".jn-intro-offer > p { margin: 0 0 14px; }",
+    ".jn-intro-note { margin-top: 16px; font-size: .9rem; color: var(--text-muted, #8a857c); }",
+  ].join("\n");
+  document.head.appendChild(el);
+})();
+
 function JoinApp() {
   const { product, rate, channels, route } = jnContext();
   const [phase, setPhase] = useStateJN("invite");
@@ -287,35 +360,39 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
 function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
   const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
   const [accountDone, setAccountDone] = useStateJN(false);
+  const [linkSent, setLinkSent] = useStateJN(false);
   const [introSkipped, setIntroSkipped] = useStateJN(false);
   const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
   const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
+  // Register the rewards account → actually fire the Supabase magic link so the
+  // "we've sent a sign-in link" claim is real (it lands them in /rewards).
+  // linkSent gates that copy: it flips true only when a link was truly triggered.
+  const register = () => {
+    if (!accountEmail.includes("@")) return;
+    setAccountDone(true);
+    jnSendMagicLink(accountEmail).then((ok) => { if (ok) setLinkSent(true); });
+  };
+
   return (
     <main className="jn-main">
-      {!introSkipped ? (
-        <section className="jn-hero">
-          <span className="eyebrow">You're in</span>
-          <p className="jn-cadence-confirm">You'll hear from the {product} team <b>{cadenceWord}</b> — change it or pause anytime.</p>
-          <h1>Want to give the team a head start?</h1>
-          <p>It's optional — but a short ~10-minute intro chat helps the {product} team get to know how you actually use {product}. Here's why it's worth it:</p>
-          <ul className="jn-intro-why">
-            <li><b>Everything's tailored to you.</b> They learn your context once, so later questions fit how you really use {product}.</li>
-            <li><b>Fewer, better check-ins.</b> Knowing you up front means they ask less often and never repeat themselves — far less spammy.</li>
-            <li><b>You earn for it.</b> The intro counts like any other time — your minutes and rewards are tracked from your very first reply.</li>
-          </ul>
-          <div className="jn-intro-actions">
-            <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product) + (slug ? "&slug=" + encodeURIComponent(slug) : "") + (contactEmail ? "&contact=" + encodeURIComponent(contactEmail) : "")}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
-            <button type="button" className="jn-skip" onClick={() => setIntroSkipped(true)}>Skip for now</button>
+      <section className="jn-hero">
+        <span className="eyebrow">You're in</span>
+        <h1>You're a {product} feedback partner.</h1>
+        <p className="jn-cadence-confirm">The {product} team will reach out by {reachWord} when they have a question — {cadenceWord}, and you say yes or no each time. Your minutes and rewards are tracked automatically from your very first reply.</p>
+
+        {!introSkipped ? (
+          <div className="jn-intro-offer">
+            <p><b>Optional — give the team a head start.</b> A short ~10-minute intro chat helps the {product} team learn how you actually use {product}, so their questions fit you, they ask less often, and you earn from the very first reply.</p>
+            <div className="jn-intro-actions">
+              <a className="btn btn-primary btn-lg" href={"/app/IntroCall.html?product=" + encodeURIComponent(product) + (slug ? "&slug=" + encodeURIComponent(slug) : "") + (contactEmail ? "&contact=" + encodeURIComponent(contactEmail) : "")}>Start the 10-minute intro <Icon name="arrow" size={16} /></a>
+              <button type="button" className="jn-skip" onClick={() => setIntroSkipped(true)}>Skip for now</button>
+            </div>
           </div>
-        </section>
-      ) : (
-        <section className="jn-hero">
-          <span className="eyebrow">You're all set</span>
-          <h1>You're in — no intro needed.</h1>
-          <p>The {product} team will reach out with their first question by {reachWord} when they have one. Your minutes and rewards are tracked automatically from your very first reply. Want to do the intro after all? <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>It's still here.</button></p>
-        </section>
-      )}
+        ) : (
+          <p className="jn-intro-note">No intro — the team will reach out when they have a question. <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>Do the intro after all?</button></p>
+        )}
+      </section>
 
       <section className="jn-block jn-account">
         <h2>Track your {product} rewards</h2>
@@ -329,13 +406,15 @@ function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
                 value={accountEmail}
                 placeholder="you@example.com"
                 onChange={(e) => setAccountEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && accountEmail.includes("@")) setAccountDone(true); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && accountEmail.includes("@")) register(); }}
               />
-              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={() => setAccountDone(true)}>Register</Btn>
+              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={register}>Register</Btn>
             </div>
           </>
         ) : (
-          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> You're set — we've sent a sign-in link to {accountEmail}. Your minutes and {product} rewards will be waiting there.</p>
+          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> {linkSent
+            ? <>You're set — we've sent a sign-in link to {accountEmail}. Your minutes and {product} rewards will be waiting there.</>
+            : <>You're set — track your minutes and {product} rewards anytime at observanthq.com/rewards.</>}</p>
         )}
       </section>
     </main>
