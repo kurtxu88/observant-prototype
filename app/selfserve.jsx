@@ -43,9 +43,22 @@ function ssLoadState() {
   }
 }
 
-function ssSaveState(state) {
+// Persist the per-browser cache. When a signed-in account is provided, tag the
+// cache with that account identity (`_account`) so a DIFFERENT account signing in
+// on the same browser can't inherit this workspace. When no account is given
+// (signed-out / Supabase-unconfigured), the tag is stripped → account-untagged-safe,
+// exactly as before.
+function ssSaveState(state, account) {
   if (!state) return;
-  localStorage.setItem(SS_STORAGE_KEY, JSON.stringify(state));
+  const { _account, ...rest } = state;
+  const payload = account ? { ...rest, _account: account } : rest;
+  localStorage.setItem(SS_STORAGE_KEY, JSON.stringify(payload));
+}
+
+// Normalized account key used for tagging + matching the cache (emails are
+// case-insensitive; empty when signed out).
+function ssAcctKey(email) {
+  return String(email || "").trim().toLowerCase();
 }
 
 function ssRemoveState() {
@@ -474,16 +487,39 @@ function SelfServeApp() {
       await A.init();
       if (cancelled) return;
       if (!A.isConfigured()) { setGate("pass"); return; } // configured:false → no gate
-      // Hydrate the workspace from the DB (account-keyed) before revealing the
-      // UI, so a signed-in user on a fresh browser lands on their real dashboard
-      // instead of re-onboarding. DB wins over localStorage. Never blocks the
-      // gate: any miss/error just leaves the current (localStorage) state. Skip
-      // /portal — that's the public sample demo, not an account's workspace.
-      const hydrate = async () => {
+      // Hydrate the workspace for the signed-in account. The DB (account-keyed) is
+      // the source of truth; the localStorage cache is only trusted when it's tagged
+      // to THIS same account. This is what stops a brand-new account from inheriting
+      // a stale/foreign workspace (e.g. a leftover "Northwind") and skipping onboarding.
+      //
+      //  - DB has a real workspace  → hydrate it and (re)tag the cache to this account.
+      //  - DB has NOTHING (new user) → keep the local cache ONLY if its `_account`
+      //    matches this account AND it's a real custom workspace; otherwise DISCARD
+      //    the stale/foreign cache and start FRESH onboarding (empty form).
+      //  - Skip /portal — that's the public sample demo, not an account's workspace.
+      const hydrate = async (acctKey) => {
         if (SS_VIEW === "portal") return;
         try {
           const dbState = await ssDbLoadState();
-          if (!cancelled && dbState) setState(dbState);
+          if (cancelled) return;
+          if (dbState) {
+            setState(dbState);
+            ssSaveState(dbState, acctKey);           // (re)tag cache to this account
+            return;
+          }
+          // Nothing in the DB → this account is new here. Only reuse the local cache
+          // if it belongs to this account and is a real (custom) workspace.
+          const cached = ssLoadState();
+          const mine = cached
+            && ssAcctKey(cached._account) === acctKey
+            && acctKey
+            && cached.workspaceMode === "custom";
+          if (mine) {
+            setState(cached);
+          } else {
+            ssRemoveState();                         // drop stale/foreign cache
+            setState(null);                          // → fresh onboarding
+          }
         } catch (e) {}
       };
 
@@ -492,7 +528,7 @@ function SelfServeApp() {
       const user = session ? session.user : null;
       if (user) {
         setAuthEmail(user.email || "");
-        await hydrate();
+        await hydrate(ssAcctKey(user.email));
         if (cancelled) return;
         setGate("pass");
       } else setGate("signin");
@@ -500,7 +536,7 @@ function SelfServeApp() {
       A.onAuthChange(async (u) => {
         if (cancelled || !u) return;
         setAuthEmail(u.email || "");
-        await hydrate();
+        await hydrate(ssAcctKey(u.email));
         if (cancelled) return;
         setGate("pass");
       }).then((fn) => { unsub = fn; });
@@ -510,6 +546,9 @@ function SelfServeApp() {
 
   const signOutAuth = async () => {
     try { if (window.ObservantAuth) await window.ObservantAuth.signOut(); } catch (_e) {}
+    // Clear the per-browser workspace cache so the next account signing in on this
+    // browser can't inherit this one's workspace.
+    ssRemoveState();
     window.location.href = "/setup";
   };
 
@@ -522,9 +561,17 @@ function SelfServeApp() {
       : current);
   }, []);
 
+  // Persist the per-browser cache, but only once the sign-in gate has SETTLED
+  // ("pass"). While "checking"/"signin" we must NOT write — that would clobber the
+  // cache's `_account` tag before hydrate can read it to decide keep-vs-discard.
+  // Tag the cache with the account ONLY for a real (custom) workspace of a signed-in
+  // user; the sample/portal workspace and the signed-out/unconfigured path stay
+  // untagged (exactly as before).
   useEffectSS(() => {
-    if (state) ssSaveState(state);
-  }, [state]);
+    if (gate !== "pass" || !state) return;
+    const account = (authEmail && state.workspaceMode === "custom") ? ssAcctKey(authEmail) : "";
+    ssSaveState(state, account);
+  }, [state, gate, authEmail]);
 
   // Account-keyed DB persistence: debounced, fire-and-forget. localStorage (above)
   // stays the fast per-browser cache; the DB is the cross-browser source of truth

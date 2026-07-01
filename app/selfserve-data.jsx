@@ -136,7 +136,10 @@ function ssInitials(name) {
 
 function ssProductName(workspace, fallback) {
   const raw = (workspace && workspace.companyName || "").trim();
-  return raw || fallback || "Northwind";
+  // NEVER default to the "Northwind" demo company. The Northwind fixture is only
+  // ever produced by ssCreateSampleState (the /portal sample demo). A real/custom
+  // workspace with no name yet shows a neutral placeholder, not the demo company.
+  return raw || fallback || "Your product";
 }
 
 function ssSlug(value) {
