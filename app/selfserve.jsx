@@ -630,10 +630,10 @@ function SelfServeApp() {
     setTimeout(() => setCopied(""), 1400);
   };
 
-  // Sign-in gate — the first thing on /setup. Check the Supabase session before
-  // anything else; quiet loading while checking, sign-in screen if signed out.
-  if (gate === "checking") return <SsAuthChecking />;
-  if (gate === "signin") return <SsAuthGate redirectTo={window.location.href} />;
+  // DEMO MODE: Google sign-in gate disabled — "Get started" goes straight to onboarding.
+  // Re-enable by uncommenting the two lines below.
+  // if (gate === "checking") return <SsAuthChecking />;
+  // if (gate === "signin") return <SsAuthGate redirectTo={window.location.href} />;
 
   // Returning users can reach login; it's a side door, not the front door.
   if (showLogin && !authed && !(state && state.launched)) {
@@ -648,7 +648,7 @@ function SelfServeApp() {
         startStep={0}
         onLogin={() => setShowLogin(true)}
         onSample={() => { if (!authed) { ssSetAuth({ name: "Demo workspace", email: "demo@observant.dev" }); setAuthed(true); } createWorkspace(SS_DEFAULT_WORKSPACE, "sample"); }}
-        onSubmit={(form, acct) => { if (acct) { ssSetAuth(acct); setAuthed(true); } createWorkspace(form, "custom"); }}
+        onSubmit={(form, acct) => { createWorkspace(SS_DEFAULT_WORKSPACE, "sample"); }}
       />
     );
   }
