@@ -365,13 +365,21 @@ function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
   const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
   const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
-  // Register the rewards account → actually fire the Supabase magic link so the
-  // "we've sent a sign-in link" claim is real (it lands them in /rewards).
-  // linkSent gates that copy: it flips true only when a link was truly triggered.
+  // Register the rewards account → send the sign-in link via OUR OWN Resend
+  // (server mints a real Supabase magic link, then emails it from our verified
+  // sender — reliable, unlike Supabase's built-in mailer). linkSent gates the
+  // "we've sent a sign-in link" copy: it flips true only when sent === true.
   const register = () => {
     if (!accountEmail.includes("@")) return;
     setAccountDone(true);
-    jnSendMagicLink(accountEmail).then((ok) => { if (ok) setLinkSent(true); });
+    fetch("/api/selfserve/send-signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: accountEmail, product }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d && d.sent === true) setLinkSent(true); })
+      .catch(() => {});
   };
 
   return (
