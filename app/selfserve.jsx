@@ -52,6 +52,74 @@ function ssRemoveState() {
   localStorage.removeItem(SS_STORAGE_KEY);
 }
 
+// ---- account-keyed DB persistence (survives a new browser / incognito) ----
+// localStorage above is a per-browser cache; the DB (keyed to the signed-in
+// Supabase account) is the cross-browser source of truth, so the same workspace
+// loads anywhere instead of forcing re-onboarding. All calls degrade quietly:
+// signed-out / no DB / any error → null, and the app keeps using localStorage.
+const SS_WS_ENDPOINT = "/api/selfserve/workspace";
+
+function ssWorkspaceSlug(state) {
+  try {
+    const name = ((state && state.workspace && state.workspace.companyName) || "").trim().toLowerCase();
+    const slug = name.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return slug || "default";
+  } catch (e) { return "default"; }
+}
+
+// Get the current session's access token (via the shared auth helper), or null
+// when Supabase isn't configured / there's no session.
+async function ssDbToken() {
+  try {
+    const A = await ssEnsureAuth();
+    if (!A || !A.isConfigured || !A.isConfigured()) return null;
+    return await A.getAccessToken();
+  } catch (e) { return null; }
+}
+
+// Load this account's most-recent workspace from the DB. Returns a normalized
+// state object (preferred over localStorage) or null when there's nothing real
+// to hydrate (no DB, signed out, simulated, or no saved workspace yet).
+async function ssDbLoadState() {
+  try {
+    const token = await ssDbToken();
+    if (!token) return null;
+    const res = await fetch(SS_WS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ action: "load" }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.simulated) return null;
+    const ws = data.workspace;
+    if (!ws || !ws.state || !ws.state.workspace) return null;
+    return SelfServeData.normalizeState(ws.state);
+  } catch (e) { return null; }
+}
+
+// Fire-and-forget save of the current workspace state, keyed to the account.
+async function ssDbSaveState(state) {
+  try {
+    if (!state || !state.workspace) return;
+    const token = await ssDbToken();
+    if (!token) return;
+    await fetch(SS_WS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        action: "save",
+        slug: ssWorkspaceSlug(state),
+        product: {
+          name: ((state.workspace.companyName) || "").trim(),
+          description: ((state.workspace.productDescription) || "").trim(),
+        },
+        state,
+      }),
+    });
+  } catch (e) { /* fire-and-forget */ }
+}
+
 function ssUpdateById(items, id, update) {
   return items.map((item) => item.id === id ? { ...item, ...update(item) } : item);
 }
@@ -406,15 +474,34 @@ function SelfServeApp() {
       await A.init();
       if (cancelled) return;
       if (!A.isConfigured()) { setGate("pass"); return; } // configured:false → no gate
+      // Hydrate the workspace from the DB (account-keyed) before revealing the
+      // UI, so a signed-in user on a fresh browser lands on their real dashboard
+      // instead of re-onboarding. DB wins over localStorage. Never blocks the
+      // gate: any miss/error just leaves the current (localStorage) state. Skip
+      // /portal — that's the public sample demo, not an account's workspace.
+      const hydrate = async () => {
+        if (SS_VIEW === "portal") return;
+        try {
+          const dbState = await ssDbLoadState();
+          if (!cancelled && dbState) setState(dbState);
+        } catch (e) {}
+      };
+
       const session = await A.getSession();
       if (cancelled) return;
       const user = session ? session.user : null;
-      if (user) { setAuthEmail(user.email || ""); setGate("pass"); }
-      else setGate("signin");
+      if (user) {
+        setAuthEmail(user.email || "");
+        await hydrate();
+        if (cancelled) return;
+        setGate("pass");
+      } else setGate("signin");
       // Pick up the OAuth / magic-link redirect (or any later change).
-      A.onAuthChange((u) => {
+      A.onAuthChange(async (u) => {
         if (cancelled || !u) return;
         setAuthEmail(u.email || "");
+        await hydrate();
+        if (cancelled) return;
         setGate("pass");
       }).then((fn) => { unsub = fn; });
     })();
@@ -438,6 +525,20 @@ function SelfServeApp() {
   useEffectSS(() => {
     if (state) ssSaveState(state);
   }, [state]);
+
+  // Account-keyed DB persistence: debounced, fire-and-forget. localStorage (above)
+  // stays the fast per-browser cache; the DB is the cross-browser source of truth
+  // for a signed-in user. Only real (custom) workspaces are pushed — never the
+  // sample / /portal demo — so signed-out or unconfigured behaves exactly as today.
+  const ssDbSaveTimer = useRefSS(null);
+  useEffectSS(() => {
+    if (SS_VIEW === "portal") return undefined;
+    if (gate !== "pass" || !authEmail) return undefined;                 // signed-in only
+    if (!state || state.workspaceMode !== "custom" || !state.workspace) return undefined;
+    if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current);
+    ssDbSaveTimer.current = setTimeout(() => { ssDbSaveState(state); }, 1200);
+    return () => { if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current); };
+  }, [state, gate, authEmail]);
 
   useEffectSS(() => {
     if (!state || !state.loopRuns || !state.loopRuns.length) return undefined;
