@@ -3901,3 +3901,7 @@ button.ss-inproduct-row:focus-visible { border-color: var(--accent-soft); }
 @media (max-width: 860px) {
   .ss-thread-panel .ss-chat-body { max-height: none; }
 }
+
+/* MCP card link to the full connect page */
+.ss-integ-link { display: inline-flex; align-items: center; gap: .3rem; margin-top: .6rem; font-size: .85rem; font-weight: 600; color: var(--accent); text-decoration: none; }
+.ss-integ-link:hover { color: var(--accent-hover, var(--accent)); }

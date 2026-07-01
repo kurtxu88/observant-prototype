@@ -2601,7 +2601,8 @@ function Integrations({ state }) {
         <div className="ss-integ-card">
           <div className="ss-integ-head"><Icon name="link" size={16} /> <b>MCP server</b></div>
           <p className="mut">Pull what Observant has learned into Claude Code, Cursor, or any MCP client — mid-task.</p>
-          <code className="ss-mcp">claude mcp add observant https://api.observant.ai/mcp</code>
+          <code className="ss-mcp">claude mcp add --transport http observant https://www.observanthq.com/api/mcp</code>
+          <a href="/MCP.html" className="ss-integ-link" target="_blank" rel="noopener">Connect to your editor →</a>
         </div>
       </div>
     </section>
