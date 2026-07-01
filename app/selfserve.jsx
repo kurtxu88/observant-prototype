@@ -341,6 +341,7 @@ function SsAuthGate({ redirectTo }) {
           <span className="eyebrow">Get started</span>
           <h1>Sign in to set up Observant.</h1>
           <p>Sign in to get started — then a few steps and Observant starts learning from your users one-on-one, continuously, on their own time.</p>
+          <p className="ss-fineprint">Just exploring? <a href="/portal">See the live demo →</a></p>
         </div>
         <div className="ss-proof-grid" aria-label="Product signals">
           <div><b>1:1</b><span>with every user</span></div>
@@ -811,9 +812,8 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
               <Btn variant="primary" size="lg" disabled={!ready} onClick={() => setStep(1)}>Continue <Icon name="arrow" size={16} /></Btn>
               {editing
                 ? (onExit ? <Btn variant="ghost" size="lg" onClick={onExit}><Icon name="back" size={16} /> Back to setup</Btn> : null)
-                : <Btn variant="ghost" size="lg" onClick={() => { setForm({ ...SS_EMPTY_WORKSPACE_FORM, ...SS_DEFAULT_WORKSPACE }); setStep(0); }}>Use the sample workspace</Btn>}
+                : <Btn variant="ghost" size="lg" onClick={() => { window.location.href = "/portal"; }}>See the sample workspace</Btn>}
             </div>
-            {!editing && <p className="ss-fineprint">Already have an account? <button type="button" className="ss-linklike" onClick={onLogin}>Log in</button>. Demo — no password.</p>}
           </>
         )}
 
@@ -1477,7 +1477,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
         <main className="ss-activation-main">
           {view === "hub" && (
             <section className="ss-panel">
-              <PanelTitle k="Set up" title="Set up your feedback" status={anyActive ? "1 active" : "Pick one"} />
+              <PanelTitle k="Set up" title="Set up your feedback" status={anyActive ? "1 active" : ""} />
               <p className="ss-step-lead"><b>Start with one — add the other anytime.</b> Each feedback surface sets up on its own track. You can come back to add the other whenever you like, from <b>Sources</b> in your dashboard.</p>
               <SetupHubCards setup={setup} onPick={setView} />
               {anyActive && <HubNudge active={active} />}
