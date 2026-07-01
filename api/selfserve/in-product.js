@@ -82,6 +82,9 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Stamp workspace ownership (best-effort) — resolve the workspace by the same slug.
+    const owner = await resolveOwnership(slug);
+    if (owner.workspace_id) row.workspace_id = owner.workspace_id;
     const saved = await db.insert("inproduct_feedback", row);
     res.status(200).json({ ok: true, id: saved && saved.id });
   } catch (err) {
@@ -90,3 +93,16 @@ module.exports = async function handler(req, res) {
     res.status(200).json({ ok: true, simulated: true, error: err && err.message });
   }
 };
+
+// Resolve the owning workspace by slug → { workspace_id } for the feedback row.
+// Best-effort: {} when the workspaces table is absent (migration not run) or no
+// slug match, so the insert proceeds exactly as before (column left null). Never throws.
+async function resolveOwnership(slug) {
+  try {
+    if (!db.dbConfigured() || !slug) return {};
+    const rows = await db.select("workspaces", "slug=eq." + encodeURIComponent(slug) + "&select=id,account_id&order=created_at.asc&limit=1");
+    const ws = Array.isArray(rows) && rows[0];
+    if (!ws) return {};
+    return { workspace_id: ws.id };
+  } catch (e) { return {}; }
+}

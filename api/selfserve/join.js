@@ -35,11 +35,13 @@ module.exports = async function handler(req, res) {
   if (!db.dbConfigured()) { res.status(200).json({ ok: true, simulated: true }); return; }
 
   try {
+    // Resolve ownership (account/workspace) by the same slug, best-effort.
+    const owner = await resolveOwnership(slug);
     // Lazily create the program from the magic-link context (the team-side
     // persist will replace this once #8 builder-auth lands).
     const program = await db.upsert(
       "programs",
-      { slug, product_name: productName, rate_per_min: rate },
+      Object.assign({ slug, product_name: productName, rate_per_min: rate }, owner),
       "slug"
     );
     // Insert the partner; on repeat opt-in, merge (keep one row per contact).
@@ -62,3 +64,19 @@ module.exports = async function handler(req, res) {
     res.status(200).json({ ok: true, simulated: true, error: err && err.message });
   }
 };
+
+// Resolve the owning workspace by slug and return { workspace_id, account_id } to
+// stamp onto the program. Best-effort: returns {} if the workspaces table doesn't
+// exist yet (migration not run) or no workspace matches the slug, so callers proceed
+// exactly as before (owner columns left null). Never throws.
+async function resolveOwnership(slug) {
+  try {
+    if (!db.dbConfigured() || !slug) return {};
+    const rows = await db.select("workspaces", "slug=eq." + encodeURIComponent(slug) + "&select=id,account_id&order=created_at.asc&limit=1");
+    const ws = Array.isArray(rows) && rows[0];
+    if (!ws) return {};
+    const out = { workspace_id: ws.id };
+    if (ws.account_id) out.account_id = ws.account_id;
+    return out;
+  } catch (e) { return {}; }
+}

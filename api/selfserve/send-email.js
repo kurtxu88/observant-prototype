@@ -116,7 +116,8 @@ async function persistOutbound({ product, toEmail, subject, mode, body }) {
     if (!db.dbConfigured() || !toEmail) return null;
     const slug = String(product || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     if (!slug) return null;
-    const program = await db.upsert("programs", { slug, product_name: product, rate_per_min: 2 }, "slug");
+    const owner = await resolveOwnership(slug);
+    const program = await db.upsert("programs", Object.assign({ slug, product_name: product, rate_per_min: 2 }, owner), "slug");
     // Don't clobber consent_at here (that's join.js's opt-in) — omit it so merge preserves it.
     const partner = await db.upsert("partners", { program_id: program.id, channel: "email", contact: toEmail, status: "active" }, "program_id,channel,contact");
     let conv = null;
@@ -127,6 +128,21 @@ async function persistOutbound({ product, toEmail, subject, mode, body }) {
     await db.update("conversations", "id=eq." + conv.id, { last_active_at: new Date().toISOString() });
     return conv.id;
   } catch (e) { console.error("[send-email] persist failed:", e && e.message); return null; }
+}
+
+// Resolve the owning workspace by slug → { workspace_id, account_id } to stamp onto
+// the program. Best-effort: {} if the workspaces table is absent or no slug match,
+// so the write proceeds exactly as before. Never throws.
+async function resolveOwnership(slug) {
+  try {
+    if (!db.dbConfigured() || !slug) return {};
+    const rows = await db.select("workspaces", "slug=eq." + encodeURIComponent(slug) + "&select=id,account_id&order=created_at.asc&limit=1");
+    const ws = Array.isArray(rows) && rows[0];
+    if (!ws) return {};
+    const out = { workspace_id: ws.id };
+    if (ws.account_id) out.account_id = ws.account_id;
+    return out;
+  } catch (e) { return {}; }
 }
 
 // C2 sometimes echoes a literal "Subject: ..." line into the body — the email
