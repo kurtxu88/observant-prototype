@@ -98,3 +98,70 @@ alter table conversations  enable row level security;
 alter table messages       enable row level security;
 alter table minutes_ledger enable row level security;
 alter table redemptions    enable row level security;
+
+
+-- ============================================================================
+-- OWNERSHIP LAYER — folded in from db/migrations/accounts-workspaces.sql,
+-- insights.sql, and ownership.sql. This is the canonical source of truth; the
+-- migration files exist so a live Supabase project can be upgraded in place, but
+-- a fresh project can be created by running THIS file top to bottom.
+--
+-- Ownership chain:
+--   accounts → workspaces → programs → partners → conversations → messages
+--                        ↘ insights (per workspace)
+-- ============================================================================
+
+-- One row per signed-in human (mirrors a Supabase auth.users row).
+create table if not exists accounts (
+  id            uuid primary key default gen_random_uuid(),
+  auth_user_id  uuid unique not null,                 -- Supabase auth.users.id (from the verified token)
+  email         text,
+  name          text,
+  created_at    timestamptz not null default now()
+);
+create unique index if not exists accounts_auth_user_idx on accounts(auth_user_id);
+
+-- One product per account. slug matches programs.slug (the magic-link identifier).
+create table if not exists workspaces (
+  id                   uuid primary key default gen_random_uuid(),
+  account_id           uuid references accounts(id) on delete cascade,
+  slug                 text not null,                 -- product identifier; matches programs.slug
+  product_name         text,
+  product_description  text,
+  config               jsonb not null default '{}',   -- setup / surfaces / rate / etc.
+  state                jsonb not null default '{}',   -- full app-state snapshot for hydration
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  unique (account_id, slug)
+);
+create index if not exists workspaces_slug_idx       on workspaces(slug);
+create index if not exists workspaces_account_id_idx on workspaces(account_id);
+
+-- Synthesized learnings, rolled up per workspace for the builder dashboard.
+create table if not exists insights (
+  id            uuid primary key default gen_random_uuid(),
+  workspace_id  uuid references workspaces(id) on delete cascade,
+  title         text,
+  detail        text,
+  metric        text,
+  source        text,                          -- 'conversation' | 'inproduct' | 'signal'
+  status        text not null default 'open',
+  created_at    timestamptz not null default now()
+);
+create index if not exists insights_workspace_created_idx on insights(workspace_id, created_at desc);
+create index if not exists insights_workspace_source_idx  on insights(workspace_id, source);
+
+-- Ownership FKs on existing tables (add-if-not-exists so this stays idempotent).
+-- NOTE: github_installations + inproduct_feedback are created in their own feature
+-- migrations; run those before this section on a fresh project, or the two alters
+-- below are no-ops until those tables exist.
+alter table programs add column if not exists workspace_id uuid references workspaces(id);
+alter table programs add column if not exists account_id   uuid references accounts(id);
+create index if not exists programs_workspace_idx on programs(workspace_id);
+create index if not exists programs_account_idx   on programs(account_id);
+
+-- Enable RLS on the new ownership tables (no policies → anon/authenticated denied;
+-- service-role bypasses).
+alter table accounts   enable row level security;
+alter table workspaces enable row level security;
+alter table insights   enable row level security;
