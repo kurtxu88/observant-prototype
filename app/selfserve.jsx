@@ -102,6 +102,55 @@ function ssSurfaceLabel(surface) {
   return labels[surface] || surface;
 }
 
+// ---- Channel model: normalize a person's surface into a channel key + badge meta.
+// Off-product = email + Telegram (the 1:1 threads); in-product = the snippet signals.
+function ssChannelKey(surface) {
+  const s = String(surface || "").toLowerCase();
+  if (s.indexOf("telegram") >= 0) return "telegram";
+  if (s.indexOf("mail") >= 0) return "email";
+  if (s.indexOf("product") >= 0 || s.indexOf("app") >= 0) return "inproduct";
+  return "offproduct";
+}
+function ssChannelMeta(key) {
+  const map = {
+    email: { label: "Email", icon: "mail" },
+    telegram: { label: "Telegram", icon: "chat" },
+    inproduct: { label: "In-product", icon: "globe" },
+  };
+  return map[key] || { label: "Off-product", icon: "relay" };
+}
+function ssPersonMinutes(person) {
+  const m = String(person && person.profile && person.profile.since || "").match(/(\d+)\s*min/);
+  return m ? m[1] + " min" : "";
+}
+function ssPersonReward(person) {
+  return (person && person.profile && person.profile.reward) || "";
+}
+// The four in-product feedback kinds the snippet collects.
+function ssInproductMeta(type) {
+  const map = {
+    feedback: { label: "Feedback", icon: "chat" },
+    eval: { label: "AI eval", icon: "spark" },
+    exit: { label: "Exit survey", icon: "back" },
+    csat: { label: "CSAT", icon: "check" },
+  };
+  return map[type] || { label: "Signal", icon: "globe" };
+}
+function ssInproductValue(fb) {
+  const t = fb && fb.type;
+  const v = String((fb && fb.value) || "");
+  if (t === "eval") return v === "up" ? "Rated helpful" : v === "down" ? "Rated not helpful" : (v || "Rated");
+  if (t === "csat") return v ? "CSAT " + v + "/5" : "CSAT";
+  if (t === "exit") return "Left — " + (v ? v.replace(/-/g, " ") : "no reason given");
+  if (t === "feedback") return v === "open" ? "Opened feedback" : (v || "Feedback");
+  return v || "Signal";
+}
+function ssInproductWho(state, fb) {
+  const person = (state && Array.isArray(state.people) ? state.people : []).find((p) => p.id === fb.userId);
+  if (person) return { name: person.name, person: person };
+  return { name: fb.user_ref ? "Anonymous · " + fb.user_ref : "Anonymous user", person: null };
+}
+
 function ssWorkspaceIsCustom(state) {
   return state.workspaceMode === "custom";
 }
@@ -758,18 +807,21 @@ function ssAssistantContext(state, product) {
   const people = (state && Array.isArray(state.people)) ? state.people : [];
   const convos = (state && Array.isArray(state.conversations)) ? state.conversations : [];
   const insights = (state && Array.isArray(state.insights)) ? state.insights : [];
+  const feedback = (state && Array.isArray(state.inproductFeedback)) ? state.inproductFeedback : [];
 
   // Genuinely no data yet → say so, so the model can be honest instead of evasive.
-  if (!people.length && !convos.length && !insights.length) {
+  if (!people.length && !convos.length && !insights.length && !feedback.length) {
     return "RECENT FEEDBACK ON " + (product || "THIS PRODUCT") + ": no feedback collected yet"
       + (desc ? " — product is: " + desc : "") + ". You have access to the dashboard; there's simply nothing in it so far.";
   }
 
   const nameById = {};
-  people.forEach((p) => { if (p && p.id) nameById[p.id] = p.name || p.id; });
+  const channelById = {};
+  people.forEach((p) => { if (p && p.id) { nameById[p.id] = p.name || p.id; channelById[p.id] = ssChannelMeta(ssChannelKey(p.surface)).label; } });
 
   const parts = ["RECENT FEEDBACK ON " + (product || "THIS PRODUCT")
-    + " (live from this dashboard — you DO have access; never ask the user to paste anything):"];
+    + " — spans OFF-PRODUCT 1:1 threads (email + Telegram) AND in-product signals (snippet)."
+    + " Live from this dashboard — you DO have access; never ask the user to paste anything:"];
   if (desc) parts.push("Product: " + desc);
 
   if (people.length) {
@@ -784,6 +836,7 @@ function ssAssistantContext(state, product) {
   if (convos.length) {
     const lines = convos.slice(0, 5).map((c) => {
       const who = nameById[(c && c.userId)] || (c && c.userId) || "A user";
+      const chan = channelById[(c && c.userId)] || "off-product";
       const msgs = (c && Array.isArray(c.messages)) ? c.messages : [];
       let lastUser = "";
       for (let i = msgs.length - 1; i >= 0; i--) {
@@ -791,9 +844,19 @@ function ssAssistantContext(state, product) {
         if (mm && mm.t === "user" && mm.text) { lastUser = mm.text.trim(); break; }
       }
       const topic = (c && c.title || "").trim();
-      return "- " + who + (topic ? " — " + topic : "") + (lastUser ? ": “" + lastUser + "”" : "");
+      return "- " + who + " [" + chan + "]" + (topic ? " — " + topic : "") + (lastUser ? ": “" + lastUser + "”" : "");
     });
-    parts.push("Recent conversations (" + convos.length + " total):\n" + lines.join("\n"));
+    parts.push("Off-product 1:1 conversations (" + convos.length + " total):\n" + lines.join("\n"));
+  }
+
+  if (feedback.length) {
+    const lines = feedback.slice(0, 5).map((f) => {
+      const label = ssInproductMeta(f && f.type).label;
+      const who = ssInproductWho(state, f || {}).name;
+      const note = (f && f.note || "").trim();
+      return "- " + label + " · " + ssInproductValue(f || {}) + " (" + who + ")" + (note ? ": “" + note + "”" : "");
+    });
+    parts.push("In-product feedback (" + feedback.length + " signals from the snippet):\n" + lines.join("\n"));
   }
 
   if (insights.length) {
@@ -846,7 +909,7 @@ function ProductAssistant({ product, state, open, setOpen }) {
     const partners = (state && state.people ? state.people.length : 0);
     const convos = (state && state.conversations ? state.conversations.length : 0);
     const insights = (state && state.insights ? state.insights.length : 0);
-    if (/recent feedback|recent activity|what.?s new|latest/.test(s)) return "In the last few days " + convos + " of your 1:1 lines added new replies. The strongest thread is onboarding friction — users hit the setup step before they understand the value. A couple also flagged pricing clarity. Want me to open those conversations?";
+    if (/recent feedback|recent activity|what.?s new|latest/.test(s)) { const fb = (state && state.inproductFeedback ? state.inproductFeedback.length : 0); return "Across both channels: " + convos + " off-product 1:1 threads (email + Telegram) added new replies, and " + fb + " in-product signals came in through the snippet. The strongest thread is sharing — users trust the numbers but can't get a team-readable view out of the product. Want me to open those conversations?"; }
     if (/which user|who should|hear from|right user|talk to/.test(s)) return "Three of your " + partners + " feedback partners are worth a direct line right now: the two who churned signals are creeping on, plus one power user who keeps hitting the same edge in a core flow. Observant already has open loops with them — I can draft the next question.";
     if (/summar|saying|theme|trend|pattern/.test(s)) return "Across the loops, users keep returning to three themes: setup takes longer than they expect, the value of the core flow isn't obvious until they're deep in it, and they want clearer pricing. " + insights + " insights are drafted from these patterns — the onboarding one is the most cited.";
     if (/signal|attention|need attention|watch|risk|churn/.test(s)) return "Two signals need attention: a small cluster of partners went quiet after their first session (early drop-off), and a recurring confusion in the core flow that's showing up across personas. Neither is urgent yet, but both are trending — I'd open a loop on the drop-off first.";
@@ -2045,87 +2108,204 @@ function AskPanel({ product, state, patchState, navigate }) {
   );
 }
 
+// Loop history / Conversations — a CRM of feedback conversations. Off-product 1:1
+// threads (email + Telegram) are the spine; in-product snippet signals sit alongside,
+// clearly labeled by source; loops (the questions the team sent) stay one tab over.
 function LearningView({ state, patchState, navigate }) {
-  const product = SelfServeData.productName(state.workspace);
-  const custom = ssWorkspaceIsCustom(state);
-  const [question, setQuestion] = useStateSS("");
-  const activeRun = (state.loopRuns || []).find((run) => run.status === "generating" || run.status === "collecting");
-  const stageLabel = activeRun
-    ? (activeRun.status === "generating"
-      ? SS_SIMULATION_STAGES[0].label
-      : ((activeRun.timeline || SS_SIMULATION_STAGES)[Math.max(0, activeRun.stageIndex)] || {}).label || "Sending it out")
-    : "";
-
-  const startLoop = async (config) => {
-    const runId = SelfServeData.makeRunId();
-    const loop = SelfServeData.createCustomLoop(state.workspace, config, runId);
-    const loopRun = SelfServeData.createLoopRun(runId, loop, config);
-    patchState((current) => ({
-      ...current,
-      selectedLoopId: loop.id,
-      loops: [loop, ...current.loops],
-      loopRuns: [loopRun, ...current.loopRuns],
-      activity: ["Question created: " + loop.name + ".", ...current.activity],
-    }));
-
-    let simulation;
-    try {
-      simulation = await ssPostJson("/api/selfserve/simulate", {
-        runId,
-        workspace: state.workspace,
-        loopConfig: config,
-      });
-    } catch (err) {
-      simulation = SelfServeData.fallbackSimulation(state.workspace, config, runId);
-    }
-
-    const normalized = {
-      ...simulation,
-      runId,
-      fallback: !!simulation.fallback,
-      loop: { ...loop, ...(simulation.loop || {}), id: loop.id },
-      timeline: simulation.timeline || SS_SIMULATION_STAGES,
-    };
-
-    patchState((current) => {
-      const withSimulation = {
-        ...current,
-        simulationRuns: [normalized, ...current.simulationRuns.filter((run) => run.runId !== runId)],
-        loopRuns: current.loopRuns.map((run) => run.runId === runId ? {
-          ...run,
-          status: "collecting",
-          generatedAt: normalized.generatedAt || new Date().toISOString(),
-          timeline: normalized.timeline,
-          fallback: !!normalized.fallback,
-        } : run),
-      };
-      return SelfServeData.revealSimulation(withSimulation, runId, 0);
-    });
-  };
-
-  const submit = () => {
-    const q = question.trim();
-    if (!q || activeRun) return;
-    const activeSurfaces = Object.keys(state.setup.surfaces).filter((surface) => state.setup.surfaces[surface]);
-    setQuestion("");
-    startLoop({
-      name: q.length > 44 ? q.slice(0, 42) + "…" : q,
-      question: q,
-      // Everyone on the always-on panel — no per-question sampling.
-      groupIds: ["power-users", "new-signups", "evaluators"],
-      surfaceIds: activeSurfaces.length ? activeSurfaces : ["email"],
-      signalIds: [],
-    });
-  };
+  const convos = state.conversations || [];
+  const feedback = state.inproductFeedback || [];
+  const loops = state.loops || [];
+  const [tab, setTab] = useStateSS("conversations");
 
   return (
     <div className="ss-page-stack">
       <div className="ss-activity-head">
-        <div><span className="eyebrow no-rule">Loop history</span><h2 style={{ margin: "2px 0 0" }}>Loops you've sent</h2></div>
+        <div><span className="eyebrow no-rule">Conversations</span><h2 style={{ margin: "2px 0 0" }}>Every 1:1 your users are in</h2></div>
         <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
       </div>
-      <QuestionHistory state={state} navigate={navigate} />
+      <div className="ss-conv-tabs" role="tablist">
+        <button type="button" role="tab" className={tab === "conversations" ? "on" : ""} onClick={() => setTab("conversations")}>
+          <Icon name="chat" size={14} /> Off-product 1:1s <em>{convos.length}</em>
+        </button>
+        <button type="button" role="tab" className={tab === "inproduct" ? "on" : ""} onClick={() => setTab("inproduct")}>
+          <Icon name="globe" size={14} /> In-product feedback <em>{feedback.length}</em>
+        </button>
+        <button type="button" role="tab" className={tab === "loops" ? "on" : ""} onClick={() => setTab("loops")}>
+          <Icon name="spark" size={14} /> Loops <em>{loops.length}</em>
+        </button>
+      </div>
+      {tab === "conversations" && <ConversationsCRM state={state} navigate={navigate} />}
+      {tab === "inproduct" && <InProductFeedbackList state={state} navigate={navigate} />}
+      {tab === "loops" && <QuestionHistory state={state} navigate={navigate} />}
     </div>
+  );
+}
+
+// Channel pill — email / Telegram / in-product, used everywhere a source is shown.
+function ChannelBadge({ channel, small }) {
+  const meta = ssChannelMeta(channel);
+  return (
+    <span className={"ss-chan-badge chan-" + channel + (small ? " sm" : "")}>
+      <Icon name={meta.icon} size={small ? 10 : 12} /> {meta.label}
+    </span>
+  );
+}
+
+// Master-detail CRM: browsable list of 1:1 threads on the left, full back-and-forth on the right.
+function ConversationsCRM({ state, navigate }) {
+  const convos = state.conversations || [];
+  const [selId, setSelId] = useStateSS(convos[0] ? convos[0].id : "");
+  const selected = convos.find((c) => c.id === selId) || convos[0];
+
+  if (!convos.length) {
+    return (
+      <section className="ss-panel">
+        <PanelTitle k="Conversations" title="1:1 feedback threads" status="None yet" />
+        <EmptyState
+          icon="chat"
+          title="No conversations yet"
+          text="Once your users opt in and reply over email or Telegram, every 1:1 shows up here as a thread you can read in full."
+          cta={navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null}
+        />
+      </section>
+    );
+  }
+
+  const person = ssPersonForConversation(state, selected);
+  return (
+    <div className="ss-learning-layout">
+      <section className="ss-panel">
+        <PanelTitle k="Conversations" title="1:1 feedback threads" status={convos.length + " threads"} />
+        <div className="ss-conv-list">
+          {convos.map((c) => (
+            <ConversationRow key={c.id} state={state} conversation={c} selected={c.id === selected.id} onClick={() => setSelId(c.id)} />
+          ))}
+        </div>
+      </section>
+      <ConversationThread state={state} conversation={selected} person={person} navigate={navigate} />
+    </div>
+  );
+}
+
+// One CRM row: person, channel badge, last-message snippet, status, minutes.
+function ConversationRow({ state, conversation, selected, onClick }) {
+  const person = ssPersonForConversation(state, conversation);
+  if (!person) return null;
+  const channel = ssChannelKey(person.surface);
+  const msgs = conversation.messages || [];
+  let snippet = "";
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i] && msgs[i].t === "user" && msgs[i].text) { snippet = msgs[i].text; break; }
+  }
+  if (!snippet && msgs.length) snippet = msgs[msgs.length - 1].text || "";
+  const minutes = ssPersonMinutes(person);
+  return (
+    <button type="button" className={"ss-conv-row" + (selected ? " on" : "")} onClick={onClick}>
+      <ProfileAvatar person={person} />
+      <div className="ss-conv-row-copy">
+        <div className="ss-conv-row-top">
+          <b>{person.name}</b>
+          <ChannelBadge channel={channel} small />
+        </div>
+        {snippet && <p>{snippet}</p>}
+        <div className="ss-conv-row-meta">
+          <span className={"ss-conv-status st-" + String(conversation.state || "").toLowerCase().replace(/\s+/g, "")}>{conversation.state || "Open"}</span>
+          {conversation.mode === "voice" && <span className="ss-conv-tag">Voice · transcript</span>}
+          {minutes && <span className="ss-conv-min">{minutes}</span>}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// Thread reader: person + channel header, the full Observant→user→follow-up exchange.
+function ConversationThread({ state, conversation, person, navigate }) {
+  if (!conversation) {
+    return <section className="ss-chat-panel"><div className="ss-chat-body"><EmptyState title="No thread selected" text="Pick a conversation to read the full back-and-forth." /></div></section>;
+  }
+  const channel = ssChannelKey(person ? person.surface : "");
+  const meta = ssChannelMeta(channel);
+  const first = person ? person.name.split(" ")[0] : "this user";
+  const minutes = ssPersonMinutes(person);
+  const reward = ssPersonReward(person);
+  return (
+    <section className="ss-chat-panel ss-thread-panel">
+      <div className="ss-chat-head">
+        {person && <ProfileAvatar person={person} />}
+        <div>
+          <h3>{person ? person.name : conversation.title}</h3>
+          <p>{conversation.title}</p>
+        </div>
+        <ChannelBadge channel={channel} />
+      </div>
+      <div className="ss-thread-strip">
+        <span className={"ss-conv-status st-" + String(conversation.state || "").toLowerCase().replace(/\s+/g, "")}>{conversation.state || "Open"}</span>
+        <span>Observant relays this {meta.label} line</span>
+        {minutes && <span className="ss-conv-min">{minutes}</span>}
+        {reward && <span className="ss-conv-min">{reward}</span>}
+      </div>
+      <div className="ss-chat-body">
+        {(conversation.messages || []).map((message, i) => <ChatMessage key={i} message={message} />)}
+      </div>
+      {person && navigate && (
+        <div className="ss-chat-actions">
+          <Btn variant="ghost" size="sm" onClick={() => navigate({ section: "people", conversationId: conversation.id, focusedTarget: "person-" + person.id })}>
+            <Icon name="users" size={15} /> Open {first}'s full profile
+          </Btn>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// In-product feedback stream — the snippet's short signals, each labeled by source.
+function InProductFeedbackList({ state, navigate }) {
+  const items = state.inproductFeedback || [];
+  if (!items.length) {
+    return (
+      <section className="ss-panel">
+        <PanelTitle k="In-product" title="In-product feedback" status="None yet" />
+        <EmptyState
+          icon="globe"
+          title="No in-product feedback yet"
+          text="Once the in-product snippet is live, thumbs on AI output, exit reasons and CSAT land here — each clearly labeled by source."
+          cta={navigate ? { label: "Set up in-product feedback", onClick: () => navigate({ section: "sources" }) } : null}
+        />
+      </section>
+    );
+  }
+  return (
+    <section className="ss-panel">
+      <PanelTitle k="In-product" title="In-product feedback" status={items.length + " signals"} />
+      <p className="ss-source-note"><Icon name="globe" size={13} /> Collected inside your product by the Observant snippet — separate from the off-product 1:1 threads.</p>
+      <div className="ss-inproduct-list">
+        {items.map((fb) => <InProductRow key={fb.id} state={state} fb={fb} navigate={navigate} />)}
+      </div>
+    </section>
+  );
+}
+
+function InProductRow({ state, fb, navigate }) {
+  const meta = ssInproductMeta(fb.type);
+  const who = ssInproductWho(state, fb);
+  const clickable = who.person && navigate;
+  const Wrapper = clickable ? "button" : "div";
+  const open = clickable
+    ? () => navigate({ section: "people", conversationId: ssConversationIdForPerson(state, who.person.id), focusedTarget: "person-" + who.person.id })
+    : undefined;
+  return (
+    <Wrapper type={clickable ? "button" : undefined} className={"ss-inproduct-row" + (clickable ? " ss-card-action" : "")} onClick={open}>
+      <span className="ss-src-badge"><Icon name={meta.icon} size={11} /> In-product · {meta.label}</span>
+      <div className="ss-inproduct-body">
+        <b>{ssInproductValue(fb)}</b>
+        {fb.note && <p>{fb.note}</p>}
+      </div>
+      <div className="ss-inproduct-foot">
+        <span>{who.name}</span>
+        {fb.url && <span className="mono">{fb.url}</span>}
+        {fb.time && <span>{fb.time}</span>}
+      </div>
+    </Wrapper>
   );
 }
 
@@ -2267,12 +2447,13 @@ function PeopleView({ state, patchState, navigate }) {
           <ProfileAvatar person={person} />
           <div>
             <h3>{person.name}</h3>
-            <p>{person.segment} · {person.surface}</p>
+            <p>{person.segment}</p>
           </div>
-          <span className="ss-via">via Observant over {person.surface}</span>
+          <ChannelBadge channel={ssChannelKey(person.surface)} />
         </div>
         <p className="ss-relay-note">This isn't a direct message thread — Observant's interviewer holds this line with {person.name.split(" ")[0]} over {person.surface} and relays what your team needs.</p>
         <PartnerMemory person={person} />
+        <PersonInProduct feedback={(state.inproductFeedback || []).filter((f) => f.userId === person.id)} />
         <div className="ss-mode-tabs">
           <button type="button" className={modeTab === "chat" ? "on" : ""} onClick={() => setModeTab("chat")}><Icon name="chat" size={15} /> 1:1 chat <em>async</em></button>
           <button type="button" className={modeTab === "voice" ? "on" : ""} onClick={() => setModeTab("voice")}><Icon name="phone" size={15} /> Voice interviews <em>transcripts{voiceConversations.length ? " · " + voiceConversations.length : ""}</em></button>
@@ -2349,6 +2530,35 @@ function PartnerMemory({ person }) {
       {block("What they’ve shared", p.shared)}
       {block("Open threads", p.open)}
       <p className="ss-memory-foot">Carried across every conversation — {person.name.split(" ")[0]} never repeats themselves, and the relationship compounds.</p>
+    </div>
+  );
+}
+
+// The in-product half of a person's unified feedback profile — snippet signals this
+// user left inside the product, alongside their off-product 1:1 history above.
+function PersonInProduct({ feedback }) {
+  if (!feedback || !feedback.length) return null;
+  return (
+    <div className="ss-person-inproduct">
+      <div className="ss-memory-head">
+        <span className="eyebrow no-rule">In-product feedback</span>
+        <em>{feedback.length} signal{feedback.length === 1 ? "" : "s"} · from your product</em>
+      </div>
+      <div className="ss-inproduct-list">
+        {feedback.map((fb) => (
+          <div className="ss-inproduct-row" key={fb.id}>
+            <span className="ss-src-badge"><Icon name={ssInproductMeta(fb.type).icon} size={11} /> In-product · {ssInproductMeta(fb.type).label}</span>
+            <div className="ss-inproduct-body">
+              <b>{ssInproductValue(fb)}</b>
+              {fb.note && <p>{fb.note}</p>}
+            </div>
+            <div className="ss-inproduct-foot">
+              {fb.url && <span className="mono">{fb.url}</span>}
+              {fb.time && <span>{fb.time}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

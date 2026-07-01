@@ -249,7 +249,7 @@ function ssCreatePeople(workspace) {
       name: "Dana K.",
       color: "rust",
       segment: "Power user",
-      surface: "In-product",
+      surface: "Telegram",
       status: "Active now",
       memory: "Exports every Monday and rebuilds the report for her team.",
       last: "A live dashboard is exactly the thing I keep wishing existed.",
@@ -313,7 +313,7 @@ function ssCreatePeople(workspace) {
       name: "Owen R.",
       color: "gold",
       segment: "API-heavy account",
-      surface: "In-product",
+      surface: "Email",
       status: "Watching",
       memory: "Builds internal dashboards on top of the API.",
       last: "The API is the whole reason I am here.",
@@ -433,6 +433,23 @@ function ssCreateEvents(workspace) {
     { id: "evt-2", event: "feature_opened", user: "Marcus T.", detail: "reporting settings opened 3 times", time: "18m ago", type: "trigger", conversationId: "marcus" },
     { id: "evt-3", event: "user_signed_up", user: "Priya S.", detail: "joined " + product + " from referral", time: "1h ago", type: "onboarding", conversationId: "priya" },
     { id: "evt-4", event: "checkout_abandoned", user: "Leah M.", detail: "left upgrade page after price reveal", time: "3h ago", type: "watch", conversationId: "leah" },
+  ];
+}
+
+// In-product feedback — the short signals the in-app snippet (snippet.js) collects.
+// Same shape the ingest endpoint stores (type/value/note/url), plus userId to tie a
+// signal to a known partner and a friendly time. Anonymous rows carry only a user_ref.
+// These sit ALONGSIDE the off-product 1:1 threads so the team sees both in one place.
+function ssCreateInproductFeedback(workspace) {
+  const product = ssProductName(workspace);
+  return [
+    { id: "ipf-1", type: "eval", value: "down", note: "The shared dashboard summary dropped the grouping I actually report on.", url: "/dashboards/weekly", userId: "dana", time: "12m ago" },
+    { id: "ipf-2", type: "feedback", value: "open", note: "Give me a read-only link instead of another CSV export.", url: "/reports/export", userId: "marcus", time: "40m ago" },
+    { id: "ipf-3", type: "csat", value: "2", note: "Couldn't find how to share a report with a teammate who has no seat.", url: "/share", userId: "priya", time: "2h ago" },
+    { id: "ipf-4", type: "eval", value: "up", note: "The API export matched the exec deck exactly — kept it.", url: "/settings/api", userId: "owen", time: "3h ago" },
+    { id: "ipf-5", type: "exit", value: "missing-share-link", note: "Left the upgrade page — still no proof the team can see the dashboard.", url: "/upgrade", userId: "leah", time: "4h ago" },
+    { id: "ipf-6", type: "exit", value: "export-timeout", note: "Export timed out on a large board.", url: "/export", user_ref: "u_5521", time: "5h ago" },
+    { id: "ipf-7", type: "csat", value: "5", note: "Love the new dashboards — just wish I could send them out.", url: "/dashboards", user_ref: "u_3390", time: "yesterday" },
   ];
 }
 
@@ -571,6 +588,7 @@ function ssBaseState(workspace, mode) {
     groups: [],
     conversations: [],
     events: [],
+    inproductFeedback: [],
     insights: [],
     loops: [],
     loopRuns: [],
@@ -605,6 +623,7 @@ function ssCreateSampleState(input) {
     people: ssCreatePeople(workspace),
     conversations: ssCreateConversations(workspace),
     events: ssCreateEvents(workspace),
+    inproductFeedback: ssCreateInproductFeedback(workspace),
     insights: ssCreateInsights(workspace),
     loops: ssCreateLoops(workspace),
     reviews: ssCreateReviews(workspace),
@@ -928,6 +947,7 @@ function ssNormalizeState(state) {
     groups: ssMergeSeededRecords(state.groups, seeded.groups),
     conversations,
     events: ssMergeSeededRecords(state.events, seeded.events),
+    inproductFeedback: ssMergeSeededRecords(state.inproductFeedback, seeded.inproductFeedback),
     insights: ssMergeSeededRecords(state.insights, seeded.insights),
     loops,
     loopRuns,

@@ -3664,3 +3664,240 @@ body.obs-chat-open .ss-hub-grid { grid-template-columns: 1fr; }
 .ss-hub-card-head { flex-wrap: wrap; }
 .ss-route-tag { white-space: nowrap; }
 .ss-hub-status { white-space: nowrap; }
+
+/* ============================================================
+   Conversations CRM — off-product 1:1 threads + in-product
+   feedback, unified in the Loop-history section (build #13).
+   ============================================================ */
+
+/* Segmented tabs: Off-product 1:1s / In-product feedback / Loops */
+.ss-conv-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+.ss-conv-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background .16s, color .16s, box-shadow .16s;
+}
+.ss-conv-tabs button:hover { color: var(--text-primary); }
+.ss-conv-tabs button.on {
+  background: var(--panel);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px oklch(0.2 0.02 60 / .08);
+}
+.ss-conv-tabs button em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 20px;
+  background: var(--accent-tint);
+  color: var(--accent-hover);
+}
+
+/* Channel badge — email / Telegram / in-product, warm token-derived tints */
+.ss-chan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.ss-chan-badge.sm { padding: 2px 7px; font-size: 0.66rem; }
+.ss-chan-badge.chan-email {
+  color: var(--accent-hover);
+  background: var(--accent-tint);
+  border-color: var(--accent-soft);
+}
+.ss-chan-badge.chan-telegram {
+  color: var(--blue);
+  background: color-mix(in oklch, var(--blue) 10%, var(--panel));
+  border-color: color-mix(in oklch, var(--blue) 24%, var(--panel));
+}
+.ss-chan-badge.chan-inproduct {
+  color: var(--success);
+  background: var(--success-tint);
+  border-color: color-mix(in oklch, var(--success) 26%, var(--panel));
+}
+
+/* CRM rows */
+.ss-conv-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  width: 100%;
+  padding: 0.75rem 0.6rem;
+  text-align: left;
+  color: inherit;
+  border-top: 1px solid var(--border);
+  transition: background .16s, box-shadow .16s;
+}
+.ss-conv-list .ss-conv-row:first-child { border-top-color: transparent; }
+.ss-conv-row:hover,
+.ss-conv-row:focus-visible,
+.ss-conv-row.on {
+  background: var(--accent-tint);
+  border-radius: 12px;
+}
+.ss-conv-row.on { box-shadow: inset 0 0 0 1px var(--accent-soft); }
+.ss-conv-row .ss-profile-avatar { margin-top: 2px; }
+.ss-conv-row-copy { min-width: 0; }
+.ss-conv-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.ss-conv-row-top b { font-size: 0.92rem; line-height: 1.2; }
+.ss-conv-row-copy p {
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.ss-conv-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+.ss-conv-status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.ss-conv-status.st-active,
+.ss-conv-status.st-activenow {
+  color: var(--success);
+  background: var(--success-tint);
+  border-color: color-mix(in oklch, var(--success) 24%, var(--panel));
+}
+.ss-conv-status.st-async {
+  color: var(--accent-hover);
+  background: var(--accent-tint);
+  border-color: var(--accent-soft);
+}
+.ss-conv-tag,
+.ss-conv-min {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Thread reader header strip */
+.ss-thread-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.ss-thread-panel .ss-chat-head .ss-chan-badge { margin-left: auto; }
+
+/* Source note above a stream */
+.ss-source-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0.35rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.ss-source-note svg { color: var(--success); flex-shrink: 0; }
+
+/* In-product feedback stream */
+.ss-inproduct-list { display: flex; flex-direction: column; gap: 0.7rem; }
+.ss-inproduct-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 0.8rem 0.9rem;
+}
+button.ss-inproduct-row:hover,
+button.ss-inproduct-row:focus-visible { border-color: var(--accent-soft); }
+.ss-src-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--success);
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--success-tint);
+  border: 1px solid color-mix(in oklch, var(--success) 22%, var(--panel));
+}
+.ss-inproduct-body { margin-top: 0.5rem; }
+.ss-inproduct-body b { font-size: 0.9rem; line-height: 1.3; }
+.ss-inproduct-body p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.ss-inproduct-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.ss-inproduct-foot .mono { font-family: var(--font-mono); font-size: 0.7rem; }
+
+/* Per-user in-product block inside a person's profile */
+.ss-person-inproduct {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: oklch(0.99 0.004 80 / .55);
+  padding: 1rem 1.1rem;
+  margin: 0.25rem 0 1rem;
+}
+.ss-person-inproduct .ss-inproduct-row { background: var(--surface); }
+
+@media (max-width: 860px) {
+  .ss-thread-panel .ss-chat-body { max-height: none; }
+}
