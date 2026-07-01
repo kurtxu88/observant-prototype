@@ -15,15 +15,23 @@
       Both read Supabase via api/_db.js and degrade gracefully to a
       small simulated payload when no DB is configured (demo/local).
 
-   2. Codified bridge tools (DOCUMENTED CONNECTION — not built here).
+   2. Codified bridge tools (REAL PROXY when CODIFIED_API_KEY is set).
       Codified is the research/synthesis engine — a SEPARATE live
-      product (the Codified MCP). We do NOT have Codified's backend in
-      this repo and do not embed or reimplement it. These tools are an
-      interface that names the exact Codified MCP tool each one would
-      connect out to; the live endpoint + auth come from the Codified
-      product (TBD-from-Codified/Bin). Until that's wired, each returns
-      a stub documenting the call. Observant holds the raw feedback;
-      Codified orchestrates studies + synthesis over it.
+      product (the Codified MCP at CODIFIED_MCP_URL, default
+      https://api.usercodified.com/mcp). We do NOT embed Codified's
+      backend; we PROXY to it over its own JSON-RPC/streamable-HTTP
+      transport using an org-scoped Bearer key (cdf_…):
+        • CODIFIED_API_KEY set → on tools/list we also fetch Codified's
+          tools/list and merge them in, prefixed `codified_…`; on
+          tools/call for a `codified_…` tool we forward to Codified's
+          tools/call with the un-prefixed real name + args and return
+          the result. If dynamic listing fails we fall back to a fixed
+          `codified_*` set (query_insights / search_transcripts /
+          run_study / synthesize_journey) whose handlers still proxy.
+        • CODIFIED_API_KEY NOT set → each `codified_*` tool returns a
+          doc-stub ("add CODIFIED_API_KEY in Vercel to enable").
+      Observant holds the raw feedback; Codified orchestrates studies
+      + synthesis over it.
 
    Every tool returns the MCP content shape:
      { content: [{ type: "text", text }], isError? }
@@ -35,7 +43,7 @@ const db = require("../_db");
    descriptions agent-facing: an editor agent reads these to decide
    when to call them.
    --------------------------------------------------------------- */
-const TOOLS = [
+const OBSERVANT_TOOLS = [
   {
     name: "observant_recent_feedback",
     source: "observant",
@@ -78,14 +86,33 @@ const TOOLS = [
       },
     },
   },
+];
+
+/* ---------------------------------------------------------------
+   CODIFIED BRIDGE TOOLS (fixed fallback surface).
+   These are advertised whenever we CAN'T dynamically list the live
+   Codified MCP — either because no CODIFIED_API_KEY is set (stub
+   mode) or because the live tools/list call failed. When a key IS
+   set and the live listing succeeds, this fixed set is REPLACED by
+   the real, dynamically-fetched Codified tool list (name-prefixed
+   `codified_…`). Either way, calling a `codified_*` tool with a key
+   set proxies to the live Codified MCP; without a key it returns the
+   "add CODIFIED_API_KEY" stub. Names/shapes below mirror the REAL
+   Codified MCP tools (kurtxu88/codify_v2 packages/mcp-server).
+   --------------------------------------------------------------- */
+const CODIFIED_PREFIX = "codified_";
+const CODIFIED_FALLBACK_TOOLS = [
   {
     name: "codified_query_insights",
     source: "codified-bridge",
     description:
-      "BRIDGE → Codified MCP `query_insights`. Search synthesized research insights by feature/topic across studies Observant has run — returns user quotes, market context, and recommendations. Add the Codified MCP for live results; this tool documents the call.",
+      "BRIDGE → Codified MCP `query_insights`. Search synthesized research insights by feature/topic across studies Observant has run — returns user quotes, market context, and recommendations. Proxies to the live Codified MCP when CODIFIED_API_KEY is set.",
     inputSchema: {
       type: "object",
-      properties: { feature: { type: "string", description: "Feature or topic to search (e.g. 'checkout')." } },
+      properties: {
+        feature: { type: "string", description: "Feature or topic to search (e.g. 'checkout', 'onboarding', 'pricing')." },
+        includeExamples: { type: "boolean", description: "Also search example/demo insights." },
+      },
       required: ["feature"],
     },
   },
@@ -93,10 +120,13 @@ const TOOLS = [
     name: "codified_search_transcripts",
     source: "codified-bridge",
     description:
-      "BRIDGE → Codified MCP `search_transcripts`. Full-text search across all 1:1 interview transcripts to find what users actually said. Add the Codified MCP for live results.",
+      "BRIDGE → Codified MCP `search_transcripts`. Full-text search across all 1:1 interview transcripts to find what users actually said. Proxies to the live Codified MCP when CODIFIED_API_KEY is set.",
     inputSchema: {
       type: "object",
-      properties: { query: { type: "string", description: "Search term to find in transcripts." } },
+      properties: {
+        query: { type: "string", description: "Search term to find in transcripts." },
+        includeExamples: { type: "boolean", description: "Also search example/demo transcripts." },
+      },
       required: ["query"],
     },
   },
@@ -104,7 +134,7 @@ const TOOLS = [
     name: "codified_run_study",
     source: "codified-bridge",
     description:
-      "BRIDGE → Codified MCP `run_study`. Kick off a new round of user feedback (pmf / churn / drop_off / d0-retention / discovery / launch_feedback / concept-test …). Observant recruits the right users from your roster and runs the 1:1s; results flow back to observant_conversations + observant_insights. Add the Codified MCP to actually launch a study.",
+      "BRIDGE → Codified MCP `run_study`. Generate a study plan for a new round of user feedback (pmf / churn / drop_off / d0-retention / discovery / sentiment / concept-test / persona / launch_feedback / custom). Proxies to the live Codified MCP when CODIFIED_API_KEY is set; results flow back to observant_conversations + observant_insights.",
     inputSchema: {
       type: "object",
       properties: {
@@ -119,15 +149,35 @@ const TOOLS = [
       required: ["type"],
     },
   },
+  {
+    name: "codified_synthesize_journey",
+    source: "codified-bridge",
+    description:
+      "BRIDGE → Codified MCP `synthesize_journey`. Synthesize a user journey from analytics data (e.g. PostHog output) into insight records. Proxies to the live Codified MCP when CODIFIED_API_KEY is set.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        analyticsData: { type: "string", description: "Raw analytics output (PostHog MCP, SQL, or other)." },
+        description: { type: "string", description: "What you want to understand from the data." },
+        title: { type: "string", description: "Optional title for the journey." },
+      },
+      required: ["analyticsData"],
+    },
+  },
 ];
 
-/* Map of Observant bridge tool → the Codified MCP tool it stands in for.
-   Used both in stub responses and in the design doc. */
-const BRIDGE_MAP = {
-  codified_query_insights: "query_insights",
-  codified_search_transcripts: "search_transcripts",
-  codified_run_study: "run_study",
-};
+/* Map of Observant bridge tool → the real Codified MCP tool it stands
+   in for. Derived from the fallback set (prefix stripped), but the
+   proxy also handles any dynamically-listed codified_* tool by simply
+   removing the prefix. Used in stub responses + the design doc. */
+const BRIDGE_MAP = CODIFIED_FALLBACK_TOOLS.reduce((m, t) => {
+  m[t.name] = t.name.slice(CODIFIED_PREFIX.length);
+  return m;
+}, {});
+
+/* Full advertised surface (Observant tools + fixed Codified fallback).
+   The dynamic path may swap the codified portion for the live listing. */
+const TOOLS = OBSERVANT_TOOLS.concat(CODIFIED_FALLBACK_TOOLS);
 
 /* ---------------------------------------------------------------
    helpers
@@ -288,32 +338,175 @@ async function insights(args) {
   );
 }
 
-/* ---------------------------------------------------------------
-   BRIDGE TOOLS — document the call OUT to the live Codified MCP.
-   Codified is a separate product; its backend is NOT in this repo,
-   so nothing here is executed against Codified. The stub names the
-   exact Codified MCP tool this maps to and how to connect to the
-   live engine. The endpoint/auth come from Codified (TBD-from-
-   Codified/Bin). This is a documented connection, not a fake call.
-   --------------------------------------------------------------- */
+/* ===============================================================
+   CODIFIED MCP PROXY — the real bridge.
+   Speaks Codified's JSON-RPC 2.0 streamable-HTTP transport:
+     - POST JSON-RPC with `Authorization: Bearer <cdf_…>` and
+       `Accept: application/json, text/event-stream`.
+     - Parses both plain-JSON and SSE (`text/event-stream`) replies.
+     - Runs the MCP handshake (initialize → notifications/initialized)
+       and reuses any `Mcp-Session-Id` the server issues.
+   Only active when CODIFIED_API_KEY is present; otherwise every
+   codified_* tool degrades to bridgeStub().
+   =============================================================== */
+const CODIFIED_DEFAULT_URL = "https://api.usercodified.com/mcp";
+const CODIFIED_PROTOCOL = "2024-11-05";
+const CODIFIED_TIMEOUT_MS = 20000;
+
+function codifiedKey() { return process.env.CODIFIED_API_KEY || ""; }
+function codifiedUrl() { return process.env.CODIFIED_MCP_URL || CODIFIED_DEFAULT_URL; }
+function codifiedEnabled() { return !!codifiedKey(); }
+
+/* Module-scoped session cache (survives warm serverless invocations). */
+let _codifiedSession = { id: null, initialized: false, ts: 0 };
+const CODIFIED_SESSION_TTL_MS = 5 * 60 * 1000;
+let _rpcSeq = 0;
+
+/* Parse an MCP HTTP reply: SSE frames (data: <json>) OR a plain JSON body.
+   Returns the JSON-RPC message object (result/error), or null. */
+function parseMcpBody(contentType, raw) {
+  if (!raw) return null;
+  const ct = (contentType || "").toLowerCase();
+  if (ct.indexOf("text/event-stream") !== -1 || /^\s*(event|data):/m.test(raw)) {
+    let last = null;
+    for (const line of raw.split(/\r?\n/)) {
+      const m = /^data:\s?(.*)$/.exec(line);
+      if (!m) continue;
+      const payload = m[1];
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const obj = JSON.parse(payload);
+        if (obj && (obj.result !== undefined || obj.error !== undefined)) return obj;
+        last = obj;
+      } catch (_) { /* skip non-JSON data lines */ }
+    }
+    return last;
+  }
+  try { return JSON.parse(raw); } catch (_) { return null; }
+}
+
+/* One JSON-RPC round-trip to the Codified MCP. Notifications (no id)
+   expect no body. Captures Mcp-Session-Id from response headers. */
+async function codifiedRpc(method, params, { notification = false } = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json, text/event-stream",
+    Authorization: "Bearer " + codifiedKey(),
+    "MCP-Protocol-Version": CODIFIED_PROTOCOL,
+  };
+  if (_codifiedSession.id) headers["Mcp-Session-Id"] = _codifiedSession.id;
+
+  const body = { jsonrpc: "2.0", method };
+  if (params !== undefined) body.params = params;
+  if (!notification) body.id = ++_rpcSeq;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), CODIFIED_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(codifiedUrl(), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const sid = res.headers.get("mcp-session-id");
+  if (sid) _codifiedSession.id = sid;
+
+  if (notification) { try { await res.text(); } catch (_) {} return null; }
+
+  const raw = await res.text();
+  if (!res.ok) {
+    const err = new Error("Codified MCP " + res.status + ": " + (raw ? raw.slice(0, 300) : res.statusText));
+    err.status = res.status;
+    throw err;
+  }
+  const msg = parseMcpBody(res.headers.get("content-type"), raw);
+  if (msg && msg.error) {
+    const err = new Error("Codified MCP error: " + (msg.error.message || JSON.stringify(msg.error)));
+    err.rpc = msg.error;
+    throw err;
+  }
+  return msg ? msg.result : null;
+}
+
+/* Ensure the MCP handshake has run (once per warm session/TTL). */
+async function ensureCodifiedSession() {
+  const fresh = _codifiedSession.initialized && Date.now() - _codifiedSession.ts < CODIFIED_SESSION_TTL_MS;
+  if (fresh) return;
+  await codifiedRpc("initialize", {
+    protocolVersion: CODIFIED_PROTOCOL,
+    capabilities: {},
+    clientInfo: { name: "observant-bridge", version: "0.1.0" },
+  });
+  try { await codifiedRpc("notifications/initialized", undefined, { notification: true }); } catch (_) {}
+  _codifiedSession.initialized = true;
+  _codifiedSession.ts = Date.now();
+}
+
+/* Run an op against Codified, re-initializing once if the session is
+   rejected (e.g. server restarted / session expired). */
+async function codifiedOp(fn) {
+  try {
+    await ensureCodifiedSession();
+    return await fn();
+  } catch (err) {
+    if (err && (err.status === 400 || err.status === 401 || err.status === 404)) {
+      _codifiedSession = { id: null, initialized: false, ts: 0 };
+      await ensureCodifiedSession();
+      return await fn();
+    }
+    throw err;
+  }
+}
+
+/* DYNAMIC: fetch Codified's live tool list, prefix names `codified_`. */
+async function listCodifiedTools() {
+  const result = await codifiedOp(() => codifiedRpc("tools/list", {}));
+  const list = (result && result.tools) || [];
+  return list.map((t) => ({
+    name: CODIFIED_PREFIX + t.name,
+    description:
+      "BRIDGE → Codified MCP `" + t.name + "`. " + (t.description || "").trim(),
+    inputSchema: t.inputSchema || { type: "object", properties: {} },
+  }));
+}
+
+/* PROXY: forward a codified_* tools/call to the live Codified MCP. */
+async function proxyCodifiedCall(name, args) {
+  const realName = name.slice(CODIFIED_PREFIX.length);
+  const result = await codifiedOp(() =>
+    codifiedRpc("tools/call", { name: realName, arguments: args || {} })
+  );
+  // Codified returns the MCP content shape already — pass it through.
+  if (result && Array.isArray(result.content)) return result;
+  return jsonText(result || {}, "Codified MCP · " + realName);
+}
+
+/* STUB — returned for codified_* tools when no CODIFIED_API_KEY is set.
+   Names the real Codified tool + how to turn the live proxy on. */
 function bridgeStub(name, args) {
-  const codifiedTool = BRIDGE_MAP[name] || name;
+  const codifiedTool = BRIDGE_MAP[name] || name.slice(CODIFIED_PREFIX.length) || name;
   return jsonText(
     {
       bridge: true,
       connects_out_to: "codified-mcp (separate live product)",
       codified_tool: codifiedTool,
       arguments_seen: args,
-      status: "not-connected — Codified MCP endpoint + auth not configured here",
-      connection_tbd: "live Codified MCP URL/command + org auth (TBD-from-Codified/Bin)",
+      status: "not-connected — CODIFIED_API_KEY not set on this Observant deployment",
       how_to_connect:
-        "Add the live Codified MCP alongside Observant so this runs against the engine:\n" +
-        "  claude mcp add codified -- npx -y @usercodified/mcp   # exact command from Codified\n" +
-        "Observant holds your raw feedback (conversations + in-product snippets); Codified orchestrates studies and synthesizes over it. Once Codified is connected, call `" +
-        codifiedTool +
-        "` on it directly with these arguments.",
+        "Set CODIFIED_API_KEY (an org-scoped Codified key, cdf_…) in Vercel to turn this " +
+        "bridge on. Optionally set CODIFIED_MCP_URL (default " + CODIFIED_DEFAULT_URL + "). " +
+        "Once set, Observant proxies `" + codifiedTool + "` to the live Codified MCP with " +
+        "these arguments, and tools/list merges in Codified's live tools (prefixed codified_). " +
+        "Observant holds your raw feedback (conversations + in-product snippets); Codified " +
+        "orchestrates studies and synthesizes over it.",
     },
-    "Bridge → Codified MCP · " + codifiedTool + " (connect the live Codified MCP to run this)"
+    "Bridge → Codified MCP · " + codifiedTool + " (set CODIFIED_API_KEY to run this live)"
   );
 }
 
@@ -329,24 +522,52 @@ async function callTool(name, args) {
       return conversations(a);
     case "observant_insights":
       return insights(a);
-    case "codified_query_insights":
-    case "codified_search_transcripts":
-    case "codified_run_study":
-      return bridgeStub(name, a);
-    default:
-      return { content: [{ type: "text", text: "Unknown tool: " + name }], isError: true };
   }
+  // Any codified_* tool: proxy live when a key is set, else doc-stub.
+  if (name.indexOf(CODIFIED_PREFIX) === 0) {
+    if (!codifiedEnabled()) return bridgeStub(name, a);
+    try {
+      return await proxyCodifiedCall(name, a);
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: "Codified bridge call '" + name + "' failed: " + ((err && err.message) || err) }],
+        isError: true,
+      };
+    }
+  }
+  return { content: [{ type: "text", text: "Unknown tool: " + name }], isError: true };
 }
 
-/* Tool list as advertised over the wire (strip the internal `source` field
-   into the schema-clean MCP shape, but keep `source` available to callers
-   that want to group Observant vs bridge tools). */
+/* Strip internal fields → schema-clean MCP tool shape. */
+function clean(t) {
+  return { name: t.name, description: t.description, inputSchema: t.inputSchema };
+}
+
+/* SYNC list — Observant tools + the fixed Codified fallback. Used for the
+   human-readable GET server card (no network) and as the safe default. */
 function listTools() {
-  return TOOLS.map((t) => ({
-    name: t.name,
-    description: t.description,
-    inputSchema: t.inputSchema,
-  }));
+  return TOOLS.map(clean);
 }
 
-module.exports = { TOOLS, BRIDGE_MAP, listTools, callTool };
+/* ASYNC list — the wire path for MCP tools/list. When a key is set, merge
+   in Codified's LIVE tools (dynamic); on any failure fall back to the
+   fixed set. Observant's own tools are always present and unchanged. */
+async function listToolsAsync() {
+  const observant = OBSERVANT_TOOLS.map(clean);
+  if (codifiedEnabled()) {
+    try {
+      const live = await listCodifiedTools();
+      if (live && live.length) return observant.concat(live);
+    } catch (_) { /* fall through to fixed fallback */ }
+  }
+  return observant.concat(CODIFIED_FALLBACK_TOOLS.map(clean));
+}
+
+module.exports = {
+  TOOLS,
+  BRIDGE_MAP,
+  listTools,
+  listToolsAsync,
+  callTool,
+  codifiedEnabled,
+};

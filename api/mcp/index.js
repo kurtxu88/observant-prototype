@@ -12,11 +12,12 @@
    WHAT IT EXPOSES (see api/mcp/_tools.js):
      • Observant tools (REAL, DB-backed) — your collected user feedback:
          observant_recent_feedback, observant_conversations, observant_insights
-     • Codified bridge tools (DESIGNED/STUBBED) — the research engine:
-         codified_query_insights, codified_search_transcripts, codified_run_study
-       Production proxies these to the Codified MCP; the scaffold returns a
-       clear "add the Codified MCP" stub. One door: read your users'
-       feedback AND drive studies, without leaving the editor.
+     • Codified bridge tools (LIVE PROXY when CODIFIED_API_KEY is set) —
+       the research engine. With a key, tools/list merges in Codified's
+       live tools (prefixed codified_) and tools/call forwards to the
+       Codified MCP; without a key each codified_* tool returns a clear
+       "set CODIFIED_API_KEY" stub. One door: read your users' feedback
+       AND drive studies, without leaving the editor.
 
    Methods handled:
      initialize · notifications/initialized · ping · tools/list · tools/call
@@ -71,7 +72,10 @@ function serverCard() {
     bridge: {
       engine: "codified",
       map: tools.BRIDGE_MAP,
-      note: "Observant holds the raw feedback; Codified orchestrates studies + synthesis over it.",
+      live: tools.codifiedEnabled(),
+      note: tools.codifiedEnabled()
+        ? "CODIFIED_API_KEY set — codified_* tools proxy to the live Codified MCP (tools/list merges live tools). Observant holds the raw feedback; Codified orchestrates studies + synthesis over it."
+        : "Set CODIFIED_API_KEY (cdf_… org key) to turn the live proxy on. Observant holds the raw feedback; Codified orchestrates studies + synthesis over it.",
     },
   };
 }
@@ -100,7 +104,7 @@ async function handleRpc(msg) {
       return rpcResult(id, {});
 
     case "tools/list":
-      return rpcResult(id, { tools: tools.listTools() });
+      return rpcResult(id, { tools: await tools.listToolsAsync() });
 
     case "tools/call": {
       const name = params && params.name;
