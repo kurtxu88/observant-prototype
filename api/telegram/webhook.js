@@ -73,8 +73,8 @@ async function handleStart(req, chatId, text, msg) {
   const welcome =
     (firstName ? "Hi " + firstName + " — " : "Hi — ") +
     "you're connected to the " + productName + " feedback line on Observant. " +
-    "This is a two-way thread: we'll send the occasional question here, and you can message anytime something breaks or you want to share feedback — that earns rewards too. " +
-    "What's something you did with " + productName + " recently? Anything stand out?";
+    "The " + productName + " team will drop in with the occasional question here, and every reply earns you rewards. " +
+    "Message me anytime about your feedback and thoughts on " + productName + ".";
 
   if (!db.dbConfigured()) {
     // No DB → we can't persist the opt-in, but the bot should still greet.

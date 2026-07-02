@@ -4,6 +4,24 @@
    its output seeds C4 (individual memory) so later questions are tailored. */
 const { useState: useIC, useRef: useICRef, useEffect: useICFx } = React;
 
+// Split a long assistant message into natural chat bubbles (sentence-grouped,
+// ~1-2 sentences each) so the intro reads like a real conversation, not a wall.
+function icSplitBubbles(text) {
+  const s = String(text || "").trim();
+  if (!s) return [];
+  const sentences = s.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [s];
+  const bubbles = [];
+  let cur = "";
+  for (const raw of sentences) {
+    const sent = raw.trim();
+    if (!sent) continue;
+    if (cur && cur.length + sent.length > 160) { bubbles.push(cur); cur = sent; }
+    else { cur = cur ? cur + " " + sent : sent; }
+  }
+  if (cur) bubbles.push(cur);
+  return bubbles;
+}
+
 const IC_VOICE_OK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition) && !!window.speechSynthesis;
 
 function icSpeak(text, onEnd) {
@@ -255,12 +273,24 @@ function IntroCall() {
       <p className="ic-sub">A quick ~10-minute hello so the {product} team can tailor what they ask you. {IC_VOICE_OK ? "Type, or tap Voice to talk." : "No wrong answers — just chat."}</p>
 
       <div className="ic-thread">
-        {messages.map((m, i) => (
-          <div key={i} className={"ic-msg " + (m.role === "user" ? "me" : "them")}>
-            {m.role === "assistant" && <Avatar name="Observant" color="rust" />}
-            <div className="ic-bubble">{m.content}</div>
-          </div>
-        ))}
+        {messages.map((m, i) => {
+          if (m.role === "user") {
+            return (
+              <div key={i} className="ic-msg me">
+                <div className="ic-bubble">{m.content}</div>
+              </div>
+            );
+          }
+          const parts = icSplitBubbles(m.content);
+          return (
+            <div key={i} className="ic-msg them">
+              <Avatar name="Observant" color="rust" />
+              <div className="ic-bubbles">
+                {(parts.length ? parts : [m.content]).map((p, j) => <div key={j} className="ic-bubble">{p}</div>)}
+              </div>
+            </div>
+          );
+        })}
         {busy && <div className="ic-muted">Observant is {voiceMode ? "thinking…" : "typing…"}</div>}
         {listening && <div className="ic-muted">🎙 Listening…</div>}
         <div ref={endRef} />
