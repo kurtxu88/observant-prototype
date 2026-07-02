@@ -748,6 +748,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
   const [form, setForm] = useStateSS(() => editing ? { ...SS_EMPTY_WORKSPACE_FORM, ...initial } : { ...SS_EMPTY_WORKSPACE_FORM });
   const [step, setStep] = useStateSS(startStep || 0); // 0 product, 1 context
   const [drafting, setDrafting] = useStateSS(false);
+  const [sampleMode, setSampleMode] = useStateSS(false); // sample route: pre-filled form -> pre-filled (Northwind) dashboard
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
   const acctOk = (form.email || "").includes("@") && (form.email || "").includes(".");
   const ready = form.companyName.trim() && acctOk;
@@ -762,7 +763,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
     setDrafting(false);
   }
 
-  const submit = () => onSubmit(form, editing ? null : { name: form.founderName, email: form.email });
+  const submit = () => sampleMode ? onSample() : onSubmit(form, editing ? null : { name: form.founderName, email: form.email });
 
   return (
     <div className="ss-entry">
@@ -818,7 +819,7 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
               <Btn variant="primary" size="lg" disabled={!ready} onClick={() => setStep(1)}>Continue <Icon name="arrow" size={16} /></Btn>
               {editing
                 ? (onExit ? <Btn variant="ghost" size="lg" onClick={onExit}><Icon name="back" size={16} /> Back to setup</Btn> : null)
-                : <Btn variant="ghost" size="lg" onClick={() => { window.location.href = "/portal"; }}>See the sample workspace</Btn>}
+                : <Btn variant="ghost" size="lg" onClick={() => { setForm({ ...SS_EMPTY_WORKSPACE_FORM, ...SS_DEFAULT_WORKSPACE }); setSampleMode(true); }}>See the sample workspace</Btn>}
             </div>
           </>
         )}
