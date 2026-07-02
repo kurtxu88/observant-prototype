@@ -776,6 +776,20 @@ function OnboardingBar({ phase }) {
 // Onboarding steps 1-2: Product (account at the top) + optional Context & docs.
 // `initial` set => editing an existing draft; `startStep` picks which to land on;
 // `onExit` returns to the program steps without advancing.
+// Guess a product name from the URL's domain (linear.app -> "Linear"), so the
+// name field can auto-fill the moment the user drops their URL.
+function ssNameFromUrl(url) {
+  try {
+    let u = String(url || "").trim();
+    if (!u) return "";
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    const host = new URL(u).hostname.replace(/^www\./i, "");
+    const sld = (host.split(".")[0] || "").trim();
+    if (!sld) return "";
+    return sld.charAt(0).toUpperCase() + sld.slice(1);
+  } catch (e) { return ""; }
+}
+
 function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLogin }) {
   const editing = !!initial;
   const [form, setForm] = useStateSS(() => editing ? { ...SS_EMPTY_WORKSPACE_FORM, ...initial } : { ...SS_EMPTY_WORKSPACE_FORM });
@@ -827,11 +841,16 @@ function OnboardingWizard({ initial, startStep, onSubmit, onExit, onSample, onLo
               <Field label="Work email">
                 <input className="input" type="email" value={form.email} placeholder="you@company.com" onChange={(e) => update("email", e.target.value)} />
               </Field>
-              <Field label="Company or product name">
-                <input className="input" value={form.companyName} placeholder="Your product" onChange={(e) => update("companyName", e.target.value)} />
-              </Field>
               <Field label="Product URL">
-                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} onBlur={() => { if (form.productUrl.trim() && !form.productDescription.trim()) draftFromSite(); }} />
+                <input className="input" value={form.productUrl} placeholder="https://yourproduct.com" onChange={(e) => update("productUrl", e.target.value)} onBlur={() => {
+                  if (!form.productUrl.trim()) return;
+                  const guessed = ssNameFromUrl(form.productUrl);
+                  if (guessed && !form.companyName.trim()) update("companyName", guessed);
+                  if (!form.productDescription.trim()) draftFromSite();
+                }} />
+              </Field>
+              <Field label="Company or product name">
+                <input className="input" value={form.companyName} placeholder="Filled from your URL — edit if needed" onChange={(e) => update("companyName", e.target.value)} />
               </Field>
               <Field label="What does it do?" wide>
                 <textarea className="textarea" value={form.productDescription} placeholder={drafting ? "Reading your site and drafting this…" : "Drop your URL above and Observant drafts this from your site — or write a sentence yourself."} onChange={(e) => update("productDescription", e.target.value)} />
