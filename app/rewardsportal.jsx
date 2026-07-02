@@ -277,21 +277,32 @@ function PartnerHome({ user, data, err, onReload }) {
             </p>
           ) : (
             <ul className="rp-rows">
-              {history.map((l, i) => (
-                <li key={i} className="rp-row">
-                  <div className="rp-row-l">
-                    <div className="rp-row-k">{historyLabel(l)}</div>
-                    {l.product && <div className="rp-row-note">{l.product}</div>}
-                    <div className="rp-row-date">{fmtDate(l.date)}</div>
-                  </div>
-                  <div className={"rp-row-amt" + (l.kind === "redeemed" ? " neg" : "")}>
-                    {l.kind === "redeemed"
-                      ? "Claimed"
-                      : (Number(l.minutes) >= 0 ? "+" : "") + fmtMin(Math.abs(l.minutes))}
-                    {l.amount != null && <span className="rp-row-usd">{fmtUSD(Math.abs(l.amount))}</span>}
-                  </div>
-                </li>
-              ))}
+              {history.map((l, i) => {
+                // A reply that was assessed but didn't earn (partial/fail) — explain why, warmly.
+                const didntQualify = l.earned === false && l.kind !== "redeemed" && l.kind !== "adjustment";
+                return (
+                  <li key={i} className={"rp-row" + (didntQualify ? " rp-row-unq" : "")}>
+                    <div className="rp-row-l">
+                      <div className="rp-row-k">{historyLabel(l)}</div>
+                      {didntQualify && (
+                        <div className="rp-row-why">
+                          Didn't earn yet{l.reason ? " — " + lc(l.reason) : ""}
+                        </div>
+                      )}
+                      {l.product && <div className="rp-row-note">{l.product}</div>}
+                      <div className="rp-row-date">{fmtDate(l.date)}</div>
+                    </div>
+                    <div className={"rp-row-amt" + (l.kind === "redeemed" ? " neg" : "") + (didntQualify ? " unq" : "")}>
+                      {l.kind === "redeemed"
+                        ? "Claimed"
+                        : didntQualify
+                          ? "—"
+                          : (Number(l.minutes) >= 0 ? "+" : "") + fmtMin(Math.abs(l.minutes))}
+                      {!didntQualify && l.amount != null && <span className="rp-row-usd">{fmtUSD(Math.abs(l.amount))}</span>}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -305,7 +316,13 @@ function PartnerHome({ user, data, err, onReload }) {
 function historyLabel(l) {
   if (l.kind === "redeemed") return "Payout requested";
   if (l.kind === "adjustment") return "Adjustment";
+  if (l.earned === false) return "Reply received";
   return "Participated in a loop";
+}
+// Lowercase the first letter so a model-written reason reads naturally after "— ".
+function lc(s) {
+  const t = String(s || "").trim();
+  return t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
 }
 function channelLabel(c) {
   if (c === "telegram") return "Telegram";
@@ -380,9 +397,11 @@ function GoogleMark() {
   .rp-row{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;border-top:1px solid var(--border,#eee);}
   .rp-row-k{font-weight:600;font-size:.9rem;}
   .rp-row-note{font-size:.8rem;color:var(--text-muted,#857d70);margin-top:.15rem;}
+  .rp-row-why{font-size:.8rem;color:#8a6d1f;margin-top:.15rem;line-height:1.4;max-width:34ch;}
   .rp-row-date{font-size:.74rem;color:var(--text-muted,#aaa);margin-top:.15rem;}
   .rp-row-amt{text-align:right;font-weight:600;font-size:.9rem;white-space:nowrap;}
   .rp-row-amt.neg{color:var(--text-muted,#857d70);}
+  .rp-row-amt.unq{color:var(--text-muted,#b8b0a3);font-weight:500;}
   .rp-row-usd{display:block;font-size:.78rem;color:var(--text-muted,#857d70);font-weight:500;}
   .rp-foot{margin-top:1.6rem;font-size:.78rem;color:var(--text-muted,#aaa);text-align:center;}
   `;

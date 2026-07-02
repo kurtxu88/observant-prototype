@@ -78,10 +78,11 @@ module.exports = async function handler(req, res) {
     const qa = await callSelf(base, { action: "quality", product: program.product_name, questions: parsed.questions, answers: [inboundText] });
     const verdict = (qa && ["pass", "partial", "fail"].includes(qa.overall)) ? qa.overall : "pass";
 
-    // Always log the inbound reply, even if it doesn't (yet) pass.
+    // Always log the inbound reply, even if it doesn't (yet) pass — stamp it with the
+    // verdict/reason so the portal can explain why it did or didn't earn.
     const earned = verdict === "pass";
     const minutes = earned ? Math.max(1, estLoopMin(parsed.questions)) : 0;   // PRE-DETERMINED reward (never time-on-page)
-    await persistMsg(conversation.id, "partner", inboundText, minutes);
+    await persistMsg(conversation.id, "partner", inboundText, minutes, qualityMeta(qa));
 
     // Team update — urgent alert if this reply reads negative/churny (best-effort, non-blocking).
     try { await alerts.maybeAlert({ base, slug: program.slug, kind: "reply", product: program.product_name, channel: "email", name: fromEmail, partnerId: partner.id, quote: inboundText }); } catch (_e) {}
@@ -167,10 +168,27 @@ async function resolvePartner(email) {
   return { partner, program, conversation };
 }
 
-async function persistMsg(convId, sender, body, minutes) {
+// The quality verdict + one-line reason, shaped for a message's `meta` column so the
+// portal can later explain why a reply did or didn't earn. Null if we have no verdict.
+function qualityMeta(qa) {
+  if (!qa) return null;
+  const overall = ["pass", "partial", "fail"].includes(qa.overall) ? qa.overall : "pass";
+  return { quality_verdict: overall, quality_note: String((qa && qa.summary) || "").slice(0, 300) };
+}
+
+// `meta` (optional) rides in the messages.meta jsonb column — used to stamp a partner reply
+// with its quality verdict/reason. Best-effort; if the meta column is missing, retries without it.
+async function persistMsg(convId, sender, body, minutes, meta) {
   try {
     if (!db.dbConfigured() || !convId || !String(body || "").trim()) return;
-    await db.insert("messages", { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 });
+    const row = { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 };
+    if (meta && typeof meta === "object") row.meta = meta;
+    try {
+      await db.insert("messages", row);
+    } catch (e) {
+      if (row.meta) { delete row.meta; await db.insert("messages", row); }   // older DB w/o meta column
+      else throw e;
+    }
     await db.update("conversations", "id=eq." + convId, { last_active_at: new Date().toISOString() });
   } catch (e) { console.error("[inbound-email] persistMsg:", e && e.message); }
 }

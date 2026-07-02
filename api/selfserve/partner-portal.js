@@ -71,11 +71,12 @@ function simulatedPortal(email) {
       { product: "Northwind", slug: "northwind", channel: "email", cadence: "occasional", status: "active", rate: 2, compType: "cash" },
     ],
     history: [
-      { kind: "earned", minutes: 4, amount: 8, note: "email reply", product: "Northwind", date: new Date(now - 1 * day).toISOString() },
-      { kind: "earned", minutes: 3, amount: 6, note: "email reply", product: "Northwind", date: new Date(now - 5 * day).toISOString() },
+      { kind: "earned", earned: true, minutes: 4, amount: 8, verdict: "pass", reason: "", note: "email reply", product: "Northwind", date: new Date(now - 1 * day).toISOString() },
+      { kind: "unqualified", earned: false, minutes: 0, amount: null, verdict: "partial", reason: "Too brief — add a specific example to earn.", note: "", product: "Northwind", date: new Date(now - 2 * day).toISOString() },
+      { kind: "earned", earned: true, minutes: 3, amount: 6, verdict: "pass", reason: "", note: "email reply", product: "Northwind", date: new Date(now - 5 * day).toISOString() },
       { kind: "redeemed", minutes: -3, amount: -6, note: "payout requested", product: "Northwind", date: new Date(now - 6 * day).toISOString() },
-      { kind: "earned", minutes: 4, amount: 8, note: "email reply", product: "Northwind", date: new Date(now - 9 * day).toISOString() },
-      { kind: "earned", minutes: 3, amount: 6, note: "email reply", product: "Northwind", date: new Date(now - 14 * day).toISOString() },
+      { kind: "earned", earned: true, minutes: 4, amount: 8, verdict: "pass", reason: "", note: "email reply", product: "Northwind", date: new Date(now - 9 * day).toISOString() },
+      { kind: "earned", earned: true, minutes: 3, amount: 6, verdict: "pass", reason: "", note: "email reply", product: "Northwind", date: new Date(now - 14 * day).toISOString() },
     ],
   };
 }
@@ -186,10 +187,11 @@ module.exports = async function handler(req, res) {
     const balance = (balances || []).reduce((a, b) => a + Number(b.balance_amount || 0), 0);
 
     // Recent ledger across all of this partner's programs = their history.
+    // quality_verdict is the audit trail stamped on each earn — surface its verdict/reason.
     const ledger = await db.select(
       "minutes_ledger",
       "partner_id=in." + inList(ids) +
-        "&select=partner_id,kind,minutes,amount,note,created_at&order=created_at.desc&limit=60"
+        "&select=partner_id,kind,minutes,amount,note,quality_verdict,created_at&order=created_at.desc&limit=60"
     );
     const claimed = (ledger || [])
       .filter((l) => l.kind === "redeemed")
@@ -197,15 +199,61 @@ module.exports = async function handler(req, res) {
 
     const history = (ledger || []).map((l) => {
       const prog = progByPartner[l.partner_id];
+      const qv = l.quality_verdict && typeof l.quality_verdict === "object" ? l.quality_verdict : null;
+      const earned = l.kind === "earned";
       return {
         kind: l.kind,
+        earned,                                        // earn rows always qualified
         minutes: Number(l.minutes || 0),
         amount: l.amount == null ? null : Number(l.amount),
+        verdict: earned ? (qv && qv.overall) || "pass" : null,
+        reason: earned ? String((qv && qv.summary) || "") : "",
         note: l.note || "",
         product: prog ? prog.product_name : "",
         date: l.created_at,
       };
     });
+
+    // Replies that were ASSESSED but didn't (yet) earn have no ledger row (the ledger
+    // only records earns/redemptions), so pull them from the persisted partner messages —
+    // each carries its verdict/reason in meta. Best-effort: a missing meta column or any
+    // query error just omits them (the ledger-based history still renders).
+    try {
+      const convs = await db.select(
+        "conversations",
+        "partner_id=in." + inList(ids) + "&select=id,partner_id&limit=200"
+      );
+      const convProgById = {};
+      (convs || []).forEach((c) => { convProgById[c.id] = progByPartner[c.partner_id] || null; });
+      const convIds = (convs || []).map((c) => c.id);
+      if (convIds.length) {
+        const msgs = await db.select(
+          "messages",
+          "conversation_id=in." + inList(convIds) +
+            "&sender=eq.partner&select=conversation_id,minutes,meta,created_at&order=created_at.desc&limit=100"
+        );
+        (msgs || []).forEach((m) => {
+          const meta = m.meta && typeof m.meta === "object" ? m.meta : null;
+          const verdict = meta && meta.quality_verdict;
+          if (!verdict || verdict === "pass") return;    // earned replies already come from the ledger
+          const prog = convProgById[m.conversation_id];
+          history.push({
+            kind: "unqualified",
+            earned: false,
+            minutes: 0,
+            amount: null,
+            verdict,
+            reason: String(meta.quality_note || ""),
+            note: "",
+            product: prog ? prog.product_name : "",
+            date: m.created_at,
+          });
+        });
+        history.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      }
+    } catch (e) {
+      console.error("[partner-portal] verdict enrich skipped:", e && e.message);
+    }
 
     // Effective per-minute rate for display: prefer a program rate, else derive.
     let rate = 2;

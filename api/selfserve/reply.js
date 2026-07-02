@@ -50,6 +50,8 @@ module.exports = async function handler(req, res) {
     const verdict = (qa && ["pass", "partial", "fail"].includes(qa.overall)) ? qa.overall : "pass";
     if (verdict !== "pass") {
       // No reward yet — fail = re-answer, partial = add a bit more. The user stays on the form.
+      // Persist the reply + its verdict/reason so the portal can explain why it didn't earn.
+      await persistMsg(state.conversationId, "partner", userText, 0, qualityMeta(qa));
       return res.status(200).json({ ok: true, done: false, verdict, quality: qa });
     }
 
@@ -57,7 +59,7 @@ module.exports = async function handler(req, res) {
     const minutes = Math.max(1, Number(state.estMin) || estLoopMin(parsed.questions));   // PRE-DETERMINED reward for this loop (never time-on-page)
     const totalMinutes = (Number(state.accruedMinutes) || 0) + minutes;
     await recordEarnedMinutes(state, minutes, qa);   // #3 — persist the earn (audit = quality verdict)
-    await persistMsg(state.conversationId, "partner", userText, minutes);   // log the inbound reply (mirrors the ledger earn)
+    await persistMsg(state.conversationId, "partner", userText, minutes, qualityMeta(qa));   // log the inbound reply (mirrors the ledger earn) + its verdict
 
     // HARD CAP: one inquiry = the initial batch + AT MOST ONE follow-up. Then stop, always.
     if (priorEmails >= 2) {
@@ -199,12 +201,29 @@ async function recordEarnedMinutes(state, minutes, qa) {
   } catch (e) { console.error("[ledger] record failed:", e && e.message); }
 }
 
+// The quality verdict + one-line reason, shaped for a message's `meta` column so the
+// portal can later explain why a reply did or didn't earn. Null if we have no verdict.
+function qualityMeta(qa) {
+  if (!qa) return null;
+  const overall = ["pass", "partial", "fail"].includes(qa.overall) ? qa.overall : "pass";
+  return { quality_verdict: overall, quality_note: String((qa && qa.summary) || "").slice(0, 300) };
+}
+
 // Append a turn to the persisted conversation (so an email reply can later reconstruct it).
-// Best-effort: no-ops without a DB or a conversation id (e.g. older base64-only links).
-async function persistMsg(convId, sender, body, minutes) {
+// `meta` (optional) rides in the messages.meta jsonb column — used to stamp a partner reply
+// with its quality verdict/reason. Best-effort: no-ops without a DB or a conversation id
+// (e.g. older base64-only links); if the meta column is missing, retries without it.
+async function persistMsg(convId, sender, body, minutes, meta) {
   try {
     if (!db.dbConfigured() || !convId || !String(body || "").trim()) return;
-    await db.insert("messages", { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 });
+    const row = { conversation_id: convId, sender, body: String(body).slice(0, 8000), minutes: Number(minutes) || 0 };
+    if (meta && typeof meta === "object") row.meta = meta;
+    try {
+      await db.insert("messages", row);
+    } catch (e) {
+      if (row.meta) { delete row.meta; await db.insert("messages", row); }   // older DB w/o meta column
+      else throw e;
+    }
     await db.update("conversations", "id=eq." + convId, { last_active_at: new Date().toISOString() });
   } catch (e) { console.error("[reply] persistMsg failed:", e && e.message); }
 }
