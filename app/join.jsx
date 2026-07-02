@@ -4,7 +4,7 @@
    Participant-facing: the page speaks in the cliednt's brand,
    with Observant as the feedback partner running the program.
    ============================================================ */
-const { useState: useStateJN } = React;
+const { useState: useStateJN, useEffect: useEffectJN, useRef: useRefJN } = React;
 
 // ── Telegram bot ──────────────────────────────────────────────────────────
 // The bot a partner opens to start their 1:1 over Telegram.
@@ -134,6 +134,7 @@ async function jnSendMagicLink(email) {
     ".jn-intro-offer { margin-top: 18px; padding: 16px 18px; border: 1px solid var(--border, #e7e3da); border-radius: 12px; background: var(--surface-2, #faf8f4); }",
     ".jn-intro-offer > p { margin: 0 0 14px; }",
     ".jn-intro-note { margin-top: 16px; font-size: .9rem; color: var(--text-muted, #8a857c); }",
+    ".jn-email-confirm { display: flex; align-items: center; gap: 7px; margin: 14px 0 0; font-size: .9rem; color: var(--text-muted, #8a857c); }",
   ].join("\n");
   document.head.appendChild(el);
 })();
@@ -342,7 +343,7 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
         </details>
         <details>
           <summary>How do I redeem my rewards?</summary>
-          <p>Once you register an account with Observant, you can log in anytime to track your participated minutes as they add up. Rewards work like a gift card balance — claim smaller amounts often, or hold your balance for a bigger one. You cash out directly on Observant, anytime.</p>
+          <p>We've emailed you a link to your rewards portal — sign in there anytime to track your participated minutes as they add up and claim. Rewards work like a gift card balance — claim smaller amounts often, or hold your balance for a bigger one. You cash out directly on Observant, anytime.</p>
         </details>
         <details>
           <summary>What about my privacy — who sees my responses?</summary>
@@ -358,29 +359,32 @@ function JoinInvite({ product, rate, channels, route, onJoin }) {
 }
 
 function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
-  const [accountEmail, setAccountEmail] = useStateJN(contactEmail || "");
-  const [accountDone, setAccountDone] = useStateJN(false);
-  const [linkSent, setLinkSent] = useStateJN(false);
+  const [emailSent, setEmailSent] = useStateJN(false);
   const [introSkipped, setIntroSkipped] = useStateJN(false);
+  const welcomeSentRef = useRefJN(false);
   const reachWord = channel === "telegram" ? "Telegram" : channel === "inproduct" ? "right inside " + product : "email";
   const cadenceWord = cadence === "open" ? "as often as it helps" : cadence === "rare" ? "only now and then" : "about every week or two";
 
-  // Register the rewards account → send the sign-in link via OUR OWN Resend
-  // (server mints a real Supabase magic link, then emails it from our verified
-  // sender — reliable, unlike Supabase's built-in mailer). linkSent gates the
-  // "we've sent a sign-in link" copy: it flips true only when sent === true.
-  const register = () => {
-    if (!accountEmail.includes("@")) return;
-    setAccountDone(true);
+  // On join, auto-send the welcome/confirmation email exactly once (ref-guarded)
+  // to the contact email the partner already gave. It carries the rewards CTA
+  // ("Track & claim your rewards →") to their portal — no on-screen register
+  // step. Email channel only: Telegram partners get their link in Telegram, so
+  // we skip the send there. The quiet on-screen line flips true only when the
+  // server confirms a real send (sent === true); it stays hidden when the mailer
+  // isn't configured (simulated), so we never falsely claim a send.
+  useEffectJN(() => {
+    if (welcomeSentRef.current) return;
+    welcomeSentRef.current = true;
+    if (channel !== "email" || !contactEmail || !contactEmail.includes("@")) return;
     fetch("/api/selfserve/send-signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: accountEmail, product }),
+      body: JSON.stringify({ email: contactEmail, product }),
     })
       .then((r) => r.json())
-      .then((d) => { if (d && d.sent === true) setLinkSent(true); })
+      .then((d) => { if (d && d.sent === true) setEmailSent(true); })
       .catch(() => {});
-  };
+  }, []);
 
   return (
     <main className="jn-main">
@@ -388,6 +392,10 @@ function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
         <span className="eyebrow">You're in</span>
         <h1>You're a {product} feedback partner.</h1>
         <p className="jn-cadence-confirm">The {product} team will reach out by {reachWord} when they have a question — {cadenceWord}, and you say yes or no each time. Your minutes and rewards are tracked automatically from your very first reply.</p>
+
+        {emailSent && (
+          <p className="jn-email-confirm"><Icon name="check" size={14} sw={2.4} /> We've emailed your rewards link to {contactEmail}.</p>
+        )}
 
         {!introSkipped ? (
           <div className="jn-intro-offer">
@@ -399,30 +407,6 @@ function JoinWelcome({ product, slug, channel, contactEmail, cadence }) {
           </div>
         ) : (
           <p className="jn-intro-note">No intro — the team will reach out when they have a question. <button type="button" className="jn-back" onClick={() => setIntroSkipped(false)}>Do the intro after all?</button></p>
-        )}
-      </section>
-
-      <section className="jn-block jn-account">
-        <h2>Track your {product} rewards</h2>
-        {!accountDone ? (
-          <>
-            <p className="jn-block-lead">Register an account with <b>Observant</b>, the user learning platform, to see your participated minutes add up and claim your {product} rewards whenever you like.</p>
-            <div className="jn-account-form">
-              <input
-                className="input"
-                type="email"
-                value={accountEmail}
-                placeholder="you@example.com"
-                onChange={(e) => setAccountEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && accountEmail.includes("@")) register(); }}
-              />
-              <Btn variant="primary" size="sm" disabled={!accountEmail.includes("@")} onClick={register}>Register</Btn>
-            </div>
-          </>
-        ) : (
-          <p className="jn-account-done"><Icon name="check" size={15} sw={2.4} /> {linkSent
-            ? <>You're set — we've sent a sign-in link to {accountEmail}. Your minutes and {product} rewards will be waiting there.</>
-            : <>You're set — track your minutes and {product} rewards anytime at observanthq.com/rewards.</>}</p>
         )}
       </section>
     </main>
