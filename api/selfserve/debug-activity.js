@@ -31,9 +31,18 @@ module.exports = async function handler(req, res) {
 
     const convIds = (convs || []).map((c) => c.id).filter(Boolean);
     if (convIds.length) {
-      const msgs = await db.select("messages", "conversation_id=in.(" + convIds.join(",") + ")&select=id");
+      const msgs = await db.select("messages", "conversation_id=in.(" + convIds.join(",") + ")&select=sender,minutes,meta&order=created_at.asc");
       out.messageCount = (msgs || []).length;
+      out.messages = (msgs || []).map((m) => ({ sender: m.sender, minutes: m.minutes, meta: m.meta }));
     } else out.messageCount = 0;
+
+    // minutes earned per partner (why rewards may be 0)
+    if (partIds.length) {
+      try {
+        const ledger = await db.select("minutes_ledger", "partner_id=in.(" + partIds.join(",") + ")&select=partner_id,minutes,amount,kind,quality_verdict");
+        out.ledger = (ledger || []).map((l) => ({ partner_id: l.partner_id, minutes: l.minutes, amount: l.amount, kind: l.kind, verdict: l.quality_verdict }));
+      } catch (e) { out.ledgerError = String((e && e.message) || e); }
+    }
 
     // also: total counts, to see if ANY data exists regardless of slug
     out.totals = {
