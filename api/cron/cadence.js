@@ -81,15 +81,19 @@ module.exports = async function handler(req, res) {
         const program = programById[partner.program_id] || {};
         const productName = program.product_name || "your product";
 
-        // Send on the partner's channel.
+        // Send on the partner's channel. `q` is ALWAYS a team-provided question
+        // pulled from questions_queue (see pickQuestion) — the scheduler never
+        // invents or generates a question of its own.
         const sent = await sendQuestion({ base, partner, productName, question: q });
         if (!sent.ok) { summary.errors.push({ partner: partner.id, question: q.id, error: sent.error }); continue; }
 
-        // Mark the queued question as sent.
-        await safe(() => db.update("questions_queue", "id=eq." + q.id, { status: "sent", sent_at: new Date().toISOString() }), null);
-
-        // Record the outbound in the partner's ONE thread (C6: one relationship).
+        // Log to loop history FIRST — every question we send MUST be documented in
+        // the partner's thread (messages/conversations), even if the queue write
+        // below hiccups. Order matters: record, then consume the queue row.
         await recordOutbound({ partner, question: q, channel: partner.channel });
+
+        // Mark the queued question as sent (consumed from the always-on pool).
+        await safe(() => db.update("questions_queue", "id=eq." + q.id, { status: "sent", sent_at: new Date().toISOString() }), null);
 
         summary.sent++;
       } catch (e) {

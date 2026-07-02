@@ -47,6 +47,20 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, simulated: true, count: 0, reason: "no-program" });
     }
 
+    // ALWAYS-ON FUEL — enqueue this loop as the TEAM's real question so the
+    // cadence cron (api/cron/cadence.js) has something valuable to re-ask later.
+    // partner_id = null → program-wide (any partner can be re-asked it). This is
+    // the ONLY source the scheduler is allowed to draw from — it never invents.
+    // Best-effort: a queue hiccup must never block the live send.
+    await safe(() => db.insert("questions_queue", {
+      program_id: program.id,
+      partner_id: null,
+      question,
+      mode,
+      status: "queued",
+      priority: 0,
+    }), null);
+
     // The enrolled, still-active partners for this program.
     const partners = await safe(
       () => db.select("partners", "program_id=eq." + program.id + "&status=eq.active&select=id,channel,contact&order=created_at.asc"),
