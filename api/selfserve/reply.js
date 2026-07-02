@@ -83,14 +83,15 @@ module.exports = async function handler(req, res) {
     const newMessages = messages.concat([{ role: "assistant", content: next }]).slice(-8);
     const newState = Object.assign({}, state, { messages: newMessages, accruedMinutes: totalMinutes });
     const answerUrl = base + "/app/Answer.html?d=" + encodeState(newState);
-    const emailText = next + footer(answerUrl);
+    const optOut = optOutUrl(base, { contact: state.toEmail, product: state.product });
+    const emailText = next + footer(answerUrl, optOut, state.product);
     let sent = false;
     if (process.env.RESEND_API_KEY) {
       const emailPayload = {
         from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>",
         to: [state.toEmail],
         subject: "Re: " + (state.subject || "your feedback"),
-        html: htmlEmail(next, answerUrl),
+        html: htmlEmail(next, answerUrl, optOut, state.product),
         text: emailText,
       };
       const replyTo = String(process.env.RESEND_REPLY_TO || "").trim();
@@ -135,13 +136,31 @@ function estMinutes(text, answered) {
   const raw = (overhead + writing) * richness + detailBonus;
   return Math.max(1, Math.round(raw * 2) / 2); // nearest 0.5, floor 1
 }
-function footer(answerUrl) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime."; }
+function footer(answerUrl, optOut, product) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime." + accountFooterText(optOut, product); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function htmlEmail(body, answerUrl) {
+function htmlEmail(body, answerUrl, optOut, product) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
     '<div style="margin:22px 0"><a href="' + esc(answerUrl) + '" style="display:inline-block;background:#b4532a;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Answer these questions →</a></div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p></div>';
+    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p>' +
+    accountFooterHtml(optOut, product) + '</div>';
+}
+
+/* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */
+function optOutUrl(base, { partnerId, contact, product } = {}) {
+  const qs = [];
+  if (partnerId) qs.push("p=" + encodeURIComponent(partnerId));
+  if (contact) qs.push("c=" + encodeURIComponent(contact));
+  if (product) qs.push("product=" + encodeURIComponent(product));
+  return base + "/api/selfserve/opt-out" + (qs.length ? "?" + qs.join("&") : "");
+}
+function accountFooterText(optOut, product) {
+  return "\n\nLog in at partner.observanthq.com to check your minutes and rewards." +
+    (optOut ? "\nOpt out of " + (product || "these") + " feedback: " + optOut : "");
+}
+function accountFooterHtml(optOut, product) {
+  return '<p style="font-size:12px;color:#8a857c;margin:16px 0 0;border-top:1px solid #eee7da;padding-top:10px">Log in at <a href="https://partner.observanthq.com" style="color:#8a857c">partner.observanthq.com</a> to check your minutes and rewards.' +
+    (optOut ? '<br><a href="' + esc(optOut) + '" style="color:#8a857c">Opt out' + (product ? " of " + esc(product) + " feedback" : "") + '</a>' : "") + "</p>";
 }
 function encodeState(obj) { return Buffer.from(JSON.stringify(obj)).toString("base64url"); }
 function decodeState(s) { try { return JSON.parse(Buffer.from(String(s || ""), "base64url").toString("utf8")); } catch (e) { return null; } }

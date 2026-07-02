@@ -7,14 +7,17 @@ const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
   { id: "offproduct", label: "Off-product", icon: "chat" },
   { id: "inproduct", label: "In-product", icon: "globe" },
-  { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 
-// Legacy → current section aliases, so any older navigate({section:"learning"|"sources"})
-// call still resolves cleanly. "sources" stays a reachable (non-nav) first-run setup hub.
-const SS_SECTION_ALIAS = { learning: "offproduct" };
+// Off-product is the active PROGRAM hub — it owns partners, loops, and 1:1 threads.
+// These legacy standalone sections now resolve INTO Off-product's sub-tabs, so any
+// older navigate({section:"people"|"compose"|"learning"}) call still lands cleanly.
+// "sources" stays a reachable (non-nav) first-run setup hub.
+const SS_SECTION_ALIAS = { learning: "offproduct", people: "offproduct", compose: "offproduct" };
+// Which Off-product sub-tab a legacy section id maps to.
+const SS_OFF_TAB_FOR_SECTION = { people: "partners", compose: "loops", learning: "loops" };
 
 // PLACEHOLDER — swap for the real booking link before sharing externally.
 const SS_BOOK_CALL_URL = "https://calendly.com/observant-ai/intro";
@@ -1897,7 +1900,7 @@ function ReviewRowSS({ k, v, sub }) {
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   // "sources" = the first-run setup hub, reachable from Home / empty states but not in nav.
-  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop", sources: "Feedback sources" }; // non-nav pages
+  const EXTRA_SECTIONS = { context: "Context", sources: "Feedback sources" }; // non-nav pages
   const rawSection = SS_SECTION_ALIAS[state.section] || state.section;
   const section = (SS_SECTIONS.some((item) => item.id === rawSection) || EXTRA_SECTIONS[rawSection]) ? rawSection : "home";
   const product = SelfServeData.productName(state.workspace);
@@ -1906,15 +1909,22 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const [navStack, setNavStack] = useStateSS([]);
   const [assistantOpen, setAssistantOpen] = useStateSS(true);
 
-  const navigate = ({ section: nextSection, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
+  const navigate = ({ section: nextSection, offTab, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
+    // Legacy standalone sections (people / compose / learning) resolve INTO Off-product's
+    // sub-tabs — translate here so no call site ever lands on a dead id.
+    let sec = nextSection;
+    let tab = offTab;
+    if (sec && SS_OFF_TAB_FOR_SECTION[sec]) { tab = tab || SS_OFF_TAB_FOR_SECTION[sec]; sec = "offproduct"; }
+    if (sec === "offproduct" && !tab) tab = "partners"; // Partners is the program's front door
     // remember where we are so any in-app jump is reversible
     setNavStack((st) => st.concat([{
-      section: state.section, selectedConversationId: state.selectedConversationId,
+      section: state.section, offTab: state.offTab, selectedConversationId: state.selectedConversationId,
       selectedLoopId: state.selectedLoopId, focusedTarget: state.focusedTarget,
     }]).slice(-25));
     patchState((current) => ({
       ...current,
-      section: nextSection || current.section || "home",
+      section: sec || current.section || "home",
+      offTab: tab !== undefined ? tab : current.offTab,
       selectedConversationId: conversationId || current.selectedConversationId,
       selectedLoopId: loopId || current.selectedLoopId,
       focusedTarget: focusedTarget || "",
@@ -1929,6 +1939,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       patchState((current) => ({
         ...current,
         section: prev.section || "home",
+        offTab: prev.offTab,
         selectedConversationId: prev.selectedConversationId,
         selectedLoopId: prev.selectedLoopId,
         focusedTarget: prev.focusedTarget || "",
@@ -1943,15 +1954,12 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
         <button type="button" className="ss-sidebar-brand" onClick={() => navigate({ section: "home" })} aria-label="Go to Home">
           <Wordmark size="1.45rem" />
         </button>
-        <button type="button" className="ss-ask-cta" onClick={() => navigate({ section: "compose" })}>
-          <Icon name="spark" size={16} /> Send a new loop
-        </button>
         <nav className="ss-nav">
           {SS_SECTIONS.map((item) => (
             <button key={item.id} type="button" className={section === item.id ? "on" : ""} onClick={() => navigate({ section: item.id })}>
               <Icon name={item.icon} size={17} />
               <span>{item.label}</span>
-              {item.id === "people" && state.people.length > 0 && <em>{state.people.length}</em>}
+              {item.id === "offproduct" && state.people.length > 0 && <em>{state.people.length}</em>}
             </button>
           ))}
         </nav>
@@ -1992,10 +2000,8 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           {section === "home" && <HomeView state={state} patchState={patchState} navigate={navigate} />}
           {section === "offproduct" && <OffProductView state={state} patchState={patchState} navigate={navigate} />}
           {section === "inproduct" && <InProductView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
           {section === "sources" && <SourcesView state={state} patchState={patchState} />}
-          {section === "compose" && <div className="ss-page-stack"><AskPanel product={product} state={state} patchState={patchState} navigate={navigate} /></div>}
           {section === "context" && <ContextView state={state} patchState={patchState} />}
           {section === "settings" && <SettingsViewSS state={state} patchState={patchState} resetWorkspace={resetWorkspace} />}
         </main>
@@ -2065,9 +2071,9 @@ function HomeView({ state, patchState, navigate }) {
           <p>{custom && !state.loops.length ? "Observant is opening one-on-one lines with the users who opted in for " + product + ". Ask them anything, anytime — it keeps learning automatically." : "Observant is keeping one-on-one lines open with your users and bringing what it learns back to " + product + " while you ship."}</p>
         </div>
         <div className="ss-hero-metrics">
-          <Metric n={String(state.people.length)} l="feedback partners" onClick={() => navigate({ section: "people" })} />
-          <Metric n={String(state.conversations.length)} l="active 1:1 conversations" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
-          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "offproduct" })} />
+          <Metric n={String(state.people.length)} l="feedback partners" onClick={() => navigate({ section: "offproduct", offTab: "partners" })} />
+          <Metric n={String(state.conversations.length)} l="active 1:1 conversations" onClick={() => navigate({ section: "offproduct", offTab: "partners", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
+          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "offproduct", offTab: "manage" })} />
         </div>
       </section>
 
@@ -2078,7 +2084,7 @@ function HomeView({ state, patchState, navigate }) {
           <PanelTitle k="Next" title="Send a new loop" status="Ready" />
           <p>Your people are already on a continuous one-on-one line. Ask anything you're curious about and watch their answers and the insight arrive in stages.</p>
           <div className="ss-panel-actions">
-            <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+            <Btn variant="primary" onClick={() => navigate({ section: "offproduct", offTab: "loops" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
           </div>
         </section>
       )}
@@ -2448,7 +2454,7 @@ function AskPanel({ product, state, patchState, navigate }) {
               <Btn variant="primary" onClick={sendLoop} disabled={sendingLoop}><Icon name="relay" size={15} /> {sendingLoop ? "Sending to your users…" : "Send to your users"} <Icon name="arrow" size={16} /></Btn>
             </div>
             {loopResult && loopResult.ok && (
-              <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Loop sent to {loopResult.count} {loopResult.count === 1 ? "user" : "users"} — replies will flow to your dashboard.{navigate ? <> · <button type="button" className="ss-linklike" onClick={() => navigate({ section: "offproduct" })}>View in Off-product →</button></> : null}</p>
+              <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Loop sent to {loopResult.count} {loopResult.count === 1 ? "user" : "users"} — replies will flow to your dashboard.{navigate ? <> · <button type="button" className="ss-linklike" onClick={() => navigate({ section: "offproduct", offTab: "threads" })}>View 1:1 threads →</button></> : null}</p>
             )}
             {loopErr && <p className="ss-result-help" style={{ color: "#b4291f" }}>{loopErr}</p>}
           </div>
@@ -2495,39 +2501,52 @@ function AskPanel({ product, state, patchState, navigate }) {
 // ── OFF-PRODUCT — a conversation CRM. Qualitative, relationship-carried: the product
 // questions the team has asked + the full 1:1 threads (named users, quotes, read-in-full).
 // "Manage setup" opens the off-product program (invite users, channels, cadence) as a panel.
+// ── OFF-PRODUCT — the active feedback PROGRAM hub. Unlike the passive in-product
+// signals feed, this owns the partners, the loops sent to them, and the ongoing
+// 1:1 threads. Four sub-views: Partners · Loops · 1:1 threads · Manage setup.
+// "Send a new loop" is the primary action HERE (inside Loops), never global.
 function OffProductView({ state, patchState, navigate }) {
-  const [tab, setTab] = useStateSS("feed"); // "feed" | "manage"
+  const [tab, setTab] = useStateSS(state.offTab || "partners"); // partners | loops | threads | manage
+  // Honor in-app jumps that target a specific sub-tab (person jump → partners,
+  // "View 1:1 threads" → threads, etc). focusedTarget in deps catches jumps that
+  // re-target the same tab value after a manual tab switch.
+  useEffectSS(() => { if (state.offTab) setTab(state.offTab); }, [state.offTab, state.focusedTarget]);
   const product = SelfServeData.productName(state.workspace);
   const setup = state.setup;
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const active = ssSurfaceActive(setup).offproduct;
   const openManage = () => setTab("manage");
 
+  const TABS = [
+    { id: "partners", label: "Partners", icon: "users" },
+    { id: "loops", label: "Loops", icon: "spark" },
+    { id: "threads", label: "1:1 threads", icon: "chat" },
+    { id: "manage", label: "Manage setup" + (active ? "" : " ·"), icon: "settings" },
+  ];
+
   return (
     <div className="ss-page-stack ss-offproduct">
       <div className="ss-section-head">
         <div className="ss-section-lead">
-          <span className="eyebrow no-rule">Off-product · 1:1 conversations</span>
-          <p>The questions your team is asking, and the ongoing one-on-one threads with your users over email and Telegram. Read them in full — this is where the <b>why</b> lives.</p>
+          <span className="eyebrow no-rule">Off-product · your feedback program</span>
+          <p>Your enrolled feedback partners, the loops you send them, and the ongoing one-on-one threads over email and Telegram. This is the active program — where the <b>why</b> lives.</p>
         </div>
         <div className="ss-section-tabs">
-          <button type="button" className={tab === "feed" ? "on" : ""} onClick={() => setTab("feed")}><Icon name="chat" size={14} /> Conversations</button>
-          <button type="button" className={tab === "manage" ? "on" : ""} onClick={openManage}><Icon name="settings" size={14} /> Manage setup{active ? "" : " ·"}</button>
+          {TABS.map((t) => (
+            <button key={t.id} type="button" className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}><Icon name={t.icon} size={14} /> {t.label}</button>
+          ))}
         </div>
       </div>
 
-      {tab === "feed" ? (
+      {tab === "partners" && <PeopleView state={state} patchState={patchState} navigate={navigate} onManage={openManage} />}
+      {tab === "loops" && (
         <>
-          <div className="ss-activity-head">
-            <span className="eyebrow no-rule">What you've asked</span>
-            <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
-          </div>
-          <QuestionHistory state={state} navigate={navigate} onManage={openManage} />
-          <ConversationsCRM state={state} navigate={navigate} onManage={openManage} />
+          <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
+          <QuestionHistory state={state} navigate={navigate} />
         </>
-      ) : (
-        <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("feed")} backLabel="Back to conversations" />
       )}
+      {tab === "threads" && <ConversationsCRM state={state} navigate={navigate} onManage={openManage} />}
+      {tab === "manage" && <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("partners")} backLabel="Back to partners" />}
     </div>
   );
 }
@@ -2893,7 +2912,7 @@ function QuestionHistory({ state, navigate }) {
   );
 }
 
-function PeopleView({ state, patchState, navigate }) {
+function PeopleView({ state, patchState, navigate, onManage }) {
   const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
   const person = ssPersonForConversation(state, selected);
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
@@ -2907,9 +2926,11 @@ function PeopleView({ state, patchState, navigate }) {
         <PanelTitle k="Partners" title="Your feedback partners" status="None yet" />
         <EmptyState
           icon="users"
-          title="No feedback partners yet"
-          text="Invite your users to your program and the people who opt in will show up here, each on their own 1:1 line."
-          cta={navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null}
+          title="No partners yet"
+          text="Invite your users and the people who opt in will show up here, each on their own 1:1 line."
+          cta={onManage
+            ? { label: "Invite your users", onClick: onManage }
+            : (navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null)}
         />
       </section>
     );
@@ -2925,7 +2946,8 @@ function PeopleView({ state, patchState, navigate }) {
     setModeTab(conversation && conversation.mode === "voice" ? "voice" : "chat");
     patchState((current) => ({
       ...current,
-      section: "people",
+      section: "offproduct",
+      offTab: "partners",
       selectedConversationId: conversationId,
       focusedTarget: "person-" + (rowPerson ? rowPerson.id : conversationId),
     }));

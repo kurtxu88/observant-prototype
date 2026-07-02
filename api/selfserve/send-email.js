@@ -53,8 +53,9 @@ module.exports = async function handler(req, res) {
       const answerUrl = base + "/app/Answer.html?d=" + encodeState(lightState);
       const introUrl = base + "/app/IntroCall.html?product=" + encodeURIComponent(product) + "&d=" + encodeState({ product, mode: "deep", essence: essence, threads: (deepPlan && deepPlan.threads) || [] });
       const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
-      body = deepInviteText(product, essence, introUrl, answerUrl, manageUrl);
-      html = deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl);
+      const optOut = optOutUrl(base, { contact: toEmail, product });
+      body = deepInviteText(product, essence, introUrl, answerUrl, manageUrl, optOut);
+      html = deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl, optOut);
       emailText = body;
       if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true, mode, subject, body: emailText, to: toEmail });
       const r = await resendSend(toEmail, subject, html, emailText);
@@ -67,8 +68,11 @@ module.exports = async function handler(req, res) {
     subject = threadSubject;
     body = stripSubjectLine((turn && turn.message) || lightMessageFromPlan(product, plan));
     const manageUrl = base + "/app/Manage.html?d=" + encodeState({ product, contact: toEmail });
-    emailText = body + lightFooterText(manageUrl);
-    html = lightInlineHtml(body, manageUrl);
+    const optOut = optOutUrl(base, { contact: toEmail, product });
+    // Upfront, honest effort estimate: question count (via estMin) × $2/min. Leads the email.
+    const estLine = "≈ " + estMin + " min · earn about $" + estPay;
+    emailText = estLine + "\n\n" + body + lightFooterText(manageUrl) + accountFooterText(optOut, product);
+    html = lightInlineHtml(body, manageUrl, estLine, optOut, product);
     if (!process.env.RESEND_API_KEY) return res.status(200).json({ ok: false, needKey: true, mode, subject, body: emailText, to: toEmail });
     // Persist the conversation so the partner's email REPLY can continue the loop (best-effort).
     await persistOutbound({ product, toEmail, subject: threadSubject, mode: "light", body });
@@ -163,34 +167,53 @@ function lightFooterText(manageUrl) {
   return "\n\n———\nJust reply to this email with your answers — write right under each question. And this is a two-way line: reply anytime something goes wrong or you want to share feedback, not only when we ask — genuine feedback earns rewards too. Your minutes and rewards are tracked automatically; redeem on Observant anytime." +
     (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
 }
-function lightInlineHtml(body, manageUrl) {
+function lightInlineHtml(body, manageUrl, estLine, optOut, product) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return shell(
+    (estLine ? '<p style="margin:0 0 12px;font-size:14px"><b style="color:#b4532a">' + esc(estLine) + '</b></p>' : "") +
     bodyHtml +
     '<div style="margin:20px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answers — write right under each question.<br><span style="color:#8a857c">It\'s a two-way line — reach out anytime something breaks or you have feedback, not only when we ask. Genuine feedback earns rewards too.</span></div>' +
-    rewardNote() + manageLink(manageUrl)
+    rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product)
   );
 }
 
 /* ---- DEEP: invitation to the live session, with an async fallback ---- */
-function deepInviteText(product, essence, introUrl, answerUrl, manageUrl) {
+function deepInviteText(product, essence, introUrl, answerUrl, manageUrl, optOut) {
   return "Hi,\n\n" +
     "The " + product + " team would love to go a little deeper on something — a short conversation, about 10 minutes, guided by our AI interviewer, whenever suits you. No prep needed; you can use voice or just type.\n\n" +
     "▶ Start the conversation: " + introUrl + "\n\n" +
     "Short on time? You can answer a few quick questions async instead:\n→ " + answerUrl + "\n\n" +
     "Either way your time is rewarded — about $2 per minute, tracked automatically. Redeem on Observant anytime.\n\n" +
     "And this is a two-way line: reach out anytime something goes wrong or you've got product feedback — not just when we ask. Genuine feedback you send earns rewards too." +
-    (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
+    (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "") +
+    accountFooterText(optOut, product);
 }
-function deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl) {
+function deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl, optOut) {
   return shell(
     '<p style="margin:0 0 14px">Hi,</p>' +
     '<p style="margin:0 0 14px">The <b>' + esc(product) + '</b> team would love to go a little deeper on something — a short conversation, about <b>10 minutes</b>, guided by our AI interviewer, whenever suits you. No prep needed; use voice or just type.</p>' +
     '<div style="margin:22px 0"><a href="' + esc(introUrl) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Start the conversation →</a></div>' +
     '<p style="margin:0 0 14px;font-size:14px;color:#5a5347">Short on time? <a href="' + esc(answerUrl) + '" style="color:#b4532a">Answer a few quick questions async instead →</a></p>' +
     '<p style="margin:0 0 6px;font-size:13px;color:#8a857c">And it\'s a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</p>' +
-    rewardNote() + manageLink(manageUrl)
+    rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product)
   );
+}
+
+/* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */
+function optOutUrl(base, { partnerId, contact, product } = {}) {
+  const qs = [];
+  if (partnerId) qs.push("p=" + encodeURIComponent(partnerId));
+  if (contact) qs.push("c=" + encodeURIComponent(contact));
+  if (product) qs.push("product=" + encodeURIComponent(product));
+  return base + "/api/selfserve/opt-out" + (qs.length ? "?" + qs.join("&") : "");
+}
+function accountFooterText(optOut, product) {
+  return "\n\nLog in at partner.observanthq.com to check your minutes and rewards." +
+    (optOut ? "\nOpt out of " + (product || "these") + " feedback: " + optOut : "");
+}
+function accountFooterHtml(optOut, product) {
+  return '<p style="font-size:12px;color:#8a857c;margin:16px 0 0;border-top:1px solid #eee7da;padding-top:10px">Log in at <a href="https://partner.observanthq.com" style="color:#8a857c">partner.observanthq.com</a> to check your minutes and rewards.' +
+    (optOut ? '<br><a href="' + esc(optOut) + '" style="color:#8a857c">Opt out' + (product ? " of " + esc(product) + " feedback" : "") + '</a>' : "") + "</p>";
 }
 function manageLink(manageUrl) {
   if (!manageUrl) return "";

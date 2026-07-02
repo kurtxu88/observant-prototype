@@ -125,7 +125,8 @@ module.exports = async function handler(req, res) {
     // continue: persist the follow-up and email it back (partner replies again → back to this webhook)
     await persistMsg(conversation.id, "observant", next, 0);
     const subject = "Re: " + (conversation.subject || program.product_name);
-    const sent = await resendSend(fromEmail, subject, replyHtml(next), next + replyFooter());
+    const optOut = optOutUrl(base, { partnerId: partner.id, contact: fromEmail, product: program.product_name });
+    const sent = await resendSend(fromEmail, subject, replyHtml(next, optOut, program.product_name), next + replyFooter(optOut, program.product_name));
     return res.status(200).json({ ok: true, earned: true, verdict, minutes, decision, sent });
   } catch (error) {
     // Never retry-storm: log and 200.
@@ -242,13 +243,31 @@ function parseNumbered(text) {
 // PRE-DETERMINED reward for a loop, from its shape (question count), never time-on-page.
 function estLoopMin(questions) { const n = (Array.isArray(questions) ? questions.length : 0) || 1; return Math.max(2, Math.round(n * 1.5)); }
 
-function replyFooter() { return "\n\n———\nJust reply to this email with your answer. Your minutes and rewards are tracked automatically — redeem on Observant anytime."; }
+function replyFooter(optOut, product) { return "\n\n———\nJust reply to this email with your answer. Your minutes and rewards are tracked automatically — redeem on Observant anytime." + accountFooterText(optOut, product); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function replyHtml(body) {
+function replyHtml(body, optOut, product) {
   const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
     '<div style="margin:18px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answer.</div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Redeem on Observant anytime.</p></div>';
+    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Redeem on Observant anytime.</p>' +
+    accountFooterHtml(optOut, product) + '</div>';
+}
+
+/* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */
+function optOutUrl(base, { partnerId, contact, product } = {}) {
+  const qs = [];
+  if (partnerId) qs.push("p=" + encodeURIComponent(partnerId));
+  if (contact) qs.push("c=" + encodeURIComponent(contact));
+  if (product) qs.push("product=" + encodeURIComponent(product));
+  return base + "/api/selfserve/opt-out" + (qs.length ? "?" + qs.join("&") : "");
+}
+function accountFooterText(optOut, product) {
+  return "\n\nLog in at partner.observanthq.com to check your minutes and rewards." +
+    (optOut ? "\nOpt out of " + (product || "these") + " feedback: " + optOut : "");
+}
+function accountFooterHtml(optOut, product) {
+  return '<p style="font-size:12px;color:#8a857c;margin:16px 0 0;border-top:1px solid #eee7da;padding-top:10px">Log in at <a href="https://partner.observanthq.com" style="color:#8a857c">partner.observanthq.com</a> to check your minutes and rewards.' +
+    (optOut ? '<br><a href="' + esc(optOut) + '" style="color:#8a857c">Opt out' + (product ? " of " + esc(product) + " feedback" : "") + '</a>' : "") + "</p>";
 }
 
 /* ---------- Svix (Resend) signature verification — optional ---------- */

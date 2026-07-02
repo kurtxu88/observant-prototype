@@ -45,14 +45,17 @@ module.exports = async function handler(req, res) {
     // 2) Deliver that link via OUR OWN Resend (same call as send-invite.js).
     //    This is the welcome/confirmation email — it carries the rewards widget
     //    (the "Track & claim your rewards →" CTA into their portal).
+    const base = "https://" + (req.headers.host || "www.observanthq.com");
+    const optOut = optOutUrl(base, { contact: email, product });
     const subject = "You're a " + product + " feedback partner";
     const text =
       "You're in — you're now a " + product + " feedback partner.\n\n" +
       "How it works: the " + product + " team will drop in with the occasional question, and you can reply anytime with feedback of your own. Every reply earns rewards, tracked automatically on your Observant account from your very first reply.\n\n" +
       "Register and track your rewards on partner.observanthq.com here:\n\n" +
       actionLink + "\n\n" +
-      "Sign in anytime to see your minutes add up and claim your rewards.";
-    const html = welcomeHtml(product, actionLink);
+      "Sign in anytime to see your minutes add up and claim your rewards." +
+      accountFooterText(optOut, product);
+    const html = welcomeHtml(product, actionLink, optOut);
 
     const emailPayload = { from: process.env.RESEND_FROM || "Observant <onboarding@resend.dev>", to: [email], subject: subject, html: html, text: text };
     const replyTo = String(process.env.RESEND_REPLY_TO || "").trim();
@@ -70,7 +73,7 @@ module.exports = async function handler(req, res) {
   }
 };
 
-function welcomeHtml(product, actionLink) {
+function welcomeHtml(product, actionLink, optOut) {
   const p = esc(product);
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' +
     '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#8a857c">You\'re in</p>' +
@@ -78,7 +81,25 @@ function welcomeHtml(product, actionLink) {
     '<p style="margin:0 0 14px">How it works: the <b>' + p + '</b> team will drop in with the occasional question, and you can reply anytime with feedback of your own. Every reply earns rewards, tracked automatically on your <b>Observant</b> account from your very first reply.</p>' +
     '<div style="margin:22px 0"><a href="' + esc(actionLink) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Track &amp; claim your rewards →</a></div>' +
     '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">Sign in anytime to see your minutes add up and claim your rewards.</p>' +
+    accountFooterHtml(optOut, product) +
     '</div>';
+}
+
+/* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */
+function optOutUrl(base, { partnerId, contact, product } = {}) {
+  const qs = [];
+  if (partnerId) qs.push("p=" + encodeURIComponent(partnerId));
+  if (contact) qs.push("c=" + encodeURIComponent(contact));
+  if (product) qs.push("product=" + encodeURIComponent(product));
+  return base + "/api/selfserve/opt-out" + (qs.length ? "?" + qs.join("&") : "");
+}
+function accountFooterText(optOut, product) {
+  return "\n\nLog in at partner.observanthq.com to check your minutes and rewards." +
+    (optOut ? "\nOpt out of " + (product || "these") + " feedback: " + optOut : "");
+}
+function accountFooterHtml(optOut, product) {
+  return '<p style="font-size:12px;color:#8a857c;margin:16px 0 0;border-top:1px solid #eee7da;padding-top:10px">Log in at <a href="https://partner.observanthq.com" style="color:#8a857c">partner.observanthq.com</a> to check your minutes and rewards.' +
+    (optOut ? '<br><a href="' + esc(optOut) + '" style="color:#8a857c">Opt out' + (product ? " of " + esc(product) + " feedback" : "") + '</a>' : "") + "</p>";
 }
 
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }
