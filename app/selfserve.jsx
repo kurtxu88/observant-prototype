@@ -139,6 +139,59 @@ async function ssDbLoadState() {
   } catch (e) { return null; }
 }
 
+// ---- LIVE activity (real feedback partners + their 1:1 replies) ----
+// join.js / reply.js / inbound-email.js / telegram/webhook.js write real
+// partners + conversations + messages to the DB, but the dashboard renders
+// from the workspace STATE SNAPSHOT (state.people / state.conversations),
+// which is never synced from those tables — so real replies never surface.
+// This fetches /api/selfserve/activity (account-scoped, same bearer token)
+// and returns { people, conversations } in the dashboard's own shapes, or
+// null on any failure so the caller can leave its clean state untouched.
+const SS_ACTIVITY_ENDPOINT = "/api/selfserve/activity";
+
+async function ssActivityLoad() {
+  try {
+    const token = await ssDbToken();
+    if (!token) return null;
+    const res = await fetch(SS_ACTIVITY_ENDPOINT, {
+      method: "GET",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || data.ok !== true) return null;
+    return {
+      people: Array.isArray(data.people) ? data.people : [],
+      conversations: Array.isArray(data.conversations) ? data.conversations : [],
+    };
+  } catch (e) { return null; }
+}
+
+// Merge incoming rows over the current list by id (incoming first, then any
+// current rows not present in incoming). No-op when incoming is empty.
+function ssMergeById(currentList, incomingList) {
+  const current = Array.isArray(currentList) ? currentList : [];
+  const incoming = Array.isArray(incomingList) ? incomingList : [];
+  if (!incoming.length) return current;
+  const incomingIds = new Set(incoming.map((r) => r && r.id).filter(Boolean));
+  const kept = current.filter((r) => r && !incomingIds.has(r.id));
+  return [...incoming, ...kept];
+}
+
+// Fold live people/conversations into the current state. Selects the first
+// live conversation when nothing is selected yet, so the People / Off-product
+// view has something focused.
+function ssMergeLiveActivity(state, people, conversations) {
+  const nextPeople = ssMergeById(state.people, people);
+  const nextConversations = ssMergeById(state.conversations, conversations);
+  const hasSelected = state.selectedConversationId
+    && nextConversations.some((c) => c.id === state.selectedConversationId);
+  const selectedConversationId = hasSelected
+    ? state.selectedConversationId
+    : (conversations && conversations[0] ? conversations[0].id : state.selectedConversationId);
+  return { ...state, people: nextPeople, conversations: nextConversations, selectedConversationId };
+}
+
 // Fire-and-forget save of the current workspace state, keyed to the account.
 async function ssDbSaveState(state) {
   try {
@@ -630,6 +683,32 @@ function SelfServeApp() {
     if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current);
     ssDbSaveTimer.current = setTimeout(() => { ssDbSaveState(state); }, 1200);
     return () => { if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current); };
+  }, [state, gate, authEmail]);
+
+  // Pull the REAL feedback partners + their 1:1 replies (written to the live
+  // DB by the off-product loop) into the dashboard snapshot, ONCE, for a
+  // signed-in CUSTOM workspace (never the sample, never /portal). The activity
+  // endpoint is account-scoped and degrades to empty. CRITICAL: only merge
+  // when it actually returns rows — an empty/failed fetch leaves the current
+  // clean empty state exactly as-is (no clobber, no crash, no loop).
+  const ssActivityLoaded = useRefSS(false);
+  useEffectSS(() => {
+    if (SS_VIEW === "portal") return;                                    // public sample demo
+    if (gate !== "pass" || !authEmail) return;                           // signed-in only
+    if (!state || !state.workspace || ssIsSampleState(state)) return;    // custom workspace only
+    if (ssActivityLoaded.current) return;                                // once per load
+    ssActivityLoaded.current = true;
+    (async () => {
+      const live = await ssActivityLoad();
+      if (!live) return;                                                 // failed → leave clean state
+      const people = Array.isArray(live.people) ? live.people : [];
+      const conversations = Array.isArray(live.conversations) ? live.conversations : [];
+      if (!people.length && !conversations.length) return;               // no rows → leave clean state
+      setState((current) => {
+        if (!current || ssIsSampleState(current)) return current;        // never touch the sample
+        return ssMergeLiveActivity(current, people, conversations);
+      });
+    })();
   }, [state, gate, authEmail]);
 
   useEffectSS(() => {
