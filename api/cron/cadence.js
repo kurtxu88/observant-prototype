@@ -49,9 +49,16 @@ module.exports = async function handler(req, res) {
 
   const base = "https://" + (req.headers.host || process.env.VERCEL_URL || "");
   const now = Date.now();
-  const summary = { considered: 0, due: 0, sent: 0, held: [], errors: [] };
+  const summary = { considered: 0, due: 0, sent: 0, resumed: 0, held: [], errors: [] };
 
   try {
+    // Auto-resume: a timed pause (paused_until in the past) ends on its own, so
+    // 30/90-day breaks self-heal before this run considers who's due. An
+    // indefinite pause ("until I turn it back on") has paused_until = null and
+    // is EXCLUDED by lte (null comparisons are false in PostgREST) → it never
+    // auto-resumes. Tolerates a DB without the paused_until column.
+    summary.resumed = await autoResumePaused(now);
+
     // Programs lookup (for product_name when composing email loops).
     const programs = await safe(() => db.select("programs", "select=id,slug,product_name"), []);
     const programById = {};
@@ -95,6 +102,23 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: false, error: String((error && error.message) || error), ...summary });
   }
 };
+
+/* ---- Auto-resume expired pauses (paused_until now past) ---- */
+async function autoResumePaused(now) {
+  const iso = new Date(now).toISOString();
+  try {
+    const resumed = await db.update(
+      "partners",
+      "status=eq.paused&paused_until=not.is.null&paused_until=lte." + iso,
+      { status: "active", paused_until: null }
+    );
+    return Array.isArray(resumed) ? resumed.length : 0;
+  } catch (_e) {
+    // No paused_until column (or the filter isn't supported) → status-only
+    // pauses stay paused until resumed by hand. Don't fail the run.
+    return 0;
+  }
+}
 
 /* ---- Per-partner DUE decision (cadence + recency + one-at-a-time) ---- */
 async function considerPartner(partner, now) {
