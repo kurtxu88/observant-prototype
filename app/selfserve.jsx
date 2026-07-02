@@ -3,63 +3,97 @@
    ============================================================ */
 const { useState: useStateSS, useEffect: useEffectSS, useRef: useRefSS } = React;
 
-const SS_SECTIONS = [
+// Sidebar nav — two labeled program groups (Off-product, In-product), each sub-item its
+// own focused page. Home sits above; Insights + Settings below. Groups render as an
+// uppercase section label with always-visible, indented sub-rows.
+const SS_NAV = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "offproduct", label: "Off-product", icon: "chat" },
-  { id: "inproduct", label: "In-product", icon: "globe" },
+  {
+    group: "Off-product",
+    items: [
+      { id: "partners", label: "Partners", icon: "users" },
+      { id: "loops", label: "Loops", icon: "spark" },
+      { id: "threads", label: "1:1 threads", icon: "chat" },
+      { id: "offmanage", label: "Manage setup", title: "Off-product setup", icon: "settings" },
+    ],
+  },
+  {
+    group: "In-product",
+    items: [
+      { id: "signals", label: "Signals", icon: "globe" },
+      { id: "inmanage", label: "Manage setup", title: "In-product setup", icon: "settings" },
+    ],
+  },
   { id: "insights", label: "Insights", icon: "book" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
+// Flat list of every reachable nav section (for label lookups + validity checks).
+const SS_ALL_SECTIONS = SS_NAV.reduce((acc, entry) => acc.concat(entry.items ? entry.items : [entry]), []);
 
-// Off-product is the active PROGRAM hub — it owns partners, loops, and 1:1 threads.
-// These legacy standalone sections now resolve INTO Off-product's sub-tabs, so any
-// older navigate({section:"people"|"compose"|"learning"}) call still lands cleanly.
+// Legacy section ids → their new leaf destination, so any older
+// navigate({section:"people"|"compose"|"learning"|"offproduct"|"inproduct"}) call
+// (and old deep-links) still lands on the right focused page.
 // "sources" stays a reachable (non-nav) first-run setup hub.
-const SS_SECTION_ALIAS = { learning: "offproduct", people: "offproduct", compose: "offproduct" };
-// Which Off-product sub-tab a legacy section id maps to.
-const SS_OFF_TAB_FOR_SECTION = { people: "partners", compose: "loops", learning: "loops" };
+const SS_SECTION_ALIAS = {
+  people: "partners", compose: "loops", learning: "loops",
+  offproduct: "partners", inproduct: "signals",
+};
+// Legacy Off-product sub-tab id → new leaf section (for navigate({offTab}) + ?tab= URLs).
+const SS_OFF_TAB_TO_SECTION = { partners: "partners", loops: "loops", threads: "threads", manage: "offmanage" };
 
-// --- Deep-linkable section URLs (Fix #23) ---
-// Each dashboard section gets its own path under the /setup (or /portal) base:
-//   /setup/home  /setup/off-product/partners  /setup/in-product  /setup/insights  /setup/settings
-// (context + sources are non-nav pages but are still addressable.)
+// Resolve a (possibly legacy) section + optional offTab into a concrete leaf section id.
+function ssResolveSection(section, offTab) {
+  if (section === "offproduct" && offTab && SS_OFF_TAB_TO_SECTION[offTab]) return SS_OFF_TAB_TO_SECTION[offTab];
+  if (section === "inproduct" && offTab === "manage") return "inmanage";
+  return SS_SECTION_ALIAS[section] || section;
+}
+
+// --- Deep-linkable section URLs ---
+// Each leaf gets its own path under /setup (or /portal):
+//   /setup/home
+//   /setup/off-product/partners  /setup/off-product/loops
+//   /setup/off-product/threads   /setup/off-product/manage
+//   /setup/in-product/signals    /setup/in-product/manage
+//   /setup/insights  /setup/settings  (context + sources non-nav but addressable)
 const SS_SECTION_TO_SLUG = {
-  home: "home", offproduct: "off-product", inproduct: "in-product",
+  home: "home",
+  partners: "off-product/partners", loops: "off-product/loops",
+  threads: "off-product/threads", offmanage: "off-product/manage",
+  signals: "in-product/signals", inmanage: "in-product/manage",
   insights: "insights", settings: "settings", context: "context", sources: "sources",
 };
 const SS_SLUG_TO_SECTION = {
-  home: "home", "off-product": "offproduct", "in-product": "inproduct",
+  home: "home",
+  "off-product/partners": "partners", "off-product/loops": "loops",
+  "off-product/threads": "threads", "off-product/manage": "offmanage",
+  "in-product/signals": "signals", "in-product/manage": "inmanage",
   insights: "insights", settings: "settings", context: "context", sources: "sources",
+  // legacy front-door slugs (no leaf segment) → each program's default page
+  "off-product": "partners", "in-product": "signals",
 };
-const SS_OFF_TABS = ["partners", "loops", "threads", "manage"];
 
 // The base segment we're mounted under — "/setup" (real workspace) or "/portal" (sample).
 function ssBasePath() { return SS_VIEW === "portal" ? "/portal" : "/setup"; }
 
-// Build the URL path for a section (+ optional Off-product sub-tab).
-function ssSectionPath(section, offTab) {
+// Build the URL path for a leaf section.
+function ssSectionPath(section) {
   const slug = SS_SECTION_TO_SLUG[SS_SECTION_ALIAS[section] || section] || "home";
-  let path = ssBasePath() + "/" + slug;
-  if (slug === "off-product" && offTab && SS_OFF_TABS.includes(offTab)) path += "/" + offTab;
-  return path;
+  return ssBasePath() + "/" + slug;
 }
 
-// Parse the current pathname → { section, offTab } (or null if not a dashboard URL).
-// Off-product sub-tab reads from the path (/setup/off-product/partners) or ?tab=partners.
+// Parse the current pathname → { section } (or null if not a dashboard URL).
 function ssParseLocation() {
   const segs = window.location.pathname.toLowerCase().replace(/^\/+|\/+$/g, "").split("/");
   if (segs[0] !== "setup" && segs[0] !== "portal") return null;
-  const section = SS_SLUG_TO_SECTION[segs[1]];
-  if (!section) return null;
-  let offTab;
-  if (section === "offproduct") {
-    if (SS_OFF_TABS.includes(segs[2])) offTab = segs[2];
-    else {
-      const qtab = new URLSearchParams(window.location.search).get("tab");
-      if (SS_OFF_TABS.includes(qtab)) offTab = qtab;
-    }
+  const two = segs.slice(1, 3).join("/");
+  let section = SS_SLUG_TO_SECTION[two] || SS_SLUG_TO_SECTION[segs[1] || ""];
+  // legacy ?tab= on the off-product front door (/setup/off-product?tab=threads)
+  if ((segs[1] || "") === "off-product" && !segs[2]) {
+    const qtab = new URLSearchParams(window.location.search).get("tab");
+    if (SS_OFF_TAB_TO_SECTION[qtab]) section = SS_OFF_TAB_TO_SECTION[qtab];
   }
-  return { section, offTab };
+  if (!section) return null;
+  return { section };
 }
 
 // PLACEHOLDER — swap for the real booking link before sharing externally.
@@ -1947,38 +1981,33 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   // "sources" = the first-run setup hub, reachable from Home / empty states but not in nav.
   const EXTRA_SECTIONS = { context: "Context", sources: "Feedback sources" }; // non-nav pages
   const rawSection = SS_SECTION_ALIAS[state.section] || state.section;
-  const section = (SS_SECTIONS.some((item) => item.id === rawSection) || EXTRA_SECTIONS[rawSection]) ? rawSection : "home";
+  const section = (SS_ALL_SECTIONS.some((item) => item.id === rawSection) || EXTRA_SECTIONS[rawSection]) ? rawSection : "home";
   const product = SelfServeData.productName(state.workspace);
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
   const [navStack, setNavStack] = useStateSS([]);
   const [assistantOpen, setAssistantOpen] = useStateSS(true);
 
   const navigate = ({ section: nextSection, offTab, conversationId, loopId, focusedTarget, pendingInsightQuestion }) => {
-    // Legacy standalone sections (people / compose / learning) resolve INTO Off-product's
-    // sub-tabs — translate here so no call site ever lands on a dead id.
-    let sec = nextSection;
-    let tab = offTab;
-    if (sec && SS_OFF_TAB_FOR_SECTION[sec]) { tab = tab || SS_OFF_TAB_FOR_SECTION[sec]; sec = "offproduct"; }
-    if (sec === "offproduct" && !tab) tab = "partners"; // Partners is the program's front door
+    // Resolve legacy ids (people/compose/learning/offproduct/inproduct + offTab) into a
+    // concrete leaf section, so no call site ever lands on a dead id.
+    const sec = ssResolveSection(nextSection, offTab) || state.section || "home";
     // remember where we are so any in-app jump is reversible
     setNavStack((st) => st.concat([{
-      section: state.section, offTab: state.offTab, selectedConversationId: state.selectedConversationId,
+      section: state.section, selectedConversationId: state.selectedConversationId,
       selectedLoopId: state.selectedLoopId, focusedTarget: state.focusedTarget,
     }]).slice(-25));
-    const targetSection = sec || state.section || "home";
-    const targetTab = tab !== undefined ? tab : state.offTab;
     patchState((current) => ({
       ...current,
-      section: sec || current.section || "home",
-      offTab: tab !== undefined ? tab : current.offTab,
+      section: sec,
       selectedConversationId: conversationId || current.selectedConversationId,
       selectedLoopId: loopId || current.selectedLoopId,
       focusedTarget: focusedTarget || "",
       pendingInsightQuestion: pendingInsightQuestion !== undefined ? pendingInsightQuestion : current.pendingInsightQuestion,
     }));
     // Give the section its own URL so it's deep-linkable / back-forward navigable.
-    ssPushSectionUrl(targetSection, targetTab, false);
+    ssPushSectionUrl(sec, false);
   };
 
   const goBack = () => {
@@ -1987,22 +2016,21 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
     patchState((current) => ({
       ...current,
       section: prev.section || "home",
-      offTab: prev.offTab,
       selectedConversationId: prev.selectedConversationId,
       selectedLoopId: prev.selectedLoopId,
       focusedTarget: prev.focusedTarget || "",
     }));
     setNavStack((st) => st.slice(0, -1));
-    ssPushSectionUrl(prev.section || "home", prev.offTab, false);
+    ssPushSectionUrl(prev.section || "home", false);
   };
 
   // Keep the address bar in sync with the section (push = new history entry).
-  const ssPushSectionUrl = (section, offTab, replace) => {
+  const ssPushSectionUrl = (section, replace) => {
     if (!SS_VIEW) return;
     try {
-      const url = ssSectionPath(section, offTab);
+      const url = ssSectionPath(section);
       if (!replace && url === window.location.pathname) return;
-      const st = { section, offTab: offTab || null };
+      const st = { section };
       if (replace) window.history.replaceState(st, "", url);
       else window.history.pushState(st, "", url);
     } catch (e) {}
@@ -2014,24 +2042,15 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
     if (!SS_VIEW) return;
     const loc = ssParseLocation();
     if (loc) {
-      patchState((current) => ({
-        ...current,
-        section: loc.section,
-        offTab: loc.section === "offproduct" ? (loc.offTab || current.offTab || "partners") : current.offTab,
-      }));
+      patchState((current) => ({ ...current, section: loc.section }));
     } else {
-      ssPushSectionUrl(section, section === "offproduct" ? (state.offTab || "partners") : undefined, true);
+      ssPushSectionUrl(section, true);
     }
-    // Browser back/forward → sync the section (and Off-product sub-tab) from the URL.
+    // Browser back/forward → sync the section from the URL.
     const onPop = () => {
       const at = ssParseLocation();
       if (!at) return;
-      patchState((current) => ({
-        ...current,
-        section: at.section,
-        offTab: at.section === "offproduct" ? (at.offTab || current.offTab || "partners") : current.offTab,
-        focusedTarget: "",
-      }));
+      patchState((current) => ({ ...current, section: at.section, focusedTarget: "" }));
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -2044,11 +2063,21 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
           <Wordmark size="1.45rem" />
         </button>
         <nav className="ss-nav">
-          {SS_SECTIONS.map((item) => (
-            <button key={item.id} type="button" className={section === item.id ? "on" : ""} onClick={() => navigate({ section: item.id })}>
-              <Icon name={item.icon} size={17} />
-              <span>{item.label}</span>
-              {item.id === "offproduct" && state.people.length > 0 && <em>{state.people.length}</em>}
+          {SS_NAV.map((entry, i) => entry.items ? (
+            <div className="ss-nav-group" key={"grp-" + i}>
+              <span className="ss-nav-group-label">{entry.group}</span>
+              {entry.items.map((item) => (
+                <button key={item.id} type="button" className={"ss-nav-sub" + (section === item.id ? " on" : "")} onClick={() => navigate({ section: item.id })}>
+                  <Icon name={item.icon} size={16} />
+                  <span>{item.label}</span>
+                  {item.id === "partners" && state.people.length > 0 && <em>{state.people.length}</em>}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button key={entry.id} type="button" className={section === entry.id ? "on" : ""} onClick={() => navigate({ section: entry.id })}>
+              <Icon name={entry.icon} size={17} />
+              <span>{entry.label}</span>
             </button>
           ))}
         </nav>
@@ -2077,7 +2106,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             {navStack.length > 0 && <button type="button" className="ss-back-btn" onClick={goBack}><Icon name="back" size={15} /> Back</button>}
             <div>
               <span className="ss-breadcrumb">{product}</span>
-              <h1>{(SS_SECTIONS.find((s) => s.id === section) || {}).label || EXTRA_SECTIONS[section] || "Home"}</h1>
+              <h1>{(() => { const it = SS_ALL_SECTIONS.find((s) => s.id === section); return (it && (it.title || it.label)) || EXTRA_SECTIONS[section] || "Home"; })()}</h1>
             </div>
           </div>
           <div className="ss-topbar-actions">
@@ -2087,8 +2116,37 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
 
         <main className="ss-app-content">
           {section === "home" && <HomeView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "offproduct" && <OffProductView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "inproduct" && <InProductView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "partners" && (
+            <div className="ss-page-stack ss-offproduct">
+              <PeopleView state={state} patchState={patchState} navigate={navigate} onManage={() => navigate({ section: "offmanage" })} />
+            </div>
+          )}
+          {section === "loops" && (
+            <div className="ss-page-stack ss-offproduct">
+              <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
+              <QuestionHistory state={state} navigate={navigate} />
+            </div>
+          )}
+          {section === "threads" && (
+            <div className="ss-page-stack ss-offproduct">
+              <ConversationsCRM state={state} navigate={navigate} onManage={() => navigate({ section: "offmanage" })} />
+            </div>
+          )}
+          {section === "offmanage" && (
+            <div className="ss-page-stack ss-offproduct">
+              <OffProductTrack state={state} patchState={patchState} product={product} setup={state.setup} patchSetup={patchSetup} onBackToHub={() => navigate({ section: "partners" })} backLabel="Back to partners" />
+            </div>
+          )}
+          {section === "signals" && (
+            <div className="ss-page-stack ss-inproduct-view">
+              <InProductSignals state={state} navigate={navigate} onManage={() => navigate({ section: "inmanage" })} />
+            </div>
+          )}
+          {section === "inmanage" && (
+            <div className="ss-page-stack ss-inproduct-view">
+              <InProductTrack product={product} setup={state.setup} patchSetup={patchSetup} onBackToHub={() => navigate({ section: "signals" })} backLabel="Back to signals" />
+            </div>
+          )}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
           {section === "sources" && <SourcesView state={state} patchState={patchState} />}
           {section === "context" && <ContextView state={state} patchState={patchState} />}
@@ -2584,92 +2642,11 @@ function AskPanel({ product, state, patchState, navigate }) {
   );
 }
 
-// Loop history / Conversations — a CRM of feedback conversations. Off-product 1:1
-// threads (email + Telegram) are the spine; in-product snippet signals sit alongside,
-// clearly labeled by source; loops (the questions the team sent) stay one tab over.
-// ── OFF-PRODUCT — a conversation CRM. Qualitative, relationship-carried: the product
-// questions the team has asked + the full 1:1 threads (named users, quotes, read-in-full).
-// "Manage setup" opens the off-product program (invite users, channels, cadence) as a panel.
-// ── OFF-PRODUCT — the active feedback PROGRAM hub. Unlike the passive in-product
-// signals feed, this owns the partners, the loops sent to them, and the ongoing
-// 1:1 threads. Four sub-views: Partners · Loops · 1:1 threads · Manage setup.
-// "Send a new loop" is the primary action HERE (inside Loops), never global.
-function OffProductView({ state, patchState, navigate }) {
-  const [tab, setTab] = useStateSS(state.offTab || "partners"); // partners | loops | threads | manage
-  // Honor in-app jumps that target a specific sub-tab (person jump → partners,
-  // "View 1:1 threads" → threads, etc). focusedTarget in deps catches jumps that
-  // re-target the same tab value after a manual tab switch.
-  useEffectSS(() => { if (state.offTab) setTab(state.offTab); }, [state.offTab, state.focusedTarget]);
-  const product = SelfServeData.productName(state.workspace);
-  const setup = state.setup;
-  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
-  const active = ssSurfaceActive(setup).offproduct;
-  const openManage = () => setTab("manage");
-
-  const TABS = [
-    { id: "partners", label: "Partners", icon: "users" },
-    { id: "loops", label: "Loops", icon: "spark" },
-    { id: "threads", label: "1:1 threads", icon: "chat" },
-    { id: "manage", label: "Manage setup" + (active ? "" : " ·"), icon: "settings" },
-  ];
-
-  return (
-    <div className="ss-page-stack ss-offproduct">
-      <div className="ss-section-head">
-        <div className="ss-section-lead">
-          <span className="eyebrow no-rule">Off-product · your feedback program</span>
-          <p>Your enrolled feedback partners, the loops you send them, and the ongoing one-on-one threads over email and Telegram. This is the active program — where the <b>why</b> lives.</p>
-        </div>
-        <div className="ss-section-tabs">
-          {TABS.map((t) => (
-            <button key={t.id} type="button" className={tab === t.id ? "on" : ""} onClick={() => setTab(t.id)}><Icon name={t.icon} size={14} /> {t.label}</button>
-          ))}
-        </div>
-      </div>
-
-      {tab === "partners" && <PeopleView state={state} patchState={patchState} navigate={navigate} onManage={openManage} />}
-      {tab === "loops" && (
-        <>
-          <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
-          <QuestionHistory state={state} navigate={navigate} />
-        </>
-      )}
-      {tab === "threads" && <ConversationsCRM state={state} navigate={navigate} onManage={openManage} />}
-      {tab === "manage" && <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("partners")} backLabel="Back to partners" />}
-    </div>
-  );
-}
-
-// ── IN-PRODUCT — a metrics/pulse view. Behavioral, rating-based, high-volume:
-// eval helpful-rate, CSAT average + distribution, exit-survey top reasons — counts,
-// rates, trend + short representative quotes (NOT threads). "Manage setup" = snippet + loops.
-function InProductView({ state, patchState, navigate }) {
-  const [tab, setTab] = useStateSS("feed"); // "feed" | "manage"
-  const product = SelfServeData.productName(state.workspace);
-  const setup = state.setup;
-  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
-  const active = ssSurfaceActive(setup).inproduct;
-  const openManage = () => setTab("manage");
-
-  return (
-    <div className="ss-page-stack ss-inproduct-view">
-      <div className="ss-section-head">
-        <div className="ss-section-lead">
-          <span className="eyebrow no-rule">In-product · signals</span>
-          <p>The pulse from inside {product} — AI-output evals, CSAT, and exit-survey reasons collected in the moment by the snippet. Short, high-volume, behavioral: this is the <b>what</b>, at a glance.</p>
-        </div>
-        <div className="ss-section-tabs">
-          <button type="button" className={tab === "feed" ? "on" : ""} onClick={() => setTab("feed")}><Icon name="grid" size={14} /> Signals</button>
-          <button type="button" className={tab === "manage" ? "on" : ""} onClick={openManage}><Icon name="settings" size={14} /> Manage setup{active ? "" : " ·"}</button>
-        </div>
-      </div>
-
-      {tab === "feed"
-        ? <InProductSignals state={state} navigate={navigate} onManage={openManage} />
-        : <InProductTrack product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("feed")} backLabel="Back to signals" />}
-    </div>
-  );
-}
+// The Off-product program (Partners · Loops · 1:1 threads · Manage setup) and the
+// In-product signals (Signals · Manage setup) are now each their OWN sidebar page —
+// see SS_NAV + the render switch in ProductShell. Their building blocks (PeopleView,
+// AskPanel, QuestionHistory, ConversationsCRM, OffProductTrack, InProductSignals,
+// InProductTrack) live below and are mounted directly per-section, no tab hub.
 
 // Roll the raw in-product signals up into rates/counts — the pulse, not a thread list.
 function ssInproductStats(items) {
