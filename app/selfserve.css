@@ -3321,7 +3321,7 @@
 /* Insight card -> conversations link (card is no longer a button) */
 .ss-insight-link { display: inline-flex; align-items: center; gap: 5px; background: none; border: none; color: var(--accent); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; padding: 2px 0; margin-top: .2rem; }
 
-/* ---- One-click fix: insight detail (Novus-grounded, on the why) ---- */
+/* ---- One-click fix: insight detail (on the why) ---- */
 .ss-insight-detail-head { display: flex; gap: 1rem; align-items: flex-start; }
 .ss-insight-metric-big { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; color: var(--accent); flex: none; }
 .ss-insight-detail-head h2 { margin: .15rem 0 .35rem; }
@@ -3356,7 +3356,7 @@
 
 /* ============================================================
    In-product connect: GitHub import → scan → install PR
-   (the self-evolving on-ramp — Novus-grounded)
+   (the self-evolving on-ramp)
    ============================================================ */
 .ss-connect { margin-top: 1.4rem; border: 1px solid var(--border); border-radius: 14px; background: var(--canvas); overflow: hidden; }
 .ss-connect-stage { padding: 1.5rem 1.6rem 1.7rem; }
@@ -3566,7 +3566,7 @@
 .ss-fork-card .ss-fork-head { align-items:flex-start; }
 .ss-fork-card .ss-fork-tag { align-self:center; }
 
-/* GitHub-App authorize screen (faithful Novus install step) */
+/* GitHub-App authorize screen (install step) */
 .ss-ghauth { }
 .ss-ghauth-head { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; }
 .ss-ghauth-head b { font-size:1.05rem; }
@@ -3585,7 +3585,7 @@ details.ss-suggest[open] > .ss-suggest-summary::after { transform: rotate(90deg)
 .ss-suggest-body { margin-top: .7rem; }
 .ss-suggest-body > p { color: var(--text-secondary); font-size: .9rem; margin: 0 0 .6rem; }
 
-/* Right-side docked setup assistant rail (onboarding, à la Novus) */
+/* Right-side docked setup assistant rail (onboarding) */
 .obs-chat { position: fixed; top: 0; right: 0; bottom: 0; width: 384px; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); box-shadow: -16px 0 48px rgba(40,28,20,.10); z-index: 60; }
 .obs-chat-head { display: flex; align-items: center; gap: .65rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--border); background: var(--surface); flex: none; }
 .obs-chat-mark { width: 30px; height: 30px; flex: none; border-radius: 9px; background: var(--accent-tint); color: var(--accent); display: grid; place-items: center; }
