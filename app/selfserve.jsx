@@ -13,7 +13,6 @@ const SS_NAV = [
     items: [
       { id: "partners", label: "Partners", icon: "users" },
       { id: "loops", label: "Loops", icon: "spark" },
-      { id: "threads", label: "1:1 threads", icon: "chat" },
       { id: "offmanage", label: "Manage setup", title: "Off-product setup", icon: "settings" },
     ],
   },
@@ -34,12 +33,14 @@ const SS_ALL_SECTIONS = SS_NAV.reduce((acc, entry) => acc.concat(entry.items ? e
 // navigate({section:"people"|"compose"|"learning"|"offproduct"|"inproduct"}) call
 // (and old deep-links) still lands on the right focused page.
 // "sources" stays a reachable (non-nav) first-run setup hub.
+// "threads" is retired — the Partners page IS the 1:1-thread home (partner list +
+// selected partner's thread), so any old "threads" section/URL routes to Partners.
 const SS_SECTION_ALIAS = {
   people: "partners", compose: "loops", learning: "loops",
-  offproduct: "partners", inproduct: "signals",
+  offproduct: "partners", inproduct: "signals", threads: "partners",
 };
 // Legacy Off-product sub-tab id → new leaf section (for navigate({offTab}) + ?tab= URLs).
-const SS_OFF_TAB_TO_SECTION = { partners: "partners", loops: "loops", threads: "threads", manage: "offmanage" };
+const SS_OFF_TAB_TO_SECTION = { partners: "partners", loops: "loops", threads: "partners", manage: "offmanage" };
 
 // Resolve a (possibly legacy) section + optional offTab into a concrete leaf section id.
 function ssResolveSection(section, offTab) {
@@ -58,14 +59,15 @@ function ssResolveSection(section, offTab) {
 const SS_SECTION_TO_SLUG = {
   home: "home",
   partners: "off-product/partners", loops: "off-product/loops",
-  threads: "off-product/threads", offmanage: "off-product/manage",
+  offmanage: "off-product/manage",
   signals: "in-product/signals", inmanage: "in-product/manage",
   insights: "insights", settings: "settings", context: "context", sources: "sources",
 };
 const SS_SLUG_TO_SECTION = {
   home: "home",
   "off-product/partners": "partners", "off-product/loops": "loops",
-  "off-product/threads": "threads", "off-product/manage": "offmanage",
+  // retired: old /off-product/threads deep-links now land on Partners
+  "off-product/threads": "partners", "off-product/manage": "offmanage",
   "in-product/signals": "signals", "in-product/manage": "inmanage",
   insights: "insights", settings: "settings", context: "context", sources: "sources",
   // legacy front-door slugs (no leaf segment) → each program's default page
@@ -243,6 +245,7 @@ async function ssActivityLoad() {
     return {
       people: Array.isArray(data.people) ? data.people : [],
       conversations: Array.isArray(data.conversations) ? data.conversations : [],
+      inproductFeedback: Array.isArray(data.inproductFeedback) ? data.inproductFeedback : [],
     };
   } catch (e) { return null; }
 }
@@ -261,15 +264,18 @@ function ssMergeById(currentList, incomingList) {
 // Fold live people/conversations into the current state. Selects the first
 // live conversation when nothing is selected yet, so the People / Off-product
 // view has something focused.
-function ssMergeLiveActivity(state, people, conversations) {
+function ssMergeLiveActivity(state, people, conversations, inproductFeedback) {
   const nextPeople = ssMergeById(state.people, people);
   const nextConversations = ssMergeById(state.conversations, conversations);
+  // In-product signals fold in by id too — ssMergeById no-ops when none are returned,
+  // so a clean empty state is never clobbered.
+  const nextInproductFeedback = ssMergeById(state.inproductFeedback, inproductFeedback);
   const hasSelected = state.selectedConversationId
     && nextConversations.some((c) => c.id === state.selectedConversationId);
   const selectedConversationId = hasSelected
     ? state.selectedConversationId
     : (conversations && conversations[0] ? conversations[0].id : state.selectedConversationId);
-  return { ...state, people: nextPeople, conversations: nextConversations, selectedConversationId };
+  return { ...state, people: nextPeople, conversations: nextConversations, inproductFeedback: nextInproductFeedback, selectedConversationId };
 }
 
 // Fire-and-forget save of the current workspace state, keyed to the account.
@@ -587,7 +593,13 @@ const SS_AUTH_KEY = "observant.auth";
 function ssIsAuthed() { try { return !!localStorage.getItem(SS_AUTH_KEY); } catch (e) { return false; } }
 function ssSetAuth(info) { try { const v = typeof info === "string" ? { email: info } : (info || {}); localStorage.setItem(SS_AUTH_KEY, JSON.stringify({ name: v.name || "", email: v.email || "", at: Date.now() })); } catch (e) {} }
 function ssAuth() { try { return JSON.parse(localStorage.getItem(SS_AUTH_KEY) || "{}"); } catch (e) { return {}; } }
-function ssLogout() { try { localStorage.removeItem(SS_AUTH_KEY); ssRemoveState(); } catch (e) {} window.location.href = "/"; }
+async function ssLogout() {
+  // Real sign-out: end the Supabase session too, or returning to /setup silently
+  // reloads the prior account. Clear the local demo gate + per-browser cache after.
+  try { if (window.ObservantAuth) await window.ObservantAuth.signOut(); } catch (e) {}
+  try { localStorage.removeItem(SS_AUTH_KEY); ssRemoveState(); } catch (e) {}
+  window.location.href = "/";
+}
 
 function LoginGate({ onLogin, onBack }) {
   const [name, setName] = useStateSS("");
@@ -785,10 +797,11 @@ function SelfServeApp() {
       if (!live) return;                                                 // failed → leave clean state
       const people = Array.isArray(live.people) ? live.people : [];
       const conversations = Array.isArray(live.conversations) ? live.conversations : [];
-      if (!people.length && !conversations.length) return;               // no rows → leave clean state
+      const inproductFeedback = Array.isArray(live.inproductFeedback) ? live.inproductFeedback : [];
+      if (!people.length && !conversations.length && !inproductFeedback.length) return; // no rows → leave clean state
       setState((current) => {
         if (!current || ssIsSampleState(current)) return current;        // never touch the sample
-        return ssMergeLiveActivity(current, people, conversations);
+        return ssMergeLiveActivity(current, people, conversations, inproductFeedback);
       });
     })();
   }, [state, gate, authEmail]);
@@ -1808,6 +1821,9 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
   const ghReturning = SS_GH_RETURN.installed && !setup.connected;
   const [phase, setPhase] = useStateSS(setup.connected ? "live" : (ghReturning ? "opening" : "start"));
   const [testSent, setTestSent] = useStateSS(false);
+  const [testEmail, setTestEmail] = useStateSS("");
+  const [testSending, setTestSending] = useStateSS(false);
+  const [testErr, setTestErr] = useStateSS("");
   const [prUrl, setPrUrl] = useStateSS(setup.installPrUrl || "");
   const [prErr, setPrErr] = useStateSS("");
   const prFiredRef = useRefSS(false);
@@ -1853,6 +1869,22 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
   }, [phase]);
 
   const added = () => { setPhase("listening"); setTimeout(() => { setPhase("live"); patchSetup({ connected: true }); }, 2000); };
+
+  // GO-LIVE "send yourself a test" — actually POST /api/selfserve/send-email (same
+  // endpoint as the loop composer's real test-send), so it genuinely emails the entered
+  // address the in-product baseline prompt. Only reveals the preview bubble once it sent.
+  const GO_LIVE_TEST_QUESTION = "Quick one — did that output do what you needed?";
+  const sendGoLiveTest = async () => {
+    if (!testEmail.includes("@")) return;
+    setTestSending(true); setTestErr("");
+    try {
+      const r = await ssPostJson("/api/selfserve/send-email", { product, question: GO_LIVE_TEST_QUESTION, toEmail: testEmail, mode: "light", channel: "email" });
+      if (r && r.ok) setTestSent(true);
+      else if (r && r.needKey) setTestErr("Email isn't fully configured on this server yet — the send is wired, but no email will actually go out here.");
+      else setTestErr((r && r.error) || "Couldn't send just now — try again in a moment.");
+    } catch (e) { setTestErr("Couldn't send just now — try again in a moment."); }
+    setTestSending(false);
+  };
   const liveMoments = [
     { k: "Unsolicited “give feedback”", d: "A quiet, always-available way for any user to volunteer a thought." },
     { k: "AI / output evals", d: "A one-tap rating on each AI output — tied to that exact output." },
@@ -1926,12 +1958,19 @@ function SnippetSetup({ product, setup, patchSetup, step }) {
 
           <div className="ss-feelit">
             {!testSent ? (
-              <Btn variant="ghost" onClick={() => setTestSent(true)}><Icon name="spark" size={14} /> Send yourself a test — see exactly what your users see</Btn>
+              <div className="ss-golive-test">
+                <p className="ss-step-lead">Send yourself a real test to see exactly what your users see — enter an email and Observant delivers it.</p>
+                <div className="ss-golive-test-row">
+                  <input type="email" className="input ss-golive-test-input" placeholder="you@yourproduct.com" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} />
+                  <Btn variant="ghost" onClick={sendGoLiveTest} disabled={testSending || !testEmail.includes("@")}><Icon name="spark" size={14} /> {testSending ? "Sending…" : "Send yourself a test"}</Btn>
+                </div>
+                {testErr && <small className="ss-golive-test-err">{testErr}</small>}
+              </div>
             ) : (
               <div className="ss-pulse-preview">
-                <span className="ss-pulse-preview-tag">What your user sees</span>
+                <span className="ss-pulse-preview-tag">Sent to {testEmail} — what your user sees</span>
                 <div className="ss-pulse-bubble">
-                  <p>Quick one — did that output do what you needed?</p>
+                  <p>{GO_LIVE_TEST_QUESTION}</p>
                   <div className="ss-pulse-row"><span className="ss-pulse-tap">👍</span><span className="ss-pulse-tap">👎</span><span className="ss-pulse-input">a few words (optional)</span></div>
                   <span className="ss-pulse-what">what is this?</span>
                 </div>
@@ -1985,7 +2024,6 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
   const product = SelfServeData.productName(state.workspace);
   const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
-  const [slackConnected, setSlackConnected] = useStateSS(false);
   const [navStack, setNavStack] = useStateSS([]);
   const [assistantOpen, setAssistantOpen] = useStateSS(true);
 
@@ -2081,16 +2119,6 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             </button>
           ))}
         </nav>
-        <div className={"ss-slack-side" + (slackConnected ? " on" : "")}>
-          {slackConnected ? (
-            <div className="ss-slack-side-done"><Icon name="check" size={15} sw={2.4} /> <div><b>Slack connected</b><span>Ask straight from your channel — replies pipe back here.</span></div></div>
-          ) : (
-            <>
-              <div className="ss-slack-side-copy"><b>Ask straight from Slack</b><span>Relay your team's questions from your channel — responses pipe back within the hour.</span></div>
-              <button type="button" className="ss-slack-side-btn" onClick={() => setSlackConnected(true)}><Icon name="spark" size={14} /> Connect Slack</button>
-            </>
-          )}
-        </div>
         <button type="button" className="ss-workspace-foot" onClick={() => navigate({ section: "settings", focusedTarget: "settings-workspace" })}>
           <span className="ws-logo">{SelfServeData.initials(product).slice(0, 1)}</span>
           <div>
@@ -2125,11 +2153,6 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
             <div className="ss-page-stack ss-offproduct">
               <AskPanel product={product} state={state} patchState={patchState} navigate={navigate} />
               <QuestionHistory state={state} navigate={navigate} />
-            </div>
-          )}
-          {section === "threads" && (
-            <div className="ss-page-stack ss-offproduct">
-              <ConversationsCRM state={state} navigate={navigate} onManage={() => navigate({ section: "offmanage" })} />
             </div>
           )}
           {section === "offmanage" && (
@@ -2979,14 +3002,23 @@ function QuestionHistory({ state, navigate }) {
 }
 
 function PeopleView({ state, patchState, navigate, onManage }) {
-  const selected = state.conversations.find((c) => c.id === state.selectedConversationId) || state.conversations[0];
-  const person = ssPersonForConversation(state, selected);
+  // Selection is PERSON-centric. A partner with NO conversation must still show
+  // THEIR OWN detail (a clean empty thread), never another partner's — so we resolve
+  // the selected person from focusedTarget ("person-<id>", set on click + on nav-in)
+  // first, then the selected conversation, then the first partner. We never fall back
+  // to conversations[0] for the person (that was the "wrong thread" bug).
+  const focusPersonId = (state.focusedTarget || "").indexOf("person-") === 0
+    ? state.focusedTarget.slice("person-".length)
+    : "";
+  const person = (focusPersonId && state.people.find((p) => p.id === focusPersonId))
+    || ssPersonForConversation(state, state.conversations.find((c) => c.id === state.selectedConversationId))
+    || state.people[0];
   const [followUpOpen, setFollowUpOpen] = useStateSS(false);
   const [followUpQ, setFollowUpQ] = useStateSS("");
   const [followUpStage, setFollowUpStage] = useStateSS("");
   const [modeTab, setModeTab] = useStateSS("chat");
 
-  if (!selected || !person) {
+  if (!person) {
     return (
       <section className="ss-panel">
         <PanelTitle k="Partners" title="Your feedback partners" status="None yet" />
@@ -3005,17 +3037,22 @@ function PeopleView({ state, patchState, navigate, onManage }) {
   const personConversations = state.conversations.filter((item) => item.userId === person.id || item.id === person.id);
   const chatConversation = personConversations.find((item) => item.mode !== "voice") || null;
   const voiceConversations = personConversations.filter((item) => item.mode === "voice");
+  // The thread shown for THIS partner (may be none yet → clean empty state below).
+  const selected = chatConversation || personConversations[0] || null;
 
-  const setSelected = (conversationId) => {
-    const conversation = state.conversations.find((item) => item.id === conversationId);
-    const rowPerson = ssPersonForConversation(state, conversation);
+  // Select a partner (never a stray conversation). focusedTarget carries the person,
+  // so a partner with no thread still resolves to their own detail on re-render.
+  const setSelected = (rowPerson) => {
+    const conversation = state.conversations.find((item) => item.userId === rowPerson.id || item.id === rowPerson.id);
     setModeTab(conversation && conversation.mode === "voice" ? "voice" : "chat");
     patchState((current) => ({
       ...current,
       section: "offproduct",
       offTab: "partners",
-      selectedConversationId: conversationId,
-      focusedTarget: "person-" + (rowPerson ? rowPerson.id : conversationId),
+      // Keep a valid conversation selected when the partner has one; otherwise leave the
+      // prior id untouched (focusedTarget is what drives which partner is shown).
+      selectedConversationId: conversation ? conversation.id : current.selectedConversationId,
+      focusedTarget: "person-" + rowPerson.id,
     }));
   };
 
@@ -3027,15 +3064,18 @@ function PeopleView({ state, patchState, navigate, onManage }) {
     setFollowUpStage("Refining your question");
     setTimeout(() => setFollowUpStage("Sending it to " + person.name.split(" ")[0] + " over " + person.surface), 1400);
     setTimeout(() => {
+      const target = chatConversation || selected;
+      const relayMsgs = [
+        { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
+        { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + person.name.split(" ")[0] + ".", meta: "Observant" },
+      ];
       patchState((current) => ({
         ...current,
-        conversations: ssUpdateById(current.conversations, (chatConversation || selected).id, (conversation) => ({
-          messages: [
-            ...conversation.messages,
-            { t: "relay", text: q, meta: "Follow-up from your team — Observant is phrasing it for " + person.name.split(" ")[0] },
-            { t: "them", text: "On it — I'll work this into the conversation with the context already remembered for " + person.name.split(" ")[0] + ".", meta: "Observant" },
-          ],
-        })),
+        // If the partner has no thread yet, open one so the follow-up has a home —
+        // never write into another partner's conversation.
+        conversations: target
+          ? ssUpdateById(current.conversations, target.id, (conversation) => ({ messages: [...conversation.messages, ...relayMsgs] }))
+          : [{ id: "conv-" + person.id + "-" + Date.now(), userId: person.id, title: person.name.split(" ")[0] + " — follow-up", state: "Async", mode: "chat", messages: relayMsgs }, ...current.conversations],
         activity: ["Follow-up sent to " + person.name + " via Observant.", ...current.activity],
       }));
       setFollowUpStage("");
@@ -3045,20 +3085,20 @@ function PeopleView({ state, patchState, navigate, onManage }) {
   };
 
   const requestLive = () => {
+    const liveMsgs = [
+      { t: "relay", text: "Live 1:1 requested.", meta: "Your team" },
+      { t: "them", text: person.name.split(" ")[0] + " - the team would love 15 minutes to watch this workflow. Does Thursday at 2pm work?", meta: "Observant" },
+      { t: "user", text: "Thursday works. Send the invite.", meta: person.name.split(" ")[0] },
+    ];
     patchState((current) => ({
       ...current,
       scheduledCalls: [
-        { id: "call-" + (current.scheduledCalls.length + 1), user: person.name, time: "Thu 2:00pm", topic: selected.title },
+        { id: "call-" + (current.scheduledCalls.length + 1), user: person.name, time: "Thu 2:00pm", topic: (selected && selected.title) || "Live 1:1" },
         ...current.scheduledCalls,
       ],
-      conversations: ssUpdateById(current.conversations, selected.id, (conversation) => ({
-        messages: [
-          ...conversation.messages,
-          { t: "relay", text: "Live 1:1 requested.", meta: "Your team" },
-          { t: "them", text: person.name.split(" ")[0] + " - the team would love 15 minutes to watch this workflow. Does Thursday at 2pm work?", meta: "Observant" },
-          { t: "user", text: "Thursday works. Send the invite.", meta: person.name.split(" ")[0] },
-        ],
-      })),
+      conversations: selected
+        ? ssUpdateById(current.conversations, selected.id, (conversation) => ({ messages: [...conversation.messages, ...liveMsgs] }))
+        : [{ id: "conv-" + person.id + "-" + Date.now(), userId: person.id, title: "Live 1:1", state: "Async", mode: "chat", messages: liveMsgs }, ...current.conversations],
       activity: ["Live 1:1 scheduled with " + person.name + ".", ...current.activity],
     }));
   };
@@ -3068,20 +3108,17 @@ function PeopleView({ state, patchState, navigate, onManage }) {
       <section className="ss-panel">
         <PanelTitle k="Partners" title="Your feedback partners" status={state.people.length + " partners"} />
         <div className="ss-table-list">
-          {state.people.map((rowPerson) => {
-            const conversationId = ssConversationIdForPerson(state, rowPerson.id);
-            return (
-              <PersonLine
-                key={rowPerson.id}
-                person={rowPerson}
-                meta={rowPerson.segment + " · " + rowPerson.surface}
-                body={rowPerson.last}
-                selected={selected.id === conversationId}
-                focused={state.focusedTarget === "person-" + rowPerson.id}
-                onClick={() => setSelected(conversationId)}
-              />
-            );
-          })}
+          {state.people.map((rowPerson) => (
+            <PersonLine
+              key={rowPerson.id}
+              person={rowPerson}
+              meta={rowPerson.segment + " · " + rowPerson.surface}
+              body={rowPerson.last}
+              selected={person.id === rowPerson.id}
+              focused={state.focusedTarget === "person-" + rowPerson.id}
+              onClick={() => setSelected(rowPerson)}
+            />
+          ))}
         </div>
       </section>
 

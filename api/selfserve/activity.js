@@ -64,7 +64,21 @@ function inList(ids) {
 // Empty (but ok) response — the caller treats this as "no live rows; leave
 // the current clean state alone". Used for every degrade path.
 function empty(res) {
-  res.status(200).json({ ok: true, people: [], conversations: [] });
+  res.status(200).json({ ok: true, people: [], conversations: [], inproductFeedback: [] });
+}
+
+// created_at → a short relative label ("12m ago", "3h ago", "2d ago").
+function relTime(iso) {
+  const t = Date.parse(iso || "");
+  if (!t) return "";
+  const secs = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return mins + "m ago";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "h ago";
+  const days = Math.floor(hrs / 24);
+  return days + "d ago";
 }
 
 // email → "Jane Doe"; telegram → @handle (or a neutral label); never blank.
@@ -141,6 +155,39 @@ module.exports = async function handler(req, res) {
     const wsIds = wsList.map((w) => w.id).filter(Boolean);
     const slugs = wsList.map((w) => w.slug).filter(Boolean);
 
+    // --- in-product feedback (snippet.js signals) for this workspace ---
+    // Keyed by workspace SLUG (always) OR workspace_id (once ownership.sql has run),
+    // NOT by program — so these surface even before any off-product partner replies.
+    // Same two-select + dedupe pattern as programs, tolerant of the missing column.
+    const ipfById = {};
+    const ipfCols = "&select=id,type,value,note,url,user_ref,created_at&order=created_at.desc&limit=200";
+    if (slugs.length) {
+      try {
+        const bySlug = await db.select("inproduct_feedback", "slug=in." + inList(slugs) + ipfCols);
+        (Array.isArray(bySlug) ? bySlug : []).forEach((r) => { ipfById[r.id] = r; });
+      } catch (_e) { /* no table yet → no in-product signals */ }
+    }
+    if (wsIds.length) {
+      try {
+        const byWs = await db.select("inproduct_feedback", "workspace_id=in." + inList(wsIds) + ipfCols);
+        (Array.isArray(byWs) ? byWs : []).forEach((r) => { ipfById[r.id] = r; });
+      } catch (_e) { /* no workspace_id column yet — slug match is enough */ }
+    }
+    // Shape to MATCH the dashboard's ssCreateInproductFeedback rows (type/value/note/
+    // url/user_ref/time) so the merge into state.inproductFeedback is drop-in.
+    const inproductFeedback = Object.keys(ipfById).map((k) => {
+      const r = ipfById[k];
+      return {
+        id: r.id,
+        type: r.type,
+        value: r.value,
+        note: r.note,
+        url: r.url,
+        user_ref: r.user_ref || "",
+        time: relTime(r.created_at),
+      };
+    });
+
     // --- programs: slug === workspace slug OR workspace_id === workspace id ---
     // (two selects + dedupe by id, to avoid brittle PostgREST OR-list syntax)
     const progById = {};
@@ -159,7 +206,8 @@ module.exports = async function handler(req, res) {
       } catch (_e) { /* no workspace_id column yet — slug match is enough */ }
     }
     const programs = Object.keys(progById).map((k) => progById[k]);
-    if (!programs.length) return empty(res);
+    // No off-product programs yet — but still surface any in-product signals.
+    if (!programs.length) return res.status(200).json({ ok: true, people: [], conversations: [], inproductFeedback });
     const progIds = programs.map((p) => p.id);
 
     // --- partners (active) for those programs ---
@@ -173,7 +221,14 @@ module.exports = async function handler(req, res) {
       partners = await db.select("partners", pQuery + "&select=id,program_id,channel,contact,cadence,status,created_at&order=created_at.asc");
     }
     partners = Array.isArray(partners) ? partners : [];
-    if (!partners.length) return empty(res);
+    // Never surface the signed-in builder (the account owner) as a feedback partner —
+    // e.g. when they opted their own email in while testing. Their contact === user.email.
+    const ownerEmail = String(user.email || "").trim().toLowerCase();
+    if (ownerEmail) {
+      partners = partners.filter((p) => String(p.contact || "").trim().toLowerCase() !== ownerEmail);
+    }
+    // No off-product partners yet — but still surface any in-product signals.
+    if (!partners.length) return res.status(200).json({ ok: true, people: [], conversations: [], inproductFeedback });
     const partnerIds = partners.map((p) => p.id);
     const partnerById = {};
     partners.forEach((p) => { partnerById[p.id] = p; });
@@ -279,7 +334,7 @@ module.exports = async function handler(req, res) {
       };
     });
 
-    res.status(200).json({ ok: true, people, conversations });
+    res.status(200).json({ ok: true, people, conversations, inproductFeedback });
   } catch (err) {
     // Never throw — degrade to empty so the dashboard keeps its clean state.
     console.error("[selfserve/activity] failed:", err && err.message);
