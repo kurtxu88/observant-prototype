@@ -5,12 +5,16 @@ const { useState: useStateSS, useEffect: useEffectSS, useRef: useRefSS } = React
 
 const SS_SECTIONS = [
   { id: "home", label: "Home", icon: "grid" },
-  { id: "learning", label: "Loop history", icon: "chat" },
+  { id: "offproduct", label: "Off-product", icon: "chat" },
+  { id: "inproduct", label: "In-product", icon: "globe" },
   { id: "people", label: "Feedback partners", icon: "users" },
   { id: "insights", label: "Insights", icon: "book" },
-  { id: "sources", label: "Sources", icon: "globe" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
+
+// Legacy → current section aliases, so any older navigate({section:"learning"|"sources"})
+// call still resolves cleanly. "sources" stays a reachable (non-nav) first-run setup hub.
+const SS_SECTION_ALIAS = { learning: "offproduct" };
 
 // PLACEHOLDER — swap for the real booking link before sharing externally.
 const SS_BOOK_CALL_URL = "https://calendly.com/observant-ai/intro";
@@ -1233,7 +1237,7 @@ function HubNudge({ active }) {
 
 // In-product sub-flow: re-hosts the existing SnippetSetup install flow, with its own
 // "← Back to setup" affordance. Marks the surface Active once the snippet is live.
-function InProductTrack({ product, setup, patchSetup, onBackToHub }) {
+function InProductTrack({ product, setup, patchSetup, onBackToHub, backLabel }) {
   useEffectSS(() => {
     if (setup.connected && !setup.inproductActive) {
       patchSetup({ inproductActive: true, inproduct: true, surfaces: { ...setup.surfaces, product: true } });
@@ -1242,7 +1246,7 @@ function InProductTrack({ product, setup, patchSetup, onBackToHub }) {
   return (
     <div className="ss-track">
       <div className="ss-track-head">
-        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> Back to setup</button>
+        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> {backLabel || "Back to setup"}</button>
         <span className="ss-track-steps">In-product · Connect → authorize → PR → live</span>
       </div>
       <SnippetSetup product={product} setup={setup} patchSetup={patchSetup} step={1} />
@@ -1259,7 +1263,7 @@ function InProductTrack({ product, setup, patchSetup, onBackToHub }) {
 // Off-product sub-flow: re-hosts the existing program (compensation + invitation)
 // and preview (review + magic link) screens as a focused two-step track. Marks the
 // surface Active once the magic link is generated.
-function OffProductTrack({ state, patchState, product, setup, patchSetup, onBackToHub }) {
+function OffProductTrack({ state, patchState, product, setup, patchSetup, onBackToHub, backLabel }) {
   const [step, setStep] = useStateSS(setup.offproductActive ? 1 : 0); // 0 program · 1 preview
   const [linkCopied, setLinkCopied] = useStateSS(false);
   const [inviteCopied, setInviteCopied] = useStateSS(false);
@@ -1325,7 +1329,7 @@ function OffProductTrack({ state, patchState, product, setup, patchSetup, onBack
   return (
     <div className="ss-track">
       <div className="ss-track-head">
-        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> Back to setup</button>
+        <button type="button" className="ss-linklike" onClick={onBackToHub}><Icon name="back" size={14} /> {backLabel || "Back to setup"}</button>
         <ol className="ss-loop-steps ss-track-steps-ol">
           {["Compensation & invite", "Preview & magic link"].map((s, i) => (
             <li key={s} className={"ss-loop-step" + (i < step ? " done" : i === step ? " on" : "") + ((i === 0 || step > 0 || linkGenerated) ? " nav" : "")} onClick={() => { if (i === 0 || step > 0 || linkGenerated) setStep(i); }}>
@@ -1537,7 +1541,7 @@ function ActivationScreen({ state, patchState, onLaunch, resetWorkspace, onBackT
           {view === "hub" && (
             <section className="ss-panel">
               <PanelTitle k="Set up" title="Set up your feedback" status={anyActive ? "1 active" : ""} />
-              <p className="ss-step-lead"><b>Start with one — add the other anytime.</b> Each feedback surface sets up on its own track. You can come back to add the other whenever you like, from <b>Sources</b> in your dashboard.</p>
+              <p className="ss-step-lead"><b>Start with one — add the other anytime.</b> Each feedback surface sets up on its own track. You can come back to add or manage either one whenever you like, from <b>Manage setup</b> inside the Off-product and In-product sections of your dashboard.</p>
               <SetupHubCards setup={setup} onPick={setView} />
               {anyActive && <HubNudge active={active} />}
               <div className="ss-hub-foot">
@@ -1571,8 +1575,8 @@ function SourcesView({ state, patchState }) {
     <div className="ss-page-stack">
       {view === "hub" && (
         <section className="ss-panel">
-          <PanelTitle k="Sources" title="Your feedback sources" status={anyActive ? count + " active" : "None yet"} />
-          <p className="ss-step-lead">Each feedback surface is its own track. Set up the one you skipped, or manage one that's already live — anytime.</p>
+          <PanelTitle k="Setup" title="Set up your feedback sources" status={anyActive ? count + " active" : "None yet"} />
+          <p className="ss-step-lead">Each feedback surface is its own track. Set up the one you skipped here — once live, manage it anytime from <b>Manage setup</b> inside the Off-product or In-product section.</p>
           <SetupHubCards setup={setup} onPick={setView} />
           {anyActive && <HubNudge active={active} />}
         </section>
@@ -1813,8 +1817,10 @@ function ReviewRowSS({ k, v, sub }) {
 }
 
 function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
-  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop" }; // non-nav pages
-  const section = (SS_SECTIONS.some((item) => item.id === state.section) || EXTRA_SECTIONS[state.section]) ? state.section : "home";
+  // "sources" = the first-run setup hub, reachable from Home / empty states but not in nav.
+  const EXTRA_SECTIONS = { context: "Context", compose: "Send a new loop", sources: "Feedback sources" }; // non-nav pages
+  const rawSection = SS_SECTION_ALIAS[state.section] || state.section;
+  const section = (SS_SECTIONS.some((item) => item.id === rawSection) || EXTRA_SECTIONS[rawSection]) ? rawSection : "home";
   const product = SelfServeData.productName(state.workspace);
   const firstLoopId = state.selectedLoopId || (state.loops[0] ? state.loops[0].id : "");
   const [slackConnected, setSlackConnected] = useStateSS(false);
@@ -1905,7 +1911,8 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
 
         <main className="ss-app-content">
           {section === "home" && <HomeView state={state} patchState={patchState} navigate={navigate} />}
-          {section === "learning" && <LearningView state={state} patchState={patchState} navigate={navigate} copied={copied} copyText={copyText} />}
+          {section === "offproduct" && <OffProductView state={state} patchState={patchState} navigate={navigate} />}
+          {section === "inproduct" && <InProductView state={state} patchState={patchState} navigate={navigate} />}
           {section === "people" && <PeopleView state={state} patchState={patchState} navigate={navigate} />}
           {section === "insights" && <InsightsView state={state} patchState={patchState} navigate={navigate} />}
           {section === "sources" && <SourcesView state={state} patchState={patchState} />}
@@ -1981,7 +1988,7 @@ function HomeView({ state, patchState, navigate }) {
         <div className="ss-hero-metrics">
           <Metric n={String(state.people.length)} l="feedback partners" onClick={() => navigate({ section: "people" })} />
           <Metric n={String(state.conversations.length)} l="active 1:1 conversations" onClick={() => navigate({ section: "people", conversationId: activeConversationId, focusedTarget: "person-" + (activePerson ? activePerson.id : activeConversationId) })} />
-          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "learning" })} />
+          <Metric n={String(readiness.connectedSurfaces)} l="channels open" onClick={() => navigate({ section: "offproduct" })} />
         </div>
       </section>
 
@@ -2017,11 +2024,14 @@ function HomeView({ state, patchState, navigate }) {
         ) : !latestAnswer ? <EmptyState title="No insights yet" text="Ask your panel a question and Observant drafts insights as patterns emerge across the 1:1s." /> : null}
       </section>
 
-      {/* 2 — Recently opened chats */}
+      {/* 2 — Recently opened chats (off-product qualitative pulse) */}
       <section className="ss-panel">
-        <PanelTitle k="Now" title="Recently opened chats" status={state.conversations.length ? "Live" : "Quiet"} />
+        <PanelTitle k="Off-product" title="Recently opened chats" status={state.conversations.length ? "Live" : "Quiet"} />
         {state.conversations.length ? <ConversationList state={state} compact navigate={navigate} /> : <EmptyState title="No lines yet" text="Ask a question and Observant opens 1:1 lines with your panel." />}
       </section>
+
+      {/* 2b — In-product pulse (behavioral, at a glance) */}
+      <HomeInProductPulse state={state} navigate={navigate} />
 
       {/* 3 — Question activity history */}
       <QuestionHistory state={state} />
@@ -2030,6 +2040,40 @@ function HomeView({ state, patchState, navigate }) {
         <HomeAskEntry navigate={navigate} />
       </div>
     </div>
+  );
+}
+
+// Compact in-product pulse for Home — the behavioral counterpart to the 1:1 chats,
+// summarized as headline rates that deep-link into the In-product section.
+function HomeInProductPulse({ state, navigate }) {
+  const items = state.inproductFeedback || [];
+  if (!items.length) return null;
+  const s = ssInproductStats(items);
+  const topExit = s.exitReasons[0];
+  return (
+    <section className="ss-panel">
+      <div className="ss-panel-title-with-action">
+        <PanelTitle k="In-product" title="Signals pulse" status={s.total + " signals"} />
+        <button type="button" className="ss-home-seeall" onClick={() => navigate({ section: "inproduct" })}>Open signals <Icon name="arrow" size={14} /></button>
+      </div>
+      <div className="ss-pulse-stats">
+        {s.helpfulRate != null && (
+          <button type="button" className="ss-pulse-stat" onClick={() => navigate({ section: "inproduct" })}>
+            <b>{s.helpfulRate}%</b><span>AI output helpful</span>
+          </button>
+        )}
+        {s.csatAvg != null && (
+          <button type="button" className="ss-pulse-stat" onClick={() => navigate({ section: "inproduct" })}>
+            <b>{s.csatAvg.toFixed(1)}<span className="ss-signal-unit">/5</span></b><span>CSAT average</span>
+          </button>
+        )}
+        {topExit && (
+          <button type="button" className="ss-pulse-stat" onClick={() => navigate({ section: "inproduct" })}>
+            <b>{s.exits.length}</b><span>exits · top: {topExit.reason}</span>
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -2323,16 +2367,203 @@ function AskPanel({ product, state, patchState, navigate }) {
 // Loop history / Conversations — a CRM of feedback conversations. Off-product 1:1
 // threads (email + Telegram) are the spine; in-product snippet signals sit alongside,
 // clearly labeled by source; loops (the questions the team sent) stay one tab over.
-function LearningView({ state, patchState, navigate }) {
-  // Loop history is simply the history of questions your team has asked. The
-  // per-user 1:1 threads live under People; in-product feedback under Insights.
+// ── OFF-PRODUCT — a conversation CRM. Qualitative, relationship-carried: the product
+// questions the team has asked + the full 1:1 threads (named users, quotes, read-in-full).
+// "Manage setup" opens the off-product program (invite users, channels, cadence) as a panel.
+function OffProductView({ state, patchState, navigate }) {
+  const [tab, setTab] = useStateSS("feed"); // "feed" | "manage"
+  const product = SelfServeData.productName(state.workspace);
+  const setup = state.setup;
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const active = ssSurfaceActive(setup).offproduct;
+  const openManage = () => setTab("manage");
+
   return (
-    <div className="ss-page-stack">
-      <div className="ss-activity-head">
-        <span className="eyebrow no-rule">Loop history</span>
-        <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+    <div className="ss-page-stack ss-offproduct">
+      <div className="ss-section-head">
+        <div className="ss-section-lead">
+          <span className="eyebrow no-rule">Off-product · 1:1 conversations</span>
+          <p>The questions your team is asking, and the ongoing one-on-one threads with your users over email and Telegram. Read them in full — this is where the <b>why</b> lives.</p>
+        </div>
+        <div className="ss-section-tabs">
+          <button type="button" className={tab === "feed" ? "on" : ""} onClick={() => setTab("feed")}><Icon name="chat" size={14} /> Conversations</button>
+          <button type="button" className={tab === "manage" ? "on" : ""} onClick={openManage}><Icon name="settings" size={14} /> Manage setup{active ? "" : " ·"}</button>
+        </div>
       </div>
-      <QuestionHistory state={state} navigate={navigate} />
+
+      {tab === "feed" ? (
+        <>
+          <div className="ss-activity-head">
+            <span className="eyebrow no-rule">What you've asked</span>
+            <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
+          </div>
+          <QuestionHistory state={state} navigate={navigate} onManage={openManage} />
+          <ConversationsCRM state={state} navigate={navigate} onManage={openManage} />
+        </>
+      ) : (
+        <OffProductTrack state={state} patchState={patchState} product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("feed")} backLabel="Back to conversations" />
+      )}
+    </div>
+  );
+}
+
+// ── IN-PRODUCT — a metrics/pulse view. Behavioral, rating-based, high-volume:
+// eval helpful-rate, CSAT average + distribution, exit-survey top reasons — counts,
+// rates, trend + short representative quotes (NOT threads). "Manage setup" = snippet + loops.
+function InProductView({ state, patchState, navigate }) {
+  const [tab, setTab] = useStateSS("feed"); // "feed" | "manage"
+  const product = SelfServeData.productName(state.workspace);
+  const setup = state.setup;
+  const patchSetup = (patch) => patchState((current) => ({ ...current, setup: { ...current.setup, ...patch } }));
+  const active = ssSurfaceActive(setup).inproduct;
+  const openManage = () => setTab("manage");
+
+  return (
+    <div className="ss-page-stack ss-inproduct-view">
+      <div className="ss-section-head">
+        <div className="ss-section-lead">
+          <span className="eyebrow no-rule">In-product · signals</span>
+          <p>The pulse from inside {product} — AI-output evals, CSAT, and exit-survey reasons collected in the moment by the snippet. Short, high-volume, behavioral: this is the <b>what</b>, at a glance.</p>
+        </div>
+        <div className="ss-section-tabs">
+          <button type="button" className={tab === "feed" ? "on" : ""} onClick={() => setTab("feed")}><Icon name="grid" size={14} /> Signals</button>
+          <button type="button" className={tab === "manage" ? "on" : ""} onClick={openManage}><Icon name="settings" size={14} /> Manage setup{active ? "" : " ·"}</button>
+        </div>
+      </div>
+
+      {tab === "feed"
+        ? <InProductSignals state={state} navigate={navigate} onManage={openManage} />
+        : <InProductTrack product={product} setup={setup} patchSetup={patchSetup} onBackToHub={() => setTab("feed")} backLabel="Back to signals" />}
+    </div>
+  );
+}
+
+// Roll the raw in-product signals up into rates/counts — the pulse, not a thread list.
+function ssInproductStats(items) {
+  const list = Array.isArray(items) ? items : [];
+  const evals = list.filter((i) => i.type === "eval");
+  const up = evals.filter((i) => i.value === "up");
+  const down = evals.filter((i) => i.value === "down");
+  const evalTotal = up.length + down.length;
+  const csats = list.filter((i) => i.type === "csat" && i.value != null && i.value !== "");
+  const csatVals = csats.map((i) => Number(i.value)).filter((n) => !isNaN(n));
+  const csatAvg = csatVals.length ? csatVals.reduce((a, b) => a + b, 0) / csatVals.length : null;
+  const csatDist = [1, 2, 3, 4, 5].map((n) => ({ n, count: csatVals.filter((v) => v === n).length }));
+  const exits = list.filter((i) => i.type === "exit");
+  const exitMap = {};
+  exits.forEach((e) => { const r = (e.value || "no reason given").replace(/-/g, " "); exitMap[r] = (exitMap[r] || 0) + 1; });
+  const exitReasons = Object.keys(exitMap).map((r) => ({ reason: r, count: exitMap[r] })).sort((a, b) => b.count - a.count);
+  const feedbacks = list.filter((i) => i.type === "feedback");
+  return {
+    total: list.length,
+    evals, up, down, evalTotal,
+    helpfulRate: evalTotal ? Math.round((up.length / evalTotal) * 100) : null,
+    csats, csatVals, csatAvg, csatDist,
+    exits, exitReasons, feedbacks,
+  };
+}
+
+// One short, representative quote inside a metric card — never a full thread.
+function SignalQuote({ state, fb, tone }) {
+  if (!fb || !fb.note) return null;
+  const who = ssInproductWho(state, fb);
+  return (
+    <blockquote className={"ss-signal-quote" + (tone ? " tone-" + tone : "")}>
+      <p>“{fb.note}”</p>
+      <cite>{who.name}{fb.url ? <span className="mono"> · {fb.url}</span> : null}{fb.time ? " · " + fb.time : ""}</cite>
+    </blockquote>
+  );
+}
+
+function InProductSignals({ state, navigate, onManage }) {
+  const items = state.inproductFeedback || [];
+  if (!items.length) {
+    const setupCta = onManage
+      ? { label: "Install the snippet", onClick: onManage }
+      : (navigate ? { label: "Set up in-product feedback", onClick: () => navigate({ section: "sources" }) } : null);
+    return (
+      <section className="ss-panel">
+        <PanelTitle k="In-product" title="In-product signals" status="None yet" />
+        <EmptyState
+          icon="globe"
+          title="No in-product signals yet"
+          text="Once the snippet is live, thumbs on AI output, CSAT taps and exit reasons roll up here as rates and trends — the pulse from inside your product."
+          cta={setupCta}
+        />
+      </section>
+    );
+  }
+
+  const s = ssInproductStats(items);
+  const bestUp = s.up.find((f) => f.note) || s.up[0];
+  const worstDown = s.down.find((f) => f.note) || s.down[0];
+  const lowCsat = s.csats.filter((f) => Number(f.value) <= 2).find((f) => f.note);
+  const highCsat = s.csats.filter((f) => Number(f.value) >= 4).find((f) => f.note);
+  const csatMax = Math.max(1, ...s.csatDist.map((d) => d.count));
+
+  return (
+    <div className="ss-signals">
+      <p className="ss-source-note"><Icon name="globe" size={13} /> Collected inside your product by the Observant snippet — {s.total} signals. Rates and quotes, not threads; the deep <b>why</b> lives in Off-product.</p>
+
+      <div className="ss-signal-grid">
+        {/* AI output evals — helpful vs not-helpful pass rate */}
+        <section className="ss-signal-card">
+          <div className="ss-signal-card-head"><Icon name="spark" size={14} /> <b>AI output evals</b><span className="ss-signal-n">{s.evalTotal} rated</span></div>
+          {s.helpfulRate != null ? (
+            <>
+              <div className="ss-signal-stat"><b>{s.helpfulRate}%</b><em>rated helpful</em></div>
+              <div className="ss-rate-bar"><span className="ss-rate-fill" style={{ width: s.helpfulRate + "%" }} /></div>
+              <div className="ss-rate-legend"><span><i className="dot up" /> {s.up.length} helpful</span><span><i className="dot down" /> {s.down.length} not helpful</span></div>
+              {worstDown && <SignalQuote state={state} fb={worstDown} tone="neg" />}
+              {bestUp && <SignalQuote state={state} fb={bestUp} tone="pos" />}
+            </>
+          ) : <p className="ss-signal-empty">No evals rated yet.</p>}
+        </section>
+
+        {/* CSAT — average + 1–5 distribution */}
+        <section className="ss-signal-card">
+          <div className="ss-signal-card-head"><Icon name="check" size={14} /> <b>CSAT</b><span className="ss-signal-n">{s.csats.length} responses</span></div>
+          {s.csatAvg != null ? (
+            <>
+              <div className="ss-signal-stat"><b>{s.csatAvg.toFixed(1)}<span className="ss-signal-unit">/5</span></b><em>average satisfaction</em></div>
+              <div className="ss-csat-dist">
+                {s.csatDist.map((d) => (
+                  <div className="ss-csat-col" key={d.n}>
+                    <span className="ss-csat-bar" style={{ height: Math.round((d.count / csatMax) * 100) + "%" }} />
+                    <span className="ss-csat-tick">{d.n}</span>
+                  </div>
+                ))}
+              </div>
+              {lowCsat && <SignalQuote state={state} fb={lowCsat} tone="neg" />}
+              {highCsat && <SignalQuote state={state} fb={highCsat} tone="pos" />}
+            </>
+          ) : <p className="ss-signal-empty">No CSAT responses yet.</p>}
+        </section>
+
+        {/* Exit survey — top reasons by count */}
+        <section className="ss-signal-card">
+          <div className="ss-signal-card-head"><Icon name="back" size={14} /> <b>Exit survey</b><span className="ss-signal-n">{s.exits.length} exits</span></div>
+          {s.exitReasons.length ? (
+            <>
+              <ul className="ss-exit-reasons">
+                {s.exitReasons.map((r) => (
+                  <li key={r.reason}><span className="ss-exit-reason">{r.reason}</span><span className="ss-exit-count">{r.count}</span></li>
+                ))}
+              </ul>
+              {s.exits.find((f) => f.note) && <SignalQuote state={state} fb={s.exits.find((f) => f.note)} tone="neg" />}
+            </>
+          ) : <p className="ss-signal-empty">No exits recorded yet.</p>}
+        </section>
+
+        {/* Unsolicited feedback — count + a quote */}
+        {s.feedbacks.length > 0 && (
+          <section className="ss-signal-card">
+            <div className="ss-signal-card-head"><Icon name="chat" size={14} /> <b>Unsolicited feedback</b><span className="ss-signal-n">{s.feedbacks.length}</span></div>
+            <div className="ss-signal-stat"><b>{s.feedbacks.length}</b><em>users volunteered a thought</em></div>
+            {s.feedbacks.find((f) => f.note) && <SignalQuote state={state} fb={s.feedbacks.find((f) => f.note)} />}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
@@ -2348,20 +2579,23 @@ function ChannelBadge({ channel, small }) {
 }
 
 // Master-detail CRM: browsable list of 1:1 threads on the left, full back-and-forth on the right.
-function ConversationsCRM({ state, navigate }) {
+function ConversationsCRM({ state, navigate, onManage }) {
   const convos = state.conversations || [];
   const [selId, setSelId] = useStateSS(convos[0] ? convos[0].id : "");
   const selected = convos.find((c) => c.id === selId) || convos[0];
 
   if (!convos.length) {
+    const inviteCta = onManage
+      ? { label: "Invite your users", onClick: onManage }
+      : (navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null);
     return (
       <section className="ss-panel">
         <PanelTitle k="Conversations" title="1:1 feedback threads" status="None yet" />
         <EmptyState
           icon="chat"
-          title="No conversations yet"
+          title="No 1:1s yet"
           text="Once your users opt in and reply over email or Telegram, every 1:1 shows up here as a thread you can read in full."
-          cta={navigate ? { label: "Invite users to your program", onClick: () => navigate({ section: "sources" }) } : null}
+          cta={inviteCta}
         />
       </section>
     );

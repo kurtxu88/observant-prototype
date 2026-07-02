@@ -3905,3 +3905,145 @@ button.ss-inproduct-row:focus-visible { border-color: var(--accent-soft); }
 /* MCP card link to the full connect page */
 .ss-integ-link { display: inline-flex; align-items: center; gap: .3rem; margin-top: .6rem; font-size: .85rem; font-weight: 600; color: var(--accent); text-decoration: none; }
 .ss-integ-link:hover { color: var(--accent-hover, var(--accent)); }
+
+/* ============================================================
+   Feedback sections — Off-product (conversational) vs In-product (metrics)
+   ============================================================ */
+
+/* Shared section header + Manage-setup tabs */
+.ss-section-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 1.2rem; flex-wrap: wrap;
+}
+.ss-section-lead { max-width: 60ch; }
+.ss-section-lead p { margin: .4rem 0 0; color: var(--text-secondary); font-size: .93rem; line-height: 1.55; }
+.ss-section-lead b { color: var(--text-primary); font-weight: 600; }
+.ss-section-tabs {
+  display: inline-flex; gap: .3rem; padding: .28rem;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+  flex: none;
+}
+.ss-section-tabs button {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .42rem .8rem; border-radius: 9px;
+  font-size: .84rem; font-weight: 600; color: var(--text-secondary);
+  background: none; border: 1px solid transparent; transition: background .12s, color .12s;
+}
+.ss-section-tabs button:hover { color: var(--text-primary); }
+.ss-section-tabs button.on {
+  background: var(--panel); color: var(--accent);
+  border-color: var(--accent-soft); box-shadow: 0 1px 2px oklch(0 0 0 / .04);
+}
+
+/* Off-product — warm, conversational thread-forward treatment */
+.ss-offproduct .ss-activity-head { margin-top: .3rem; }
+.ss-offproduct .ss-panel { border-color: var(--accent-soft); }
+.ss-offproduct .ss-conv-row.on,
+.ss-offproduct .ss-conv-list button.on { background: var(--accent-tint); }
+
+/* In-product — tighter metric/stat cards */
+.ss-signals { display: flex; flex-direction: column; }
+.ss-signal-grid {
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.ss-signal-card {
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--panel); padding: 1.1rem 1.15rem;
+  display: flex; flex-direction: column;
+}
+.ss-signal-card-head {
+  display: flex; align-items: center; gap: .45rem;
+  font-size: .82rem; letter-spacing: .01em; color: var(--text-secondary);
+}
+.ss-signal-card-head svg { color: var(--accent); }
+.ss-signal-card-head b { color: var(--text-primary); font-weight: 600; font-size: .9rem; }
+.ss-signal-n {
+  margin-left: auto; font-family: var(--font-mono); font-size: .68rem;
+  color: var(--text-muted); background: var(--surface);
+  padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border);
+}
+.ss-signal-stat {
+  display: flex; align-items: baseline; gap: .5rem; margin: .8rem 0 .55rem;
+}
+.ss-signal-stat b {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: 2.3rem; line-height: 1; letter-spacing: -.02em; color: var(--text-primary);
+}
+.ss-signal-unit { font-size: 1.1rem; color: var(--text-muted); }
+.ss-signal-stat em { font-style: normal; font-size: .82rem; color: var(--text-muted); }
+.ss-signal-empty { font-size: .86rem; color: var(--text-muted); margin: .8rem 0 0; }
+
+/* Helpful-rate bar */
+.ss-rate-bar {
+  height: 8px; border-radius: 6px; overflow: hidden;
+  background: color-mix(in oklch, var(--text-muted) 22%, var(--panel));
+}
+.ss-rate-fill {
+  display: block; height: 100%; border-radius: 6px;
+  background: var(--success); transition: width .4s ease;
+}
+.ss-rate-legend {
+  display: flex; gap: 1rem; margin-top: .5rem;
+  font-size: .76rem; color: var(--text-muted);
+}
+.ss-rate-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.ss-rate-legend .dot.up { background: var(--success); }
+.ss-rate-legend .dot.down { background: var(--accent); }
+
+/* CSAT 1–5 distribution */
+.ss-csat-dist {
+  display: flex; align-items: flex-end; gap: .5rem;
+  height: 66px; margin: .3rem 0 .2rem;
+}
+.ss-csat-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: .3rem; }
+.ss-csat-bar {
+  width: 100%; min-height: 3px; border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-hover));
+  transition: height .4s ease;
+}
+.ss-csat-tick { font-size: .72rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* Exit-survey reasons */
+.ss-exit-reasons { list-style: none; margin: .7rem 0 .2rem; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.ss-exit-reasons li { display: flex; align-items: center; gap: .6rem; }
+.ss-exit-reason { flex: 1; font-size: .86rem; color: var(--text-primary); text-transform: capitalize; }
+.ss-exit-count {
+  font-family: var(--font-mono); font-size: .74rem; font-weight: 600; color: var(--accent-hover);
+  background: var(--accent-tint); border: 1px solid var(--accent-soft);
+  border-radius: 20px; padding: 1px 9px; min-width: 26px; text-align: center;
+}
+
+/* Short representative quote inside a metric card (never a thread) */
+.ss-signal-quote {
+  margin: .7rem 0 0; padding: .55rem .7rem;
+  border-left: 3px solid var(--border-strong); border-radius: 0 8px 8px 0;
+  background: var(--surface);
+}
+.ss-signal-quote.tone-neg { border-left-color: var(--accent); background: var(--accent-tint); }
+.ss-signal-quote.tone-pos { border-left-color: var(--success); background: var(--success-tint); }
+.ss-signal-quote p { margin: 0; font-size: .84rem; line-height: 1.45; color: var(--text-primary); }
+.ss-signal-quote cite {
+  display: block; margin-top: .35rem; font-style: normal;
+  font-size: .7rem; color: var(--text-muted);
+}
+.ss-signal-quote cite .mono { font-family: var(--font-mono); }
+
+/* Home — compact in-product pulse row */
+.ss-pulse-stats { display: flex; gap: .8rem; flex-wrap: wrap; margin-top: .3rem; }
+.ss-pulse-stat {
+  flex: 1 1 160px; text-align: left; color: inherit;
+  border: 1px solid var(--border); border-radius: 13px;
+  background: var(--panel); padding: .8rem .95rem; transition: border-color .12s;
+}
+.ss-pulse-stat:hover, .ss-pulse-stat:focus-visible { border-color: var(--accent-soft); }
+.ss-pulse-stat b {
+  display: block; font-family: var(--font-display); font-weight: 500;
+  font-size: 1.7rem; line-height: 1; letter-spacing: -.02em;
+}
+.ss-pulse-stat span { display: block; margin-top: .3rem; font-size: .78rem; color: var(--text-muted); }
+
+@media (max-width: 640px) {
+  .ss-section-head { align-items: stretch; }
+  .ss-section-tabs { align-self: flex-start; }
+}
