@@ -93,15 +93,19 @@ function SignIn() {
   const [note, setNote] = useStateRP("");
   const emailValid = email.includes("@") && email.includes(".");
 
+  // Always come back to the partner rewards portal on THIS host (so a partner
+  // signing in on partner.observanthq.com lands on their rewards, not the
+  // client dashboard). Requires this origin to be allow-listed in Supabase.
+  const rewardsRedirect = window.location.origin + "/rewards";
   const google = async () => {
     setBusy(true); setNote("");
-    const { error } = await ObservantAuth.signInWithGoogle();
+    const { error } = await ObservantAuth.signInWithGoogle(rewardsRedirect);
     if (error) { setNote(error.message); setBusy(false); }
   };
   const magic = async () => {
     if (!emailValid) return;
     setBusy(true); setNote("");
-    const { error } = await ObservantAuth.signInWithEmail(email);
+    const { error } = await ObservantAuth.signInWithEmail(email, rewardsRedirect);
     setBusy(false);
     if (error) { setNote(error.message); return; }
     setSent(true);
