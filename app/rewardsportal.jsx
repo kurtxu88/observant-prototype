@@ -155,6 +155,7 @@ function PartnerHome({ user, data, err, onReload }) {
   const [claimState, setClaimState] = useStateRP("idle"); // idle | busy | done | error
   const [claimMsg, setClaimMsg] = useStateRP("");
   const [claimedAmt, setClaimedAmt] = useStateRP(0);
+  const [setupState, setSetupState] = useStateRP("idle"); // idle | busy | error
 
   const totals = (data && data.totals) || { netMinutes: 0, earnedMinutes: 0, balance: 0, claimed: 0 };
   const rate = data ? data.rate : 2;
@@ -163,9 +164,57 @@ function PartnerHome({ user, data, err, onReload }) {
   const linked = !data || data.linked !== false;
   const balance = Number(totals.balance || 0);
 
+  // Real payout capability (from the API). Can a Claim actually move money?
+  const payout = (data && data.payout) || {};
+  const payoutSupported = !!payout.supported;          // Stripe wired at all
+  const payoutReady = !!payout.enabled;                // connected + Stripe-cleared
+  const needsSetup = payoutSupported && !payoutReady;  // must connect a payout account first
+
   // Brand the portal to the partner's product when we know it.
   const product = programs.length && programs[0].product ? programs[0].product : "";
   const partnerLabel = product ? product + " feedback partner" : "Feedback partner";
+
+  // Returning from Stripe onboarding (/rewards?connect=done): sync the account's
+  // payout eligibility once, then refresh the portal so the Claim button unlocks.
+  useEffectRP(() => {
+    let cancelled = false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connect") !== "done" || !payout.partnerId) return;
+    (async () => {
+      try {
+        const token = await ObservantAuth.getAccessToken();
+        await fetch("/api/stripe/connect", {
+          method: "POST",
+          headers: Object.assign({ "Content-Type": "application/json" }, token ? { Authorization: "Bearer " + token } : {}),
+          body: JSON.stringify({ partnerId: payout.partnerId, action: "status" }),
+        });
+      } catch (_e) { /* best-effort */ }
+      try { window.history.replaceState({}, "", window.location.pathname); } catch (_e) {}
+      if (!cancelled) onReload();
+    })();
+    return () => { cancelled = true; };
+  }, [payout.partnerId]);
+
+  // Open Stripe Connect onboarding to add a payout destination.
+  async function setupPayouts() {
+    if (setupState === "busy") return;
+    if (!payout.partnerId) { setSetupState("error"); setClaimMsg("We couldn't find your payout account — reply to your invite email and we'll sort it out."); return; }
+    setSetupState("busy"); setClaimMsg("");
+    try {
+      const token = await ObservantAuth.getAccessToken();
+      const res = await fetch("/api/stripe/connect", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, token ? { Authorization: "Bearer " + token } : {}),
+        body: JSON.stringify({ partnerId: payout.partnerId }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.ok === false || !json.url) throw new Error(json.error || "couldn't start payout setup");
+      window.location.href = json.url;   // Stripe hosted onboarding → returns to /rewards?connect=done
+    } catch (e) {
+      setSetupState("error");
+      setClaimMsg(e.message || "couldn't start payout setup");
+    }
+  }
 
   async function claim() {
     if (balance <= 0 || claimState === "busy" || claimState === "done") return;
@@ -178,14 +227,21 @@ function PartnerHome({ user, data, err, onReload }) {
         body: JSON.stringify({ action: "redeem" }),
       });
       const json = await res.json();
-      if (!res.ok || json.ok === false) throw new Error(json.error || "could not request your payout");
-      setClaimedAmt(Number(json.claimed || balance));
-      setClaimState("done");
-      // Refresh so the balance + history reflect the redemption.
+      if (!res.ok) throw new Error(json.error || "could not process your claim");
+      const paid = Number(json.paid != null ? json.paid : json.claimed) || 0;
+      if (paid > 0) {
+        setClaimedAmt(paid);
+        setClaimState("done");
+        onReload();   // refresh balance + history to reflect the real payout
+        return;
+      }
+      // Nothing actually paid out (payout account not set up / not enabled).
+      // Don't fake success — send them back to setup with an honest refresh.
+      setClaimState("idle");
       onReload();
     } catch (e) {
       setClaimState("error");
-      setClaimMsg(e.message || "could not request your payout");
+      setClaimMsg(e.message || "could not process your claim");
     }
   }
 
@@ -229,20 +285,31 @@ function PartnerHome({ user, data, err, onReload }) {
           </div>
         </div>
 
-        {/* claim / redeem */}
+        {/* claim / redeem — real states: set up payouts → claim → paid */}
         <div className="rp-payout">
           {claimState === "done" ? (
             <div className="rp-sent">
-              <Icon name="check" size={16} sw={2.4} /> Payout requested — {fmtUSD(claimedAmt)} on its way. We'll email you when it's sent.
+              <Icon name="check" size={16} sw={2.4} /> Paid {fmtUSD(claimedAmt)} — sent to your connected account. It typically lands in a day or two.
             </div>
+          ) : balance <= 0 ? (
+            <Btn variant="primary" size="lg" disabled onClick={() => {}}>Nothing to claim yet</Btn>
+          ) : !payoutSupported ? (
+            <div className="rp-note">Payouts aren't enabled yet — check back soon. Your {fmtUSD(balance)} is safe and keeps adding up.</div>
+          ) : needsSetup ? (
+            <Btn variant="primary" size="lg" disabled={setupState === "busy"} onClick={setupPayouts}>
+              {setupState === "busy" ? "Opening secure setup…" : "Set up payouts"}
+            </Btn>
           ) : (
-            <Btn variant="primary" size="lg" disabled={balance <= 0 || claimState === "busy"} onClick={claim}>
-              {claimState === "busy" ? "Requesting…" : (balance > 0 ? "Claim " + fmtUSD(balance) : "Nothing to claim yet")}
+            <Btn variant="primary" size="lg" disabled={claimState === "busy"} onClick={claim}>
+              {claimState === "busy" ? "Sending…" : "Claim " + fmtUSD(balance)}
             </Btn>
           )}
           {claimState === "error" && <p className="rp-err">{claimMsg} <button type="button" className="rp-link" onClick={claim}>Try again</button></p>}
+          {setupState === "error" && <p className="rp-err">{claimMsg}</p>}
           <p className="rp-muted rp-fine">
-            Your rewards work like a gift card — claim small amounts often, or let them add up.
+            {needsSetup && balance > 0
+              ? "Connect where you'd like your rewards sent — a one-time, secure setup through Stripe."
+              : "Your rewards work like a gift card — claim small amounts often, or let them add up."}
             {totals.claimed > 0 ? " You've claimed " + fmtUSD(totals.claimed) + " so far." : ""}
           </p>
         </div>
@@ -294,7 +361,7 @@ function PartnerHome({ user, data, err, onReload }) {
                     </div>
                     <div className={"rp-row-amt" + (l.kind === "redeemed" ? " neg" : "") + (didntQualify ? " unq" : "")}>
                       {l.kind === "redeemed"
-                        ? "Claimed"
+                        ? "Paid"
                         : didntQualify
                           ? "—"
                           : (Number(l.minutes) >= 0 ? "+" : "") + fmtMin(Math.abs(l.minutes))}
@@ -314,7 +381,7 @@ function PartnerHome({ user, data, err, onReload }) {
 }
 
 function historyLabel(l) {
-  if (l.kind === "redeemed") return "Payout requested";
+  if (l.kind === "redeemed") return "Payout sent";
   if (l.kind === "adjustment") return "Adjustment";
   if (l.earned === false) return "Reply received";
   return "Participated in a loop";
@@ -383,6 +450,7 @@ function GoogleMark() {
   .rp-bal-l{font-size:.74rem;color:var(--text-muted,#857d70);margin-top:.25rem;}
   .rp-payout{margin:.2rem 0 1.6rem;}
   .rp-payout .btn{width:100%;}
+  .rp-note{background:var(--bg,#faf8f5);border:1px solid var(--border,#e7e2da);border-radius:12px;padding:.9rem 1rem;font-size:.9rem;color:var(--text-muted,#857d70);line-height:1.5;}
   .rp-h3{font-size:1rem;margin:0 0 .8rem;}
   .rp-progs{margin-bottom:1.6rem;}
   .rp-prog-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;}

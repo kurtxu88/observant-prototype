@@ -16,15 +16,27 @@
    THEIR OWN data. Falls back to ?email= only when no token is
    present (local poking); production always sends the token.
 
-   GET  → { ok, email, linked, rate, totals, programs, history }
-   POST { action:"redeem" } → records a redemptions row (+ a
-     matching 'redeemed' ledger entry so the balance zeroes and
-     can't be double-claimed), returns { ok, claimed, status }.
+   GET  → { ok, email, linked, rate, totals, programs, history,
+            payout:{ supported, connected, enabled, partnerId } }
+     — `payout` tells the portal whether a real Stripe payout can
+     happen: supported (Stripe wired), connected (partner has a
+     Connect account), enabled (Stripe cleared it for payouts).
 
-   Degrades without a DB: returns a small SIMULATED populated
-   portal so the page still renders in the static demo.
+   POST { action:"redeem" } → cash out via a REAL Stripe Transfer
+     (api/stripe/payout.payoutPartner). Only nets the balance to $0
+     for the amount that actually paid out; a partner without a
+     connected+enabled payout account gets their intent recorded
+     (redemptions.status='requested') with the balance LEFT INTACT
+     and needsSetup:true. Returns { ok, paid, requested, status,
+     needsSetup }.
+
+   Degrades without a DB or Stripe: returns { ok:true, simulated:true }
+   and honest copy ("payouts aren't enabled yet") — never a fake
+   success, never a zeroed balance.
    ============================================================ */
 const db = require("../_db");
+const stripe = require("../stripe/_stripe");
+const { payoutPartner } = require("../stripe/payout");
 
 const SB_URL = (process.env.SUPABASE_URL || "")
   .trim()
@@ -67,6 +79,8 @@ function simulatedPortal(email) {
     linked: true,
     rate: 2,
     totals: { netMinutes: 11, earnedMinutes: 14, balance: 22, claimed: 6 },
+    // No DB/Stripe in the static demo → payouts can't actually run yet. Honest.
+    payout: { supported: stripe.stripeConfigured(), connected: false, enabled: false, partnerId: null },
     programs: [
       { product: "Northwind", slug: "northwind", channel: "email", cadence: "occasional", status: "active", rate: 2, compType: "cash" },
     ],
@@ -109,10 +123,10 @@ module.exports = async function handler(req, res) {
   const { email, body } = await resolvePartner(req);
   if (!email) { res.status(401).json({ error: "not authenticated" }); return; }
 
-  // No DB → simulated populated portal (demo). Redeem just confirms.
+  // No DB → simulated populated portal (demo). Redeem can't move money — say so honestly.
   if (!db.dbConfigured()) {
     if (req.method === "POST" && body.action === "redeem") {
-      res.status(200).json({ ok: true, simulated: true, claimed: 22, status: "requested" });
+      res.status(200).json({ ok: true, simulated: true, paid: 0, requested: 0, claimed: 0, status: "unavailable", error: "payouts aren't enabled yet" });
       return;
     }
     res.status(200).json(simulatedPortal(email));
@@ -129,7 +143,7 @@ module.exports = async function handler(req, res) {
     const partners = await db.select(
       "partners",
       "contact=eq." + encodeURIComponent(email) +
-        "&select=id,program_id,channel,cadence,status"
+        "&select=id,program_id,channel,cadence,status,stripe_account_id,payouts_enabled"
     );
 
     if (!partners || !partners.length) {
@@ -137,6 +151,7 @@ module.exports = async function handler(req, res) {
       res.status(200).json({
         ok: true, email, linked: false, rate: 2,
         totals: { netMinutes: 0, earnedMinutes: 0, balance: 0, claimed: 0 },
+        payout: { supported: stripe.stripeConfigured(), connected: false, enabled: false, partnerId: null },
         programs: [], history: [],
       });
       return;
@@ -156,7 +171,7 @@ module.exports = async function handler(req, res) {
     const progByPartner = {};
     partners.forEach((p) => { progByPartner[p.id] = progById[p.program_id] || null; });
 
-    // ---- REDEEM: record the cash-out, zero the balance so it can't be re-claimed ----
+    // ---- REDEEM: pay out via a REAL Stripe Transfer (only zero what actually pays) ----
     if (req.method === "POST" && body.action === "redeem") {
       const balances = await db.select(
         "partner_balances",
@@ -165,20 +180,65 @@ module.exports = async function handler(req, res) {
       const total = (balances || []).reduce((a, b) => a + Number(b.balance_amount || 0), 0);
       if (total <= 0) { res.status(200).json({ ok: false, error: "nothing to claim yet" }); return; }
 
-      const method = String(body.method || "cash");
-      let claimed = 0;
-      // Zero each partner-program that carries a positive balance.
+      // Stripe not wired at all → be honest, leave the balance untouched.
+      if (!stripe.stripeConfigured()) {
+        res.status(200).json({ ok: true, simulated: true, paid: 0, requested: round2(total), claimed: 0, status: "unavailable", needsSetup: true, error: "payouts aren't enabled yet" });
+        return;
+      }
+
+      const byId = {};
+      partners.forEach((p) => { byId[p.id] = p; });
+      // One onboarding covers all of this partner's programs: reuse a single
+      // connected+enabled Connect account across every program row.
+      const shared = partners.find((p) => p.stripe_account_id && p.payouts_enabled) || null;
+      const alreadyRequested = new Set();   // guard duplicate 'requested' rows across re-clicks
+
+      let paid = 0, requested = 0;
+      const transfers = [];
       for (const b of balances || []) {
         const amt = round2(b.balance_amount);
         if (amt <= 0) continue;
-        await db.insert("redemptions", { partner_id: b.partner_id, amount: amt, method, status: "requested" });
-        // Matching ledger entry so partner_balances drops to 0 (guards re-claim).
-        await db.insert("minutes_ledger", {
-          partner_id: b.partner_id, kind: "redeemed", minutes: 0, amount: -amt, note: "payout requested",
-        });
-        claimed += amt;
+        let p = byId[b.partner_id];
+        if (!p) continue;
+
+        // Propagate the shared payout account to a program row that lacks one.
+        if (shared && (!p.stripe_account_id || p.payouts_enabled === false) && shared.id !== p.id) {
+          p = Object.assign({}, p, { stripe_account_id: shared.stripe_account_id, payouts_enabled: shared.payouts_enabled });
+          try { await db.update("partners", "id=eq." + b.partner_id, { stripe_account_id: shared.stripe_account_id, payouts_enabled: shared.payouts_enabled }); }
+          catch (e) { console.error("[partner-portal] share account:", e && e.message); }
+        }
+
+        const out = await payoutPartner(p);   // real Transfer + nets the ledger on success
+        if (out && out.ok) {
+          paid += Number(out.amount || amt);
+          if (out.transferId) transfers.push(out.transferId);
+        } else {
+          // Can't pay yet (no connected/enabled account). Record the intent —
+          // but DO NOT insert a redeemed ledger row, so the balance stays claimable.
+          requested += amt;
+          if (!alreadyRequested.has(b.partner_id)) {
+            alreadyRequested.add(b.partner_id);
+            try {
+              const open = await db.select("redemptions", "partner_id=eq." + b.partner_id + "&status=eq.requested&select=id&limit=1");
+              if (!(Array.isArray(open) && open.length)) {
+                await db.insert("redemptions", { partner_id: b.partner_id, amount: amt, method: "stripe", status: "requested" });
+              }
+            } catch (e) { console.error("[partner-portal] requested redemption:", e && e.message); }
+          }
+        }
       }
-      res.status(200).json({ ok: true, claimed: round2(claimed), status: "requested" });
+
+      const status = paid > 0 ? (requested > 0 ? "partial" : "paid") : "requested";
+      res.status(200).json({
+        ok: paid > 0,
+        paid: round2(paid),
+        claimed: round2(paid),                 // back-compat: what actually paid out
+        requested: round2(requested),
+        needsSetup: paid <= 0 && requested > 0,
+        status,
+        transfers,
+        error: paid <= 0 ? "finish payout setup to receive your rewards" : undefined,
+      });
       return;
     }
 
@@ -278,6 +338,17 @@ module.exports = async function handler(req, res) {
       };
     });
 
+    // Real payout capability: can a Claim actually move money right now?
+    const connectedRow = partners.find((p) => p.stripe_account_id);
+    const enabledRow = partners.find((p) => p.stripe_account_id && p.payouts_enabled);
+    const primary = connectedRow || partners[0];
+    const payout = {
+      supported: stripe.stripeConfigured(),
+      connected: !!connectedRow,
+      enabled: !!enabledRow,
+      partnerId: primary ? primary.id : null,
+    };
+
     res.status(200).json({
       ok: true,
       email,
@@ -289,6 +360,7 @@ module.exports = async function handler(req, res) {
         balance: round2(balance),
         claimed: round2(claimed),
       },
+      payout,
       programs,
       history,
     });
