@@ -64,7 +64,9 @@ window.ObservantAuth = (function () {
     if (!c) return { error: { message: "Supabase not configured" } };
     return c.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: redirectTo || window.location.href },
+      // Always show Google's account picker — never silently reuse a remembered
+      // account, so signing in is explicit and the user sees which account.
+      options: { redirectTo: redirectTo || window.location.href, queryParams: { prompt: "select_account" } },
     });
   }
 
