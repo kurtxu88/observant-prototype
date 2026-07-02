@@ -2213,6 +2213,9 @@ function AskPanel({ product, state, patchState, navigate }) {
   const [sending, setSending] = useStateSS(false);
   const [result, setResult] = useStateSS(null);
   const [err, setErr] = useStateSS("");
+  const [sendingLoop, setSendingLoop] = useStateSS(false); // real send to the panel
+  const [loopResult, setLoopResult] = useStateSS(null);
+  const [loopErr, setLoopErr] = useStateSS("");
   const [page, setPage] = useStateSS(0); // which step is showing: 0 write · 1 review · 2 test
 
   const channel = "email";                 // each user picks their own channel at opt-in; the preview shows the email view
@@ -2250,6 +2253,28 @@ function AskPanel({ product, state, patchState, navigate }) {
       }
     } catch (e) { setErr(String(e.message || e)); }
     setSending(false);
+  }
+
+  // How many enrolled feedback partners this loop would reach. In sample/demo mode
+  // that's the panel on screen; a real program returns the true count from the API.
+  const enrolledCount = (state.people || []).length;
+
+  // SEND FOR REAL — dispatch the loop to the program's enrolled off-product partners
+  // over their channel (email/Telegram), reusing send-email.js via /api/selfserve/send-loop.
+  // Degrades cleanly: with no DB/keys the API returns { simulated:true } and the UI still completes.
+  async function sendLoop() {
+    if (!question.trim()) return;
+    setSendingLoop(true); setLoopErr(""); setLoopResult(null);
+    try {
+      const r = await ssPostJson("/api/selfserve/send-loop", { product, question, exploration: (tri ? tri.exploration : 0.5), channel, wishlist, context: SelfServeData.contextSummary(state.workspace), memory: anMemory(product), mode: tri ? tri.mode : "light", deepPlan: tri ? tri.deepPlan : null, estMin: tri ? tri.estMin : undefined });
+      const realCount = r && typeof r.count === "number" && r.count > 0 ? r.count : 0;
+      const simulated = !r || r.simulated || !realCount;
+      const count = realCount || enrolledCount; // fall back to the on-screen panel size (demo)
+      setLoopResult({ ok: true, count, simulated });
+      // Record the sent loop (+ a run) so it shows live in Loop history / Off-product.
+      patchState((cur) => SelfServeData.recordSentLoop(cur, { question, mode: tri ? tri.mode : "light", channel, count, simulated }));
+    } catch (e) { setLoopErr(String(e.message || e)); }
+    setSendingLoop(false);
   }
 
   const goStep = (i) => { if (i === 0 || tri) setPage(i); };
@@ -2329,24 +2354,45 @@ function AskPanel({ product, state, patchState, navigate }) {
         </div>
       )}
 
-      {/* ── STEP 3 · TEST ── */}
+      {/* ── STEP 3 · TEST & SEND ── */}
       {page === 2 && tri && (
         <div className="ss-step-block">
-          <span className="ss-step-tag">Step 3 · See it as your users do</span>
-          {channel === "email" ? (
-            <>
-              <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive.</p>
-              <div className="ss-send-row">
-                <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
-                <Btn variant="primary" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send test email"}</Btn>
-              </div>
-            </>
-          ) : (
-            <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send a real test now.</p>
-          )}
-          {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Sent to {result.to} — check your inbox. In a live program, replies flow back to your dashboard.</p>}
-          {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
-          {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
+          <span className="ss-step-tag">Step 3 · See it, then send it</span>
+
+          {/* PRIMARY — send the loop to the real feedback panel */}
+          <div className={"ss-depth-card " + (isDeep ? "deep" : "light")}>
+            <div className="ss-depth-head">
+              <span className="ss-depth-badge">Send to your users</span>
+              <span className="ss-depth-sub">{enrolledCount ? "Goes out to your " + enrolledCount + " enrolled feedback " + (enrolledCount === 1 ? "partner" : "partners") + " on their channel — replies come back to your dashboard." : "Goes out to your enrolled feedback partners on their channel — replies come back to your dashboard."}</span>
+            </div>
+            <div className="ss-panel-actions">
+              <Btn variant="primary" onClick={sendLoop} disabled={sendingLoop}><Icon name="relay" size={15} /> {sendingLoop ? "Sending to your users…" : "Send to your users"} <Icon name="arrow" size={16} /></Btn>
+            </div>
+            {loopResult && loopResult.ok && (
+              <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Loop sent to {loopResult.count} {loopResult.count === 1 ? "user" : "users"} — replies will flow to your dashboard.{navigate ? <> · <button type="button" className="ss-linklike" onClick={() => navigate({ section: "offproduct" })}>View in Off-product →</button></> : null}</p>
+            )}
+            {loopErr && <p className="ss-result-help" style={{ color: "#b4291f" }}>{loopErr}</p>}
+          </div>
+
+          {/* SECONDARY — preview to yourself first */}
+          <div style={{ marginTop: 18 }}>
+            <span className="ss-result-label">Want to preview it first?</span>
+            {channel === "email" ? (
+              <>
+                <p className="ss-result-help">Send yourself a test {isDeep ? "invitation" : "email"} to experience exactly what your users receive — no one else is contacted.</p>
+                <div className="ss-send-row">
+                  <input className="input" type="email" value={testEmail} placeholder="you@example.com" onChange={(e) => setTestEmail(e.target.value)} />
+                  <Btn variant="ghost" onClick={sendTest} disabled={sending || !testEmail.includes("@")}><Icon name="mail" size={15} /> {sending ? "Sending…" : "Send yourself a test"}</Btn>
+                </div>
+              </>
+            ) : (
+              <p className="ss-result-help">Telegram delivery comes with the bot integration — switch to <b>Email</b> to send yourself a real test now.</p>
+            )}
+            {result && result.ok && <p className="ss-sent-note" style={{ color: "#2e7d46" }}><Icon name="check" size={15} sw={2.4} /> Test sent to {result.to} — check your inbox.</p>}
+            {result && !result.ok && result.needKey && <p className="ss-result-help" style={{ color: "#b07a1e" }}>Composed ✓ — no email provider connected yet. Add <code>RESEND_API_KEY</code> to send for real.</p>}
+            {result && !result.ok && !result.needKey && <p className="ss-result-help" style={{ color: "#b4291f" }}>{result.error}</p>}
+          </div>
+
           <div className="ss-wiz-nav">
             <button type="button" className="ss-linklike" onClick={() => setPage(1)}><Icon name="back" size={14} /> Back</button>
           </div>
@@ -3278,7 +3324,7 @@ function AskObservant({ state, patchState, autoQuestion, focused }) {
       <textarea ref={inputRef} className="textarea" value={question} onChange={(e) => setQuestion(e.target.value)} disabled={asking} />
       {asking && <AnswerProgressCard stageIndex={progressStage} />}
       <div className="ss-panel-actions">
-        <Btn variant="primary" onClick={ask} disabled={!question.trim() || asking}><Icon name="spark" size={15} /> {asking ? "Thinking" : "Ask Observant"}</Btn>
+        <Btn variant="primary" onClick={() => ask()} disabled={!question.trim() || asking}><Icon name="spark" size={15} /> {asking ? "Thinking" : "Ask Observant"}</Btn>
       </div>
     </section>
   );

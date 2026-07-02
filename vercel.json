@@ -9,9 +9,11 @@
     }
   },
   "crons": [
-    { "path": "/api/cron/cadence", "schedule": "0 15 * * *" }
+    { "path": "/api/cron/cadence", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/digest", "schedule": "0 8 * * 1" }
   ],
   "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "partner.observanthq.com" }], "destination": "/observant/Partner.html" },
     { "source": "/", "destination": "/observant/Landing.html" },
     { "source": "/setup", "destination": "/app/SelfServe.html" },
     { "source": "/portal", "destination": "/app/SelfServe.html" },

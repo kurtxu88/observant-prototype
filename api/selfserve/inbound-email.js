@@ -25,6 +25,7 @@
    ============================================================ */
 const crypto = require("crypto");
 const db = require("../_db");
+const alerts = require("./_alerts");
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -80,6 +81,9 @@ module.exports = async function handler(req, res) {
     const earned = verdict === "pass";
     const minutes = earned ? Math.max(1, estLoopMin(parsed.questions)) : 0;   // PRE-DETERMINED reward (never time-on-page)
     await persistMsg(conversation.id, "partner", inboundText, minutes);
+
+    // Team update — urgent alert if this reply reads negative/churny (best-effort, non-blocking).
+    try { await alerts.maybeAlert({ base, slug: program.slug, kind: "reply", product: program.product_name, channel: "email", name: fromEmail, partnerId: partner.id, quote: inboundText }); } catch (_e) {}
 
     if (!earned) {
       // No reward yet — leave the conversation open; the partner can add more in a reply.
@@ -156,7 +160,7 @@ async function resolvePartner(email) {
     conversation = await db.insert("conversations", { partner_id: partner.id, subject: (conversation && conversation.subject) || null, mode: "light", status: "open" });
   }
 
-  const progs = await db.select("programs", "id=eq." + partner.program_id + "&select=id,product_name,rate_per_min&limit=1");
+  const progs = await db.select("programs", "id=eq." + partner.program_id + "&select=id,slug,product_name,rate_per_min&limit=1");
   const program = (Array.isArray(progs) && progs[0]) || { product_name: "your product", rate_per_min: 2 };
   return { partner, program, conversation };
 }

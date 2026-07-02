@@ -7,6 +7,7 @@
    the real build moves this to a DB/KV.
    ============================================================ */
 const db = require("../_db");
+const alerts = require("./_alerts");
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -35,6 +36,9 @@ module.exports = async function handler(req, res) {
       ? parsed.questions.map((q, i) => (i + 1) + ". " + String(answers[i] || "").trim()).filter((s) => s.replace(/^\d+\.\s*/, "").trim()).join("\n")
       : String(answers[0] || "").trim();
     if (!userText.trim()) return res.status(200).json({ ok: false, error: "no answers provided" });
+
+    // Team update — urgent alert if this reply reads negative/churny (best-effort, non-blocking).
+    try { await alerts.maybeAlert({ base, kind: "reply", product: state.product, channel: state.channel || "email", name: state.toEmail, quote: userText }); } catch (_e) {}
 
     const messages = state.messages.concat([{ role: "user", content: userText }]);
     const answeredCount = answers.filter((a) => String(a || "").trim()).length;

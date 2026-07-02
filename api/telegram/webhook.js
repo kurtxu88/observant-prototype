@@ -27,6 +27,7 @@
    ============================================================ */
 const db = require("../_db");
 const { sendMessage } = require("./_send");
+const alerts = require("../selfserve/_alerts");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -179,6 +180,10 @@ async function handleMessage(req, chatId, text, msg) {
 
   // Always log the inbound turn (with the earned minutes baked in).
   await persistMsg(conversation.id, "partner", text, minutes);
+
+  // Team update — urgent alert if this reply reads negative/churny (best-effort, non-blocking).
+  const tgName = partner.handle || (msg && msg.from && msg.from.first_name) || String(chatId);
+  try { await alerts.maybeAlert({ base, slug: program.slug, kind: "reply", product, channel: "telegram", name: tgName, handle: partner.handle, partnerId: partner.id, quote: text }); } catch (_e) {}
 
   if (!earned) {
     // No reward yet — leave the conversation open; the partner can add more.

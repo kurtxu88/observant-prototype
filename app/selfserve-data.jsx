@@ -752,6 +752,79 @@ function ssCreateCustomLoop(workspace, config, runId) {
   };
 }
 
+// Record a loop that was just SENT to the real feedback panel (from the compose flow's
+// "Send to your users"). Adds it to state.loops as live/collecting with a run so it shows
+// in Loop history / the Off-product section. Upserts by question (so a prior test-send row
+// gets promoted, not duplicated). Pure — returns the next state.
+function ssRecordSentLoop(state, opts) {
+  const options = opts || {};
+  const question = ssTrim(options.question, "");
+  if (!question) return state;
+  const count = Math.max(0, Number(options.count) || 0);
+  const mode = options.mode === "deep" ? "deep" : "light";
+  const channel = options.channel === "telegram" ? "telegram" : "email";
+  const nowIso = new Date().toISOString();
+  const shortName = question.length > 44 ? question.slice(0, 42) + "…" : question;
+  const existing = (state.loops || []).find((loop) => loop.question === question);
+  const runId = ssMakeRunId();
+  const loopId = existing ? existing.id : "loop-" + runId;
+  const run = {
+    runId,
+    loopId,
+    status: "collecting",
+    stageIndex: 2,
+    fallback: false,
+    error: "",
+    startedAt: nowIso,
+    generatedAt: nowIso,
+    completedAt: "",
+    timeline: SS_SIMULATION_STAGES,
+    config: { question, mode },
+  };
+
+  let loops;
+  let loopRuns;
+  if (existing) {
+    loops = (state.loops || []).map((loop) => loop.id === existing.id
+      ? { ...loop, status: "Collecting", cadence: "Always on", people: count, active: count, sentToUsers: true, simulated: !!options.simulated }
+      : loop);
+    const hasRun = (state.loopRuns || []).some((r) => r.loopId === existing.id);
+    loopRuns = hasRun
+      ? (state.loopRuns || []).map((r) => r.loopId === existing.id ? { ...run, runId: r.runId } : r)
+      : [run, ...(state.loopRuns || [])];
+  } else {
+    const loop = {
+      id: loopId,
+      name: shortName,
+      status: "Collecting",
+      cadence: "Always on",
+      people: count,
+      active: count,
+      memory: 0,
+      question,
+      mode,
+      conversationId: "",
+      conversationIds: [],
+      peopleIds: [],
+      eventIds: [],
+      surfaceIds: [channel],
+      signalIds: [],
+      generatedAt: nowIso,
+      sentToUsers: true,
+      simulated: !!options.simulated,
+    };
+    loops = [loop, ...(state.loops || [])];
+    loopRuns = [run, ...(state.loopRuns || [])];
+  }
+
+  return {
+    ...state,
+    loops,
+    loopRuns,
+    activity: ["Loop sent to " + count + " user" + (count === 1 ? "" : "s") + ": " + shortName + ".", ...(state.activity || [])].slice(0, 24),
+  };
+}
+
 function ssCreateLoopRun(runId, loop, config) {
   return {
     runId,
@@ -1092,6 +1165,7 @@ Object.assign(window, {
     createCustomState: ssCreateCustomState,
     createCustomLoop: ssCreateCustomLoop,
     createLoopRun: ssCreateLoopRun,
+    recordSentLoop: ssRecordSentLoop,
     fallbackSimulation: ssFallbackSimulation,
     revealSimulation: ssRevealSimulation,
     makeRunId: ssMakeRunId,

@@ -23,6 +23,7 @@
    gracefully (returns { ok, simulated:true }) when no DB is set.
    ============================================================ */
 const db = require("../_db");
+const alerts = require("./_alerts");
 
 const ALLOW = "Access-Control-Allow-Origin";
 const TYPES = ["feedback", "eval", "exit", "csat"];
@@ -86,6 +87,9 @@ module.exports = async function handler(req, res) {
     const owner = await resolveOwnership(slug);
     if (owner.workspace_id) row.workspace_id = owner.workspace_id;
     const saved = await db.insert("inproduct_feedback", row);
+    // Team update — urgent alert on CSAT ≤ 2, any exit survey, or a thumbs-down
+    // AI-eval (maybeAlert decides urgency by type/value). Best-effort, non-blocking.
+    try { await alerts.maybeAlert({ base: "https://" + (req.headers.host || "www.observanthq.com"), slug: slug, kind: type, value: value, name: userRef, quote: note, channel: "in-product" }); } catch (_e) {}
     res.status(200).json({ ok: true, id: saved && saved.id });
   } catch (err) {
     // Never block the host app on a backend hiccup — log + soft-succeed.

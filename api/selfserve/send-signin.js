@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         type: "magiclink",
         email: email,
-        options: { redirect_to: "https://www.observanthq.com/rewards" },
+        options: { redirect_to: "https://partner.observanthq.com/rewards" },
       }),
     });
     if (!gen.ok) {
@@ -48,8 +48,8 @@ module.exports = async function handler(req, res) {
     const subject = "You're a " + product + " feedback partner";
     const text =
       "You're in — you're now a " + product + " feedback partner.\n\n" +
-      "Your minutes and rewards are tracked automatically from your very first reply. " +
-      "Track and claim your rewards here:\n\n" +
+      "How it works: the " + product + " team will drop in with the occasional question, and you can reply anytime with feedback of your own. Every reply earns rewards, tracked automatically on your Observant account from your very first reply.\n\n" +
+      "Register and track your rewards on partner.observanthq.com here:\n\n" +
       actionLink + "\n\n" +
       "Sign in anytime to see your minutes add up and claim your rewards.";
     const html = welcomeHtml(product, actionLink);
@@ -75,7 +75,7 @@ function welcomeHtml(product, actionLink) {
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' +
     '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#8a857c">You\'re in</p>' +
     '<p style="margin:0 0 14px;font-size:18px;font-weight:600">You\'re a <b>' + p + '</b> feedback partner.</p>' +
-    '<p style="margin:0 0 14px">Your minutes and rewards are tracked automatically from your very first reply.</p>' +
+    '<p style="margin:0 0 14px">How it works: the <b>' + p + '</b> team will drop in with the occasional question, and you can reply anytime with feedback of your own. Every reply earns rewards, tracked automatically on your <b>Observant</b> account from your very first reply.</p>' +
     '<div style="margin:22px 0"><a href="' + esc(actionLink) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Track &amp; claim your rewards →</a></div>' +
     '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">Sign in anytime to see your minutes add up and claim your rewards.</p>' +
     '</div>';
