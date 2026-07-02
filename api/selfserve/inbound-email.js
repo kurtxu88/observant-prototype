@@ -26,6 +26,7 @@
 const crypto = require("crypto");
 const db = require("../_db");
 const alerts = require("./_alerts");
+const layout = require("./_email-layout");
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -246,11 +247,22 @@ function estLoopMin(questions) { const n = (Array.isArray(questions) ? questions
 function replyFooter(optOut, product) { return "\n\n———\nJust reply to this email with your answer. Your minutes and rewards are tracked automatically — redeem on Observant anytime." + accountFooterText(optOut, product); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function replyHtml(body, optOut, product) {
-  const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
-  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
-    '<div style="margin:18px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answer.</div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Redeem on Observant anytime.</p>' +
-    accountFooterHtml(optOut, product) + '</div>';
+  const parsed = parseNumbered(body);
+  const intro = parsed.questions.length ? parsed.intro : body;
+  const bodyHtml =
+    layout.paragraphs(intro) +
+    layout.questionBlock(parsed.questions) +
+    (parsed.outro ? layout.paragraphs(parsed.outro) : "") +
+    layout.calloutBox('↩︎ <b>Just reply to this email</b> with your answer.');
+  const footerHtml =
+    '<p style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#8a857c;margin:0 0 4px">You earn about $2 per minute you spend answering — tracked automatically. Redeem on Observant anytime.</p>' +
+    accountFooterHtml(optOut, product);
+  return layout.emailLayout({
+    heading: "A quick follow-up from the " + product + " team",
+    preheader: "One more question — just reply to this email to earn.",
+    bodyHtml: bodyHtml,
+    footerHtml: footerHtml,
+  });
 }
 
 /* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */

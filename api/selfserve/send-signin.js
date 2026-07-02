@@ -3,6 +3,8 @@
    built-in magic-link mailer. We still mint a REAL Supabase magic link server-
    side (admin generate_link), then deliver it ourselves so it actually arrives.
    Bare-serverless, mirrors send-invite.js: always 200-ish JSON, never throws. */
+const layout = require("./_email-layout");
+
 module.exports = async function handler(req, res) {
   setJson(res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -75,14 +77,19 @@ module.exports = async function handler(req, res) {
 
 function welcomeHtml(product, actionLink, optOut) {
   const p = esc(product);
-  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' +
-    '<p style="margin:0 0 8px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#8a857c">You\'re in</p>' +
-    '<p style="margin:0 0 14px;font-size:18px;font-weight:600">You\'re a <b>' + p + '</b> feedback partner.</p>' +
+  const bodyHtml =
+    '<p style="margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8a857c">You\'re in</p>' +
     '<p style="margin:0 0 14px">How it works: the <b>' + p + '</b> team will drop in with the occasional question, and you can reply anytime with feedback of your own. Every reply earns rewards, tracked automatically on your <b>Observant</b> account from your very first reply.</p>' +
-    '<div style="margin:22px 0"><a href="' + esc(actionLink) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Track &amp; claim your rewards →</a></div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:14px 0 0">Sign in anytime to see your minutes add up and claim your rewards.</p>' +
-    accountFooterHtml(optOut, product) +
-    '</div>';
+    '<p style="margin:0 0 4px">Sign in anytime to see your minutes add up and claim your rewards.</p>';
+  const footerHtml = accountFooterHtml(optOut, product);
+  return layout.emailLayout({
+    heading: "You're a " + product + " feedback partner",
+    preheader: "You're in — track your minutes and rewards on Observant.",
+    bodyHtml: bodyHtml,
+    ctaLabel: "Track & claim your rewards →",
+    ctaUrl: actionLink,
+    footerHtml: footerHtml,
+  });
 }
 
 /* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */

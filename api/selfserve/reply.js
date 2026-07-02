@@ -8,6 +8,7 @@
    ============================================================ */
 const db = require("../_db");
 const alerts = require("./_alerts");
+const layout = require("./_email-layout");
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -139,11 +140,23 @@ function estMinutes(text, answered) {
 function footer(answerUrl, optOut, product) { return "\n\n———\nAnswer these here → " + answerUrl + "\n\nYou earn about $2 for every minute you spend answering, tracked automatically. Track and redeem your rewards on Observant anytime." + accountFooterText(optOut, product); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function htmlEmail(body, answerUrl, optOut, product) {
-  const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
-  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + bodyHtml +
-    '<div style="margin:22px 0"><a href="' + esc(answerUrl) + '" style="display:inline-block;background:#b4532a;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Answer these questions →</a></div>' +
-    '<p style="font-size:13px;color:#8a857c;margin:0">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p>' +
-    accountFooterHtml(optOut, product) + '</div>';
+  const parsed = parseNumbered(body);
+  const intro = parsed.questions.length ? parsed.intro : body;
+  const bodyHtml =
+    layout.paragraphs(intro) +
+    layout.questionBlock(parsed.questions) +
+    (parsed.outro ? layout.paragraphs(parsed.outro) : "");
+  const footerHtml =
+    '<p style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#8a857c;margin:0 0 4px">You earn about $2 per minute you spend answering — tracked automatically. Track and redeem your rewards on Observant anytime.</p>' +
+    accountFooterHtml(optOut, product);
+  return layout.emailLayout({
+    heading: "A quick follow-up from the " + product + " team",
+    preheader: "One more question — reply with your feedback to earn.",
+    bodyHtml: bodyHtml,
+    ctaLabel: "Reply with your feedback →",
+    ctaUrl: answerUrl,
+    footerHtml: footerHtml,
+  });
 }
 
 /* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */

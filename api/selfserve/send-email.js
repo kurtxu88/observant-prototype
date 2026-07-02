@@ -7,6 +7,7 @@
    RESEND_REPLY_TO).
    ============================================================ */
 const db = require("../_db");
+const layout = require("./_email-layout");
 
 module.exports = async function handler(req, res) {
   setJson(res);
@@ -168,13 +169,22 @@ function lightFooterText(manageUrl) {
     (manageUrl ? "\n\nChange how often, pause, or opt out anytime: " + manageUrl : "");
 }
 function lightInlineHtml(body, manageUrl, estLine, optOut, product) {
-  const bodyHtml = "<p style=\"margin:0 0 14px\">" + esc(body).replace(/\n\n+/g, "</p><p style=\"margin:0 0 14px\">").replace(/\n/g, "<br>") + "</p>";
-  return shell(
-    (estLine ? '<p style="margin:0 0 12px;font-size:14px"><b style="color:#b4532a">' + esc(estLine) + '</b></p>' : "") +
-    bodyHtml +
-    '<div style="margin:20px 0;padding:12px 14px;background:#f4efe6;border:1px solid #e6ddcb;border-radius:10px;font-size:14px;color:#5a5347">↩︎ <b>Just reply to this email</b> with your answers — write right under each question.<br><span style="color:#8a857c">It\'s a two-way line — reach out anytime something breaks or you have feedback, not only when we ask. Genuine feedback earns rewards too.</span></div>' +
-    rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product)
-  );
+  const parsed = parseNumbered(body);
+  // Drop a short, generic lead-in (it's covered by the heading); keep it only if it carries real context.
+  const intro = parsed.questions.length ? (parsed.intro && parsed.intro.length > 90 ? parsed.intro : "") : body;
+  const bodyHtml =
+    (estLine ? '<p style="margin:0 0 14px;font-size:14px"><b style="color:#b4532a">' + layout.esc(estLine) + '</b></p>' : "") +
+    layout.paragraphs(intro) +
+    layout.questionBlock(parsed.questions) +
+    (parsed.outro ? layout.paragraphs(parsed.outro) : "") +
+    layout.calloutBox('↩︎ <b>Just reply to this email</b> with your answers — write right under each question.<br><span style="color:#8a857c">It\'s a two-way line — reach out anytime something breaks or you have feedback, not only when we ask. Genuine feedback earns rewards too.</span>');
+  const footerHtml = rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product);
+  return layout.emailLayout({
+    heading: "A couple questions from the " + product + " team",
+    preheader: estLine || "A couple of quick questions from the " + product + " team",
+    bodyHtml: bodyHtml,
+    footerHtml: footerHtml,
+  });
 }
 
 /* ---- DEEP: invitation to the live session, with an async fallback ---- */
@@ -189,14 +199,20 @@ function deepInviteText(product, essence, introUrl, answerUrl, manageUrl, optOut
     accountFooterText(optOut, product);
 }
 function deepInviteHtml(product, essence, introUrl, answerUrl, manageUrl, optOut) {
-  return shell(
+  const bodyHtml =
     '<p style="margin:0 0 14px">Hi,</p>' +
-    '<p style="margin:0 0 14px">The <b>' + esc(product) + '</b> team would love to go a little deeper on something — a short conversation, about <b>10 minutes</b>, guided by our AI interviewer, whenever suits you. No prep needed; use voice or just type.</p>' +
-    '<div style="margin:22px 0"><a href="' + esc(introUrl) + '" style="display:inline-block;background:#b4532a;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600">Start the conversation →</a></div>' +
-    '<p style="margin:0 0 14px;font-size:14px;color:#5a5347">Short on time? <a href="' + esc(answerUrl) + '" style="color:#b4532a">Answer a few quick questions async instead →</a></p>' +
-    '<p style="margin:0 0 6px;font-size:13px;color:#8a857c">And it\'s a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</p>' +
-    rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product)
-  );
+    '<p style="margin:0 0 14px">The <b>' + layout.esc(product) + '</b> team would love to go a little deeper on something — a short conversation, about <b>10 minutes</b>, guided by our AI interviewer, whenever suits you. No prep needed; use voice or just type.</p>' +
+    '<p style="margin:0 0 14px;font-size:14px;color:#5a5347">Short on time? <a href="' + layout.esc(answerUrl) + '" style="color:#b4532a;font-weight:600">Answer a few quick questions async instead →</a></p>' +
+    '<p style="margin:0 0 4px;font-size:13px;color:#8a857c">And it\'s a two-way line — reach out anytime something goes wrong or you have feedback, not just when we ask. Genuine feedback earns rewards too.</p>';
+  const footerHtml = rewardNote() + manageLink(manageUrl) + accountFooterHtml(optOut, product);
+  return layout.emailLayout({
+    heading: "A quick conversation with the " + product + " team",
+    preheader: "About 10 minutes, guided by our AI interviewer, whenever suits you.",
+    bodyHtml: bodyHtml,
+    ctaLabel: "Start the conversation →",
+    ctaUrl: introUrl,
+    footerHtml: footerHtml,
+  });
 }
 
 /* ---- shared account/opt-out footer (client-facing, on EVERY email) ---- */
@@ -225,6 +241,16 @@ function rewardNote() {
 }
 function shell(inner) {
   return '<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#24221e;max-width:560px">' + inner + '</div>';
+}
+
+// Split an engine message into a lead-in, its numbered questions, and any trailing prose —
+// so the questions can render in the styled question-block.
+function stripMd(s) { return String(s || "").replace(/\*\*/g, "").replace(/__/g, "").replace(/^#+\s*/gm, "").trim(); }
+function parseNumbered(text) {
+  const str = String(text || ""); const lines = str.split("\n"); const questions = []; let first = -1, last = -1;
+  lines.forEach((raw, i) => { const m = raw.trim().match(/^(\d+)[.)]\s+(.*)/); if (m) { questions.push(stripMd(m[2])); if (first < 0) first = i; last = i; } });
+  if (!questions.length) return { intro: stripMd(str), questions: [], outro: "" };
+  return { intro: stripMd(lines.slice(0, first).join("\n")), questions: questions, outro: stripMd(lines.slice(last + 1).join("\n")) };
 }
 
 function setJson(res) { res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); }
