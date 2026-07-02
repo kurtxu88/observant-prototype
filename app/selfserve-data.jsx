@@ -621,6 +621,14 @@ function ssCreateSampleState(input) {
   const product = ssProductName(workspace);
   return {
     ...ssBaseState(workspace, "sample"),
+    // Durable marker: this is the ephemeral Northwind demo. It must NEVER be
+    // written to localStorage or the DB, and must be discarded on any real
+    // sign-in / on /setup init so a real account gets a true clean slate.
+    isSample: true,
+    // The sample opens straight on the populated dashboard (both from "See the
+    // sample workspace" and /portal), not the activation steps.
+    launched: true,
+    section: "home",
     selectedLoopId: "loop-export",
     selectedConversationId: "dana",
     people: ssCreatePeople(workspace),

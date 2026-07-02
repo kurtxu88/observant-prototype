@@ -65,6 +65,30 @@ function ssRemoveState() {
   localStorage.removeItem(SS_STORAGE_KEY);
 }
 
+// Is this the ephemeral Northwind SAMPLE (not a real account)? A sample is
+// identified three ways, any of which is decisive:
+//   1. the durable `isSample` marker set by createSampleState,
+//   2. a non-"custom" workspaceMode (only custom workspaces are ever real),
+//   3. the demo's identity leaking through as "custom" — a workspace carrying
+//      SS_DEFAULT_WORKSPACE's company + email (the reported bug: Settings shows
+//      Northwind / maya@northwind.ai while all real data arrays are empty).
+// Sample state must NEVER be persisted (localStorage or DB) and must be discarded
+// on a real sign-in / on /setup init, so a real account is always a clean slate.
+function ssIsSampleState(state) {
+  if (!state) return false;
+  if (state.isSample) return true;
+  if (state.workspaceMode && state.workspaceMode !== "custom") return true;
+  try {
+    const ws = state.workspace || {};
+    const name = String(ws.companyName || "").trim().toLowerCase();
+    const email = String(ws.email || "").trim().toLowerCase();
+    const demoName = String(SS_DEFAULT_WORKSPACE.companyName || "").trim().toLowerCase();
+    const demoEmail = String(SS_DEFAULT_WORKSPACE.email || "").trim().toLowerCase();
+    if (name && email && name === demoName && email === demoEmail) return true;
+  } catch (e) {}
+  return false;
+}
+
 // ---- account-keyed DB persistence (survives a new browser / incognito) ----
 // localStorage above is a per-browser cache; the DB (keyed to the signed-in
 // Supabase account) is the cross-browser source of truth, so the same workspace
@@ -459,9 +483,10 @@ function SelfServeApp() {
   const [state, setState] = useStateSS(() => {
     if (SS_VIEW === "setup") {
       const saved = ssLoadState();
-      // A launched SAMPLE workspace belongs only to the /portal demo — a signed-in
-      // user must never be dropped into Northwind on /setup. Clear it → onboarding.
-      if (saved && saved.launched && saved.workspaceMode !== "custom") { ssRemoveState(); return null; }
+      // The Northwind SAMPLE belongs only to the /portal demo — a signed-in user must
+      // never be dropped into it on /setup. Discard ANY sample (marker, non-custom
+      // mode, or leaked Northwind identity carried as "custom") → clean onboarding.
+      if (saved && ssIsSampleState(saved)) { ssRemoveState(); return null; }
       // A launched CUSTOM workspace is the user's real dashboard — keep it; an
       // in-progress (not-yet-launched) workspace resumes onboarding where they left off.
       return saved;
@@ -510,18 +535,20 @@ function SelfServeApp() {
         try {
           const dbState = await ssDbLoadState();
           if (cancelled) return;
-          if (dbState) {
+          if (dbState && !ssIsSampleState(dbState)) {
             setState(dbState);
             ssSaveState(dbState, acctKey);           // (re)tag cache to this account
             return;
           }
-          // Nothing in the DB → this account is new here. Only reuse the local cache
-          // if it belongs to this account and is a real (custom) workspace.
+          // Nothing real in the DB → this account is new here. Only reuse the local
+          // cache if it belongs to this account and is a real (custom) workspace —
+          // never a sample or a leaked Northwind-identity cache.
           const cached = ssLoadState();
           const mine = cached
             && ssAcctKey(cached._account) === acctKey
             && acctKey
-            && cached.workspaceMode === "custom";
+            && cached.workspaceMode === "custom"
+            && !ssIsSampleState(cached);
           if (mine) {
             setState(cached);
           } else {
@@ -577,7 +604,11 @@ function SelfServeApp() {
   // untagged (exactly as before).
   useEffectSS(() => {
     if (gate !== "pass" || !state) return;
-    const account = (authEmail && state.workspaceMode === "custom") ? ssAcctKey(authEmail) : "";
+    // The sample is EPHEMERAL — never write it. Clear any prior cache so a leftover
+    // sample (or a leaked Northwind-identity state) can't linger, then bail.
+    if (ssIsSampleState(state)) { ssRemoveState(); return; }
+    // Only a real (custom) workspace reaches here — tag it to the signed-in account.
+    const account = authEmail ? ssAcctKey(authEmail) : "";
     ssSaveState(state, account);
   }, [state, gate, authEmail]);
 
@@ -589,7 +620,9 @@ function SelfServeApp() {
   useEffectSS(() => {
     if (SS_VIEW === "portal") return undefined;
     if (gate !== "pass" || !authEmail) return undefined;                 // signed-in only
-    if (!state || state.workspaceMode !== "custom" || !state.workspace) return undefined;
+    // Only a real (custom) workspace is pushed — never the ephemeral sample, and
+    // never a leaked Northwind-identity state masquerading as custom.
+    if (!state || !state.workspace || ssIsSampleState(state)) return undefined;
     if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current);
     ssDbSaveTimer.current = setTimeout(() => { ssDbSaveState(state); }, 1200);
     return () => { if (ssDbSaveTimer.current) clearTimeout(ssDbSaveTimer.current); };
