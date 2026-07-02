@@ -22,12 +22,13 @@
     background:var(--accent);margin-left:3px;vertical-align:middle}
   .wordmark small{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:.68rem;
     letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-left:9px;font-weight:600}
-  main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{max-width:540px;text-align:center}
+  main{flex:1;display:flex;flex-direction:column;align-items:center;padding:40px 24px 8px}
+  .card{max-width:620px;text-align:center}
   h1{font-family:Georgia,"Times New Roman",serif;font-weight:600;font-size:2.7rem;
     line-height:1.12;letter-spacing:-.02em;margin-bottom:18px}
   h1 .em{color:var(--accent)}
-  .lead{font-size:1.08rem;color:var(--muted);margin-bottom:32px}
+  .lead{font-size:1.08rem;color:var(--muted);margin-bottom:16px}
+  .subline{font-size:.98rem;color:var(--muted);margin-bottom:32px}
   .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:999px;
     font-size:.98rem;font-weight:600;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:.15s}
@@ -36,8 +37,24 @@
   .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
   .btn-ghost:hover{border-color:var(--muted)}
   .note{margin-top:28px;font-size:.85rem;color:var(--muted)}
+  /* substance sections */
+  .section{max-width:820px;width:100%;margin:0 auto}
+  .how{margin:54px auto 8px;max-width:600px;text-align:center}
+  .eyebrow{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin-bottom:12px}
+  .how p{font-size:1.02rem;color:var(--ink);line-height:1.6}
+  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:44px auto 8px}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 22px;text-align:left}
+  .pillar .dotnum{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+    border-radius:50%;background:rgba(26,122,84,.1);color:var(--accent);font-weight:700;font-size:.85rem;margin-bottom:14px}
+  .pillar h3{font-family:Georgia,"Times New Roman",serif;font-weight:600;font-size:1.12rem;
+    margin-bottom:8px;letter-spacing:-.01em}
+  .pillar p{font-size:.92rem;color:var(--muted);line-height:1.55}
+  .trust{max-width:600px;margin:40px auto 0;padding:16px 22px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;font-size:.9rem;color:var(--muted);text-align:center;line-height:1.55}
+  .trust strong{color:var(--ink);font-weight:600}
   .foot{padding:22px 30px;font-size:.78rem;color:var(--muted);text-align:center}
-  @media(max-width:520px){h1{font-size:2.1rem}}
+  @media(max-width:640px){h1{font-size:2.1rem}.pillars{grid-template-columns:1fr;gap:12px}}
 </style>
 </head>
 <body>
@@ -48,10 +65,41 @@
     <div class="card">
       <h1>Get paid for<br />your <span class="em">feedback</span>.</h1>
       <p class="lead">Become a feedback partner — help shape the products you use, on your own time, and earn for every minute you spend.</p>
+      <p class="subline">The products you already use get better when you tell them what's working and what isn't. Now you're paid for it.</p>
       <div class="actions">
         <a class="btn btn-primary" href="/rewards">Become a feedback partner →</a>
         <a class="btn btn-ghost" href="/rewards">Sign in</a>
       </div>
+    </div>
+
+    <section class="how">
+      <p class="eyebrow">How it works</p>
+      <p>It's an ongoing 1:1 with the products you use — over email, Telegram, or right inside the app. The company drops in with the occasional question; you reply on your own time. Every reply earns rewards, tracked by the minute. No calls, no surveys.</p>
+    </section>
+
+    <section class="section">
+      <div class="pillars">
+        <div class="pillar">
+          <span class="dotnum">1</span>
+          <h3>Discover opportunities</h3>
+          <p>Partner with companies whose products you actually use, and take on more over time as new ones open up.</p>
+        </div>
+        <div class="pillar">
+          <span class="dotnum">2</span>
+          <h3>Feedback on your terms</h3>
+          <p>Fully async, on your schedule. You decide how much you take on — reply when it suits you, skip what doesn't.</p>
+        </div>
+        <div class="pillar">
+          <span class="dotnum">3</span>
+          <h3>Earn, tracked automatically</h3>
+          <p>Cash for the minutes you spend, audited and transparent. Redeem your earnings whenever you like.</p>
+        </div>
+      </div>
+    </section>
+
+    <p class="trust"><strong>You're always in control.</strong> Everything is opt-in and consent-based — join the programs you want, share only what you choose, and opt out anytime.</p>
+
+    <div class="card">
       <p class="note">Soon — discover more companies running feedback programs and partner with them too.</p>
     </div>
   </main>
