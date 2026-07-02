@@ -63,6 +63,31 @@ repo scan is opt-in/advanced only). _Body sections below may still use the older
   PII/send mechanic, and the real backend (auth/DB/GitHub-App/Stripe — see `real-build-prerequisites`).
 
 **Decision changelog (the logic behind):**
+- **6/30 (EOD) — THE NEW DIRECTION: interview-driven building; the market is product-building-as-a-capability.**
+  From the Siyu clip: coding got democratized, but *how to build a product* didn't. The wedge becomes
+  **interview-driven building** — a fuzzy need → a research-grade interview → an agent-ready spec → a working
+  tool in 2–3 rounds → integrated. The **market = internal tooling / product-building as a capability**, and the
+  ICP is defined by *"a team/operator with a need they can't build themselves"* — **not** tech-vs-non-tech (Xuan
+  explicitly corrected the clip's "sell to non-tech" framing; the cut is capability, not job title). Why this
+  supersedes the circling of the prior weeks: it names a concrete buyer, a concrete outcome (**a shipped tool,
+  not "insights"**), and puts Xuan's whole research method at the center as the engine. Synthesized from the full
+  Codified→Observant PRD lineage (Reflection-KG → Understory → AlphaCommons v2 → MagicPatterns account-based →
+  in-product self-evolving → PRD-Observant) into **`*Observant/03-product/PRD-vNext-2026-06-30.md`** — the new
+  candidate spec. Codename TBD (leaning *Marrow* / *Tacit*); scope question open (new company / vertical /
+  repositioning).
+- **6/30 — Market validation + our lane: 8090 Labs (Chamath).** $135M Series A (Salesforce Ventures) for a
+  "Software Factory" — AI software-building for corporate teams in regulated industries. Folded into PRD-vNext as
+  validation *and* a clean lane split: **they arm coders; we serve the can't-code layer** (the operator with a
+  need, not an engineer). Confirms the buyer and the budget exist upstream of us.
+- **6/30 — Team-dynamics read (Xuan × Bin) shapes the Zhifei recruit and the 7/01 session.** Five months of
+  transcripts (5/19–6/30) surfaced a recurring pattern: an inflate/deflate loop that swaps by whoever owns the
+  idea, same-words-different-meanings, disagreements dropped rather than resolved, and a care/commitment
+  asymmetry (Bin stepped back, questions his value; Xuan drives). The convergence condition: it only resolves
+  when anchored to a **concrete artifact**. Decisions this drove — (a) frame the Zhifei recruit as a *third
+  builder who converges-and-ships*, breaking the loop; (b) run tomorrow's 3-way (Xuan + Bin + Zhifei, 7/01
+  3–4pm) **anchored on an artifact**, not on open discussion. Zhifei's recruiting doc now carries a full
+  "from the deck to here" narrative (the ICP/buyer gap that drove the jump → why the new direction is right →
+  the team dynamic → what he'd own: the unbuilt technical back-half — feedback → agent-ready build).
 - **6/29 (EOD) — MVP = magic-link only; "Observant Send" parked.** For off-product, Observant does **not**
   send email or hold user PII — the client sends the magic link themselves (the Mailchimp model: send-on-behalf
   + compliance is the thing a sender owns, and we don't want to own it yet). A thin Resend/SES layer ("Observant
