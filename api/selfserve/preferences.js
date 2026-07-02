@@ -101,7 +101,11 @@ module.exports = async function handler(req, res) {
 async function buildQuery({ partnerId, contact, product }) {
   if (partnerId) return "id=eq." + encodeURIComponent(partnerId);
   if (!contact) return null;
-  let query = "contact=eq." + encodeURIComponent(contact) + "&channel=eq.email";
+  // Resolve by contact across ALL channels — the `contact` carried in the email
+  // payload is an email, but a Telegram partner's contact is their chat_id, and
+  // hard-filtering channel=email would hide those partners so they could never
+  // change cadence / pause. Match on the identity we were given, whatever channel.
+  let query = "contact=eq." + encodeURIComponent(contact);
   const programId = product ? await resolveProgramId(product) : null;
   if (programId) query += "&program_id=eq." + programId;
   return query;

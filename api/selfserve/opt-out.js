@@ -27,7 +27,10 @@ module.exports = async function handler(req, res) {
       if (partnerId) {
         await db.update("partners", "id=eq." + encodeURIComponent(partnerId), { status: "opted_out" });
       } else if (contact) {
-        let query = "contact=eq." + encodeURIComponent(contact) + "&channel=eq.email";
+        // Resolve by contact across ALL channels — a Telegram partner's contact
+        // is their chat_id, so hard-filtering channel=email would leave them
+        // unable to opt out. Match the identity given, whatever the channel.
+        let query = "contact=eq." + encodeURIComponent(contact);
         const programId = product ? await resolveProgramId(product) : null;
         if (programId) query += "&program_id=eq." + programId;
         await db.update("partners", query, { status: "opted_out" });

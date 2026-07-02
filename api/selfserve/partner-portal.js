@@ -120,11 +120,16 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Every partner row keyed by this email (may span programs).
+    // Every partner row keyed by this identity (may span programs AND channels).
+    // Resolve by contact across all channels — do NOT hard-filter channel=email,
+    // or a Telegram partner (who has real earned minutes) would be invisible here.
+    // Limitation: we can only match rows whose `contact` equals the signed-in
+    // email; a Telegram partner keyed solely by chat_id (no email on file) still
+    // can't be reached from a Bearer-token email — that needs an email↔chat_id link.
     const partners = await db.select(
       "partners",
       "contact=eq." + encodeURIComponent(email) +
-        "&channel=eq.email&select=id,program_id,channel,cadence,status"
+        "&select=id,program_id,channel,cadence,status"
     );
 
     if (!partners || !partners.length) {
