@@ -16,8 +16,8 @@ module.exports = async function handler(req, res) {
     const ws = slug ? await db.select("workspaces", "slug=eq." + encodeURIComponent(slug) + "&select=id,slug,account_id,product_name") : [];
     out.workspaces = (ws || []).map((w) => ({ id: w.id, slug: w.slug, account_id: w.account_id, product: w.product_name }));
 
-    const progs = slug ? await db.select("programs", "slug=eq." + encodeURIComponent(slug) + "&select=id,slug,product_name,workspace_id,account_id") : [];
-    out.programs = (progs || []).map((p) => ({ id: p.id, slug: p.slug, product: p.product_name, workspace_id: p.workspace_id, account_id: p.account_id }));
+    const progs = slug ? await db.select("programs", "slug=eq." + encodeURIComponent(slug) + "&select=id,slug,product_name") : [];
+    out.programs = (progs || []).map((p) => ({ id: p.id, slug: p.slug, product: p.product_name }));
 
     const progIds = (progs || []).map((p) => p.id).filter(Boolean);
     let partners = [];

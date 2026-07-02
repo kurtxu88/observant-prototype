@@ -150,8 +150,13 @@ module.exports = async function handler(req, res) {
       (Array.isArray(bySlug) ? bySlug : []).forEach((p) => { progById[p.id] = p; });
     }
     if (wsIds.length) {
-      const byWs = await db.select("programs", "workspace_id=in." + inList(wsIds) + progCols);
-      (Array.isArray(byWs) ? byWs : []).forEach((p) => { progById[p.id] = p; });
+      // Optional: also match by workspace_id — but that column only exists once
+      // ownership.sql has been run. Tolerate its absence so the slug match (above)
+      // still works without the migration.
+      try {
+        const byWs = await db.select("programs", "workspace_id=in." + inList(wsIds) + progCols);
+        (Array.isArray(byWs) ? byWs : []).forEach((p) => { progById[p.id] = p; });
+      } catch (_e) { /* no workspace_id column yet — slug match is enough */ }
     }
     const programs = Object.keys(progById).map((k) => progById[k]);
     if (!programs.length) return empty(res);
