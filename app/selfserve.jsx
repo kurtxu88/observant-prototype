@@ -1941,7 +1941,7 @@ function HomeView({ state, patchState, navigate }) {
             <span className="eyebrow no-rule">Always on</span>
             <h2>Welcome, {product}.</h2>
             <p>{anySourceActive
-              ? "Your feedback source is live. Bring your users in and their first 1:1s will land right here."
+              ? "Your feedback source is live."
               : "Let's set up where your users give feedback — one source is enough to begin."}</p>
           </div>
         </section>
@@ -2324,31 +2324,15 @@ function AskPanel({ product, state, patchState, navigate }) {
 // threads (email + Telegram) are the spine; in-product snippet signals sit alongside,
 // clearly labeled by source; loops (the questions the team sent) stay one tab over.
 function LearningView({ state, patchState, navigate }) {
-  const convos = state.conversations || [];
-  const feedback = state.inproductFeedback || [];
-  const loops = state.loops || [];
-  const [tab, setTab] = useStateSS("conversations");
-
+  // Loop history is simply the history of questions your team has asked. The
+  // per-user 1:1 threads live under People; in-product feedback under Insights.
   return (
     <div className="ss-page-stack">
       <div className="ss-activity-head">
-        <div><span className="eyebrow no-rule">Conversations</span><h2 style={{ margin: "2px 0 0" }}>Every 1:1 your users are in</h2></div>
+        <span className="eyebrow no-rule">Loop history</span>
         <Btn variant="primary" onClick={() => navigate({ section: "compose" })}><Icon name="spark" size={15} /> Send a new loop</Btn>
       </div>
-      <div className="ss-conv-tabs" role="tablist">
-        <button type="button" role="tab" className={tab === "conversations" ? "on" : ""} onClick={() => setTab("conversations")}>
-          <Icon name="chat" size={14} /> Off-product 1:1s <em>{convos.length}</em>
-        </button>
-        <button type="button" role="tab" className={tab === "inproduct" ? "on" : ""} onClick={() => setTab("inproduct")}>
-          <Icon name="globe" size={14} /> In-product feedback <em>{feedback.length}</em>
-        </button>
-        <button type="button" role="tab" className={tab === "loops" ? "on" : ""} onClick={() => setTab("loops")}>
-          <Icon name="spark" size={14} /> Loops <em>{loops.length}</em>
-        </button>
-      </div>
-      {tab === "conversations" && <ConversationsCRM state={state} navigate={navigate} />}
-      {tab === "inproduct" && <InProductFeedbackList state={state} navigate={navigate} />}
-      {tab === "loops" && <QuestionHistory state={state} navigate={navigate} />}
+      <QuestionHistory state={state} navigate={navigate} />
     </div>
   );
 }
