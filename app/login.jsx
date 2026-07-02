@@ -27,19 +27,27 @@ function TeamLogin() {
   const next = loginNext();
   const emailValid = email.includes("@") && email.includes(".");
 
-  // If a session already exists (or the OAuth/magic-link redirect just
-  // completed), bounce straight to the dashboard.
+  // Only forward automatically when we're COMPLETING a sign-in — i.e. returning
+  // from the Google / magic-link redirect, which carries a code/token in the URL.
+  // A plain visit to /login ALWAYS shows the sign-in screen, even if a session
+  // lingers from earlier — so "Sign in" reliably surfaces Google instead of
+  // silently skipping to /setup.
   useEffectLG(() => {
     let cancelled = false;
+    const s = window.location.search + window.location.hash;
+    const returning = /[?&#](code|access_token|token_hash)=/.test(s);
     (async () => {
+      if (!returning) { setPhase("signedout"); return; }
       const u = await ObservantAuth.getUser();
       if (cancelled) return;
       if (u) { window.location.replace(next); return; }
       setPhase("signedout");
     })();
     let unsub = () => {};
-    ObservantAuth.onAuth((u) => { if (u && !cancelled) window.location.replace(next); })
-      .then((fn) => { unsub = fn; });
+    if (returning) {
+      ObservantAuth.onAuth((u) => { if (u && !cancelled) window.location.replace(next); })
+        .then((fn) => { unsub = fn; });
+    }
     return () => { cancelled = true; unsub(); };
   }, []);
 
