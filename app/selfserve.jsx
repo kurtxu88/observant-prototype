@@ -19,6 +19,49 @@ const SS_SECTION_ALIAS = { learning: "offproduct", people: "offproduct", compose
 // Which Off-product sub-tab a legacy section id maps to.
 const SS_OFF_TAB_FOR_SECTION = { people: "partners", compose: "loops", learning: "loops" };
 
+// --- Deep-linkable section URLs (Fix #23) ---
+// Each dashboard section gets its own path under the /setup (or /portal) base:
+//   /setup/home  /setup/off-product/partners  /setup/in-product  /setup/insights  /setup/settings
+// (context + sources are non-nav pages but are still addressable.)
+const SS_SECTION_TO_SLUG = {
+  home: "home", offproduct: "off-product", inproduct: "in-product",
+  insights: "insights", settings: "settings", context: "context", sources: "sources",
+};
+const SS_SLUG_TO_SECTION = {
+  home: "home", "off-product": "offproduct", "in-product": "inproduct",
+  insights: "insights", settings: "settings", context: "context", sources: "sources",
+};
+const SS_OFF_TABS = ["partners", "loops", "threads", "manage"];
+
+// The base segment we're mounted under — "/setup" (real workspace) or "/portal" (sample).
+function ssBasePath() { return SS_VIEW === "portal" ? "/portal" : "/setup"; }
+
+// Build the URL path for a section (+ optional Off-product sub-tab).
+function ssSectionPath(section, offTab) {
+  const slug = SS_SECTION_TO_SLUG[SS_SECTION_ALIAS[section] || section] || "home";
+  let path = ssBasePath() + "/" + slug;
+  if (slug === "off-product" && offTab && SS_OFF_TABS.includes(offTab)) path += "/" + offTab;
+  return path;
+}
+
+// Parse the current pathname → { section, offTab } (or null if not a dashboard URL).
+// Off-product sub-tab reads from the path (/setup/off-product/partners) or ?tab=partners.
+function ssParseLocation() {
+  const segs = window.location.pathname.toLowerCase().replace(/^\/+|\/+$/g, "").split("/");
+  if (segs[0] !== "setup" && segs[0] !== "portal") return null;
+  const section = SS_SLUG_TO_SECTION[segs[1]];
+  if (!section) return null;
+  let offTab;
+  if (section === "offproduct") {
+    if (SS_OFF_TABS.includes(segs[2])) offTab = segs[2];
+    else {
+      const qtab = new URLSearchParams(window.location.search).get("tab");
+      if (SS_OFF_TABS.includes(qtab)) offTab = qtab;
+    }
+  }
+  return { section, offTab };
+}
+
 // PLACEHOLDER — swap for the real booking link before sharing externally.
 const SS_BOOK_CALL_URL = "https://calendly.com/observant-ai/intro";
 
@@ -477,9 +520,11 @@ function SsAuthGate({ redirectTo }) {
 // SAMPLE — that belongs only to /portal, which always lands on the sample
 // dashboard (auto-created if none exists yet).
 const SS_VIEW = (() => {
-  const path = window.location.pathname.toLowerCase();
-  if (path.endsWith("/setup")) return "setup";
-  if (path.endsWith("/portal")) return "portal";
+  // First path segment identifies the base — works for bare /setup and deep links
+  // like /setup/insights or /setup/off-product/partners.
+  const seg = window.location.pathname.toLowerCase().replace(/^\/+/, "").split("/")[0];
+  if (seg === "setup") return "setup";
+  if (seg === "portal") return "portal";
   return "";
 })();
 
@@ -1921,6 +1966,8 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       section: state.section, offTab: state.offTab, selectedConversationId: state.selectedConversationId,
       selectedLoopId: state.selectedLoopId, focusedTarget: state.focusedTarget,
     }]).slice(-25));
+    const targetSection = sec || state.section || "home";
+    const targetTab = tab !== undefined ? tab : state.offTab;
     patchState((current) => ({
       ...current,
       section: sec || current.section || "home",
@@ -1930,23 +1977,65 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
       focusedTarget: focusedTarget || "",
       pendingInsightQuestion: pendingInsightQuestion !== undefined ? pendingInsightQuestion : current.pendingInsightQuestion,
     }));
+    // Give the section its own URL so it's deep-linkable / back-forward navigable.
+    ssPushSectionUrl(targetSection, targetTab, false);
   };
 
   const goBack = () => {
-    setNavStack((st) => {
-      if (!st.length) return st;
-      const prev = st[st.length - 1];
+    if (!navStack.length) return;
+    const prev = navStack[navStack.length - 1];
+    patchState((current) => ({
+      ...current,
+      section: prev.section || "home",
+      offTab: prev.offTab,
+      selectedConversationId: prev.selectedConversationId,
+      selectedLoopId: prev.selectedLoopId,
+      focusedTarget: prev.focusedTarget || "",
+    }));
+    setNavStack((st) => st.slice(0, -1));
+    ssPushSectionUrl(prev.section || "home", prev.offTab, false);
+  };
+
+  // Keep the address bar in sync with the section (push = new history entry).
+  const ssPushSectionUrl = (section, offTab, replace) => {
+    if (!SS_VIEW) return;
+    try {
+      const url = ssSectionPath(section, offTab);
+      if (!replace && url === window.location.pathname) return;
+      const st = { section, offTab: offTab || null };
+      if (replace) window.history.replaceState(st, "", url);
+      else window.history.pushState(st, "", url);
+    } catch (e) {}
+  };
+
+  // On first mount, adopt any deep-linked section from the URL; otherwise stamp the
+  // current section into the URL so the address bar is shareable from the start.
+  useEffectSS(() => {
+    if (!SS_VIEW) return;
+    const loc = ssParseLocation();
+    if (loc) {
       patchState((current) => ({
         ...current,
-        section: prev.section || "home",
-        offTab: prev.offTab,
-        selectedConversationId: prev.selectedConversationId,
-        selectedLoopId: prev.selectedLoopId,
-        focusedTarget: prev.focusedTarget || "",
+        section: loc.section,
+        offTab: loc.section === "offproduct" ? (loc.offTab || current.offTab || "partners") : current.offTab,
       }));
-      return st.slice(0, -1);
-    });
-  };
+    } else {
+      ssPushSectionUrl(section, section === "offproduct" ? (state.offTab || "partners") : undefined, true);
+    }
+    // Browser back/forward → sync the section (and Off-product sub-tab) from the URL.
+    const onPop = () => {
+      const at = ssParseLocation();
+      if (!at) return;
+      patchState((current) => ({
+        ...current,
+        section: at.section,
+        offTab: at.section === "offproduct" ? (at.offTab || current.offTab || "partners") : current.offTab,
+        focusedTarget: "",
+      }));
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   return (
     <div className={"ss-shell" + (assistantOpen ? " ss-assistant-open" : "")}>
@@ -2015,7 +2104,7 @@ function ProductShell({ state, patchState, copied, copyText, resetWorkspace }) {
 function HomeView({ state, patchState, navigate }) {
   const readiness = SelfServeData.readiness(state.setup);
   const product = SelfServeData.productName(state.workspace);
-  const latestAnswer = state.answers[0];
+  const latestAnswer = (state.answers || []).find((a) => SelfServeData.answerIsReal(a));
   const activeConversationId = ssFirstActiveConversationId(state);
   const activePerson = ssPersonForConversation(state, state.conversations.find((item) => item.id === activeConversationId));
   const custom = ssWorkspaceIsCustom(state);
@@ -3200,7 +3289,7 @@ function PreBriefed({ state }) {
 }
 
 function InsightsView({ state, patchState, navigate }) {
-  const latestAnswer = state.answers[0];
+  const latestAnswer = (state.answers || []).find((a) => SelfServeData.answerIsReal(a));
 
   return (
     <div className="ss-page-stack">
@@ -3232,13 +3321,10 @@ function InsightsView({ state, patchState, navigate }) {
             );
           })}
         </div>
-      ) : (
-        <EmptyState
-          icon="spark"
-          title="No signals yet"
-          text="Observant surfaces patterns the moment feedback comes in. Get a source live and the first signals will appear here."
-          cta={navigate ? { label: "Set up a feedback source", onClick: () => navigate({ section: "sources" }) } : null}
-        />
+      ) : latestAnswer ? null : (
+        // No real answer and no insights yet → one clean line, never the verbose
+        // no-evidence block (that lived in the guarded LatestAnswerCard stub).
+        <p className="mut ss-answer-empty">No signal yet — set up a feedback source and answers will appear here as feedback comes in.</p>
       )}
     </div>
   );
@@ -3272,6 +3358,9 @@ async function ssBuildObservantAnswer(state, question) {
 }
 
 function LatestAnswerCard({ answer, onClick }) {
+  // Render nothing unless this is a real answer — a missing answer, an object-valued
+  // question ("[object Object]"), or the no-data/no-evidence stub all show nothing.
+  if (!SelfServeData.answerIsReal(answer)) return null;
   const Wrapper = onClick ? "button" : "section";
   return (
     <Wrapper type={onClick ? "button" : undefined} className={onClick ? "ss-answer-card ss-card-action" : "ss-answer-card"} onClick={onClick}>

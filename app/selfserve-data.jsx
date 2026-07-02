@@ -1038,7 +1038,11 @@ function ssNormalizeState(state) {
     simulationRuns,
     nextQuestions: Array.isArray(state.nextQuestions) ? state.nextQuestions : seeded.nextQuestions,
     scheduledCalls: Array.isArray(state.scheduledCalls) ? state.scheduledCalls : [],
-    answers: Array.isArray(state.answers) ? state.answers : [],
+    // Drop stale answers whose question isn't a real string (older builds could
+    // persist an object → the card rendered "[object Object]"). Clears them on load.
+    answers: Array.isArray(state.answers)
+      ? state.answers.filter((a) => a && typeof a.question === "string" && a.question.trim())
+      : [],
     generatedAt: state.generatedAt || seeded.generatedAt || "",
     activity: Array.isArray(state.activity) ? state.activity : seeded.activity,
   });
@@ -1118,6 +1122,18 @@ function ssRevealSimulation(state, runId, stageIndex) {
   });
 }
 
+// A "real" latest answer has a string question and real answer prose, and is NOT
+// the no-data / no-evidence stub api/selfserve/answer.js returns before any loop
+// has run ("Observant has not collected enough evidence yet…"). Used both to guard
+// the Latest-answer card and to keep the Insights page from showing a stub.
+function ssAnswerIsReal(answer) {
+  if (!answer || typeof answer !== "object") return false;
+  if (typeof answer.question !== "string" || !answer.question.trim()) return false;
+  if (typeof answer.answer !== "string" || !answer.answer.trim()) return false;
+  if (/has not collected enough evidence/i.test(answer.answer)) return false; // no-data stub
+  return true;
+}
+
 function ssCannedAnswer(state, question) {
   const workspace = state.workspace;
   const product = ssProductName(workspace);
@@ -1172,6 +1188,7 @@ Object.assign(window, {
     normalizeState: ssNormalizeState,
     readiness: ssReadiness,
     cannedAnswer: ssCannedAnswer,
+    answerIsReal: ssAnswerIsReal,
     productName: ssProductName,
     initials: ssInitials,
     contextCompleteness: ssContextCompleteness,
