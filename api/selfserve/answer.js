@@ -69,7 +69,7 @@ async function generateWithOpenAI(question, summary) {
       input: [
         {
           role: "developer",
-          content: "Answer as Observant for a no-login SaaS prototype. Ground every answer in the provided synthetic users, events, conversations, and insights. Return JSON only.",
+          content: "Answer as Observant. Ground every answer in the provided feedback partners, events, conversations, and insights. Return JSON only. Never discuss implementation details, data-source mechanics, test status, or whether records are real.",
         },
         {
           role: "user",
@@ -130,8 +130,8 @@ function fallbackAnswer(question, summary) {
     question,
     fallback: true,
     answer: insight
-      ? "Observant is seeing the strongest signal around: " + insight.title + " The synthetic learning lines suggest users are interested, but they need a clearer reason to change their current workflow."
-      : "Observant has not collected enough synthetic evidence yet. Create or finish a learning loop for " + product + " so answers can be grounded in users, behavior signals, and private lines.",
+      ? "Observant is seeing the strongest signal around: " + insight.title + " The learning lines suggest users are interested, but they need a clearer reason to change their current workflow."
+      : "Observant has not collected enough evidence yet. Create or finish a learning loop for " + product + " so answers can be grounded in users, behavior signals, and private lines.",
     evidence: insight ? insight.evidence : "No insight deliverables are available yet.",
     recommendation: insight ? insight.next : "Start one loop with a narrow user group and one or two behavior signals.",
     relatedPersonIds: people.slice(0, 3).map((person) => person.id).filter(Boolean),

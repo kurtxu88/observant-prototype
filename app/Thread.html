@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Observant — conversation-logic test surface</title>
+<link rel="stylesheet" href="/app/app.css" />
+<link rel="stylesheet" href="/app/selfserve.css" />
+<style>
+  .tw-wrap { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+  .tw-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .tw-tag { font-size: .8rem; opacity: .6; }
+  .tw-grid { display: grid; grid-template-columns: 360px 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 860px) { .tw-grid { grid-template-columns: 1fr; } }
+  .tw-card { border: 1px solid var(--line, #e6e3dd); border-radius: 14px; padding: 18px; background: var(--surface, #fff); }
+  .tw-card h3 { margin: 0 0 10px; font-size: .95rem; }
+  .tw-field { margin-bottom: 12px; }
+  .tw-field label { display: block; font-size: .78rem; opacity: .65; margin-bottom: 4px; }
+  .tw-field textarea, .tw-field input, .tw-field select { width: 100%; box-sizing: border-box; }
+  .tw-field textarea { min-height: 70px; resize: vertical; }
+  .tw-plan { font-size: .82rem; line-height: 1.5; }
+  .tw-plan b { display: block; margin-top: 8px; opacity: .7; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+  .tw-thread { display: flex; flex-direction: column; gap: 12px; min-height: 280px; }
+  .tw-msg { display: flex; gap: 10px; max-width: 80%; }
+  .tw-msg.me { align-self: flex-end; flex-direction: row-reverse; }
+  .tw-bubble { padding: 10px 13px; border-radius: 13px; font-size: .9rem; line-height: 1.45; }
+  .tw-msg.them .tw-bubble { background: var(--wash, #f4f1ea); }
+  .tw-msg.me .tw-bubble { background: var(--accent, #b4532a); color: #fff; }
+  .tw-who { font-size: .68rem; opacity: .5; margin-bottom: 2px; }
+  .tw-decision { display: inline-flex; gap: 6px; align-items: center; font-size: .72rem; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line, #e6e3dd); margin: 4px 0; }
+  .tw-decision.SUFFICIENT { background: #e9f6ec; border-color: #b9e3c2; }
+  .tw-decision.CONTINUE { background: #eef2fb; border-color: #cdd9f2; }
+  .tw-decision.PAUSE, .tw-decision.NUDGE { background: #fdf3e6; border-color: #f0dab4; }
+  .tw-report { border: 1px solid #b9e3c2; background: #e9f6ec; border-radius: 12px; padding: 13px; font-size: .85rem; line-height: 1.5; margin-top: 10px; }
+  .tw-report b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; opacity: .6; margin-bottom: 4px; }
+  .tw-composer { display: flex; gap: 8px; margin-top: 14px; }
+  .tw-composer input { flex: 1; }
+  .tw-err { color: #b4291f; font-size: .8rem; margin-top: 8px; }
+  .tw-muted { opacity: .55; font-size: .82rem; }
+  .tw-essence { font-size: .9rem; line-height: 1.5; padding: 8px 11px; background: var(--wash, #f4f1ea); border-radius: 9px; }
+  .tw-chanbar { display: inline-flex; gap: 4px; margin-bottom: 12px; font-size: .78rem; }
+  .tw-chanbar button { border: 1px solid var(--line,#e6e3dd); background: #fff; padding: 4px 11px; border-radius: 999px; cursor: pointer; }
+  .tw-chanbar button.on { background: var(--accent,#b4532a); color: #fff; border-color: var(--accent,#b4532a); }
+
+  /* ---- Gmail-style email thread ---- */
+  .gm { border: 1px solid var(--line,#e6e3dd); border-radius: 12px; overflow: hidden; background: #fff; }
+  .gm-subject { padding: 14px 18px 12px; font-size: 1.18rem; font-weight: 600; border-bottom: 1px solid var(--line,#e6e3dd); }
+  .gm-list { }  /* no inner scroll — let the page grow so follow-up emails are always visible */
+  .tw-seat { display: inline-block; font-size: .68rem; font-weight: 700; background: var(--accent,#b4532a); color: #fff; border-radius: 6px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; letter-spacing: .02em; }
+  .gm-msg { padding: 14px 18px; border-bottom: 1px solid #f0ede7; }
+  .gm-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .gm-from { font-size: .86rem; line-height: 1.2; flex: 1; }
+  .gm-from b { font-weight: 600; }
+  .gm-from span { color: #8a857c; font-weight: 400; }
+  .gm-to { display: block; color: #8a857c; font-size: .76rem; margin-top: 1px; }
+  .gm-time { font-size: .76rem; color: #8a857c; white-space: nowrap; }
+  .gm-body { font-size: .92rem; line-height: 1.6; color: #24221e; }
+  .gm-body p { margin: 0 0 10px; }
+  .gm-body p:last-child { margin-bottom: 0; }
+  .gm-body ul { margin: 4px 0 10px; padding-left: 20px; }
+  .gm-body li { margin: 3px 0; }
+  .gm-reply { padding: 12px 18px 16px; }
+  .gm-reply-to { font-size: .78rem; color: #8a857c; margin-bottom: 6px; }
+  .gm-reply textarea { width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical; margin-bottom: 8px; }
+  .gm-body ol { margin: 4px 0 10px; padding-left: 22px; }
+  .gm-body ol li { margin: 4px 0; }
+
+  /* C3 signal — a separated debug strip, never overlapping the real UI */
+  .tw-debug { margin-top: 12px; font-size: .78rem; background: #f7f5f0; border: 1px dashed #d8d3c8; border-radius: 9px; padding: 9px 12px; color: #6b665d; }
+  .tw-debug-tag { font-weight: 600; opacity: .55; margin-right: 8px; text-transform: uppercase; letter-spacing: .05em; font-size: .66rem; }
+  .tw-debug-dec { font-weight: 700; margin-right: 8px; }
+  .tw-debug-dec.SUFFICIENT { color: #2e7d46; }
+  .tw-debug-dec.CONTINUE { color: #3a5bbf; }
+  .tw-debug-dec.PAUSE, .tw-debug-dec.NUDGE { color: #b07a1e; }
+  .tw-debug-report { margin-top: 6px; color: #24221e; line-height: 1.5; }
+
+  .tw-note { font-size: .82rem; line-height: 1.5; color: #6b665d; background: #f7f5f0; border-radius: 9px; padding: 9px 12px; margin: 10px 0; }
+  .tw-reward { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 10px 13px; border: 1px solid #e6e3dd; border-radius: 10px; background: linear-gradient(0deg,#fbf8f2,#fff); font-size: .85rem; }
+  .tw-reward-min b { color: #24221e; }
+  .tw-reward-cta { border: 1px solid var(--accent,#b4532a); color: var(--accent,#b4532a); background: #fff; border-radius: 999px; padding: 5px 12px; font-size: .8rem; cursor: pointer; white-space: nowrap; }
+  .tw-reward-cta:hover { background: var(--accent,#b4532a); color: #fff; }
+  .tw-surveyq { margin-bottom: 12px; }
+  .tw-surveyq-label { font-size: .88rem; font-weight: 500; margin-bottom: 5px; line-height: 1.4; }
+
+  /* temperature slider (OpenAI-playground style) */
+  .tw-temp-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .tw-temp-val { font-variant-numeric: tabular-nums; font-weight: 600; font-size: .9rem; color: var(--accent,#b4532a); }
+  .tw-range { width: 100%; accent-color: var(--accent,#b4532a); cursor: pointer; }
+  .tw-temp-ends { display: flex; justify-content: space-between; font-size: .72rem; color: #8a857c; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="/app/ui.jsx"></script>
+<script type="text/babel" src="/app/thread.jsx"></script>
+</body>
+</html>

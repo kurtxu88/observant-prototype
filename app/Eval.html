@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Triage eval — Observant</title>
+<link rel="stylesheet" href="/app/app.css" />
+<link rel="stylesheet" href="/app/selfserve.css" />
+<style>
+  .ev-wrap { max-width: 920px; margin: 0 auto; padding: 32px 22px 90px; }
+  .ev-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  .ev-score { font-size: 1.1rem; font-weight: 700; }
+  .ev-sub { color: #8a857c; font-size: .9rem; margin: 0 0 18px; }
+  .ev-row { display: grid; grid-template-columns: 1fr 150px 92px 30px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee7da; }
+  .ev-row input.input { width: 100%; }
+  .ev-exp { display: inline-flex; border: 1px solid #e6e3dd; border-radius: 8px; overflow: hidden; }
+  .ev-exp button { border: none; background: #fff; font: inherit; font-size: .8rem; padding: 6px 10px; cursor: pointer; color: #8a857c; }
+  .ev-exp button.on { background: var(--accent,#b4532a); color: #fff; font-weight: 600; }
+  .ev-res { font-size: .82rem; font-weight: 600; text-align: center; }
+  .ev-res.ok { color: #2e7d46; } .ev-res.bad { color: #b4291f; } .ev-res.idle { color: #c4bdb0; }
+  .ev-why { grid-column: 1 / -1; font-size: .78rem; color: #8a857c; line-height: 1.45; margin: 0 0 2px; }
+  .ev-rm { border: none; background: #f0ece4; color: #8a857c; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; }
+  .ev-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+  .ev-bar { height: 8px; border-radius: 5px; background: #ece7de; overflow: hidden; margin: 4px 0 16px; }
+  .ev-bar > i { display: block; height: 100%; background: #2e7d46; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"></script>
+<script type="text/babel" src="/app/ui.jsx"></script>
+<script type="text/babel" src="/app/eval.jsx"></script>
+</body>
+</html>
